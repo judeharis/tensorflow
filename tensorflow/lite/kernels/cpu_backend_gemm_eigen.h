@@ -21,12 +21,21 @@ limitations under the License.
 #include "tensorflow/lite/kernels/cpu_backend_context.h"
 #include "tensorflow/lite/kernels/cpu_backend_gemm_params.h"
 
+#include "tensorflow/lite/examples/label_image_secda/gemm_driver.h"
+
 namespace tflite {
 namespace cpu_backend_gemm {
 namespace detail {
 
 struct GemmImplUsingEigen {
   static void Run(const MatrixParams<float>& lhs_params, const float* lhs_data,
+                  const MatrixParams<float>& rhs_params, const float* rhs_data,
+                  const MatrixParams<float>& dst_params, float* dst_data,
+                  const GemmParams<float, float>& params,
+                  CpuBackendContext* /* context */);
+                  
+  //SECDA: Added
+  static void Run2(gemm_driver gd, const MatrixParams<float>& lhs_params, const float* lhs_data,
                   const MatrixParams<float>& rhs_params, const float* rhs_data,
                   const MatrixParams<float>& dst_params, float* dst_data,
                   const GemmParams<float, float>& params,

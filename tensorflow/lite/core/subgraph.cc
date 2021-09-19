@@ -851,6 +851,122 @@ TfLiteStatus Subgraph::Invoke() {
   return status;
 }
 
+//SECDA: Added
+TfLiteStatus Subgraph::Invoke2(gemm_driver &gd) {
+  if (!consistent_) {
+    ReportError("Invoke called on model that is not consistent.");
+    return kTfLiteError;
+  }
+
+  TfLiteStatus status = kTfLiteOk;
+  if (state_ == kStateUninvokable) {
+    ReportError("Invoke called on model that is not ready.");
+    return kTfLiteError;
+  }
+
+  // This is only needed for UseNNAPI(true);
+  if (should_apply_nnapi_delegate_ && !applied_nnapi_delegate_) {
+    TF_LITE_ENSURE_OK(&context_, ModifyGraphWithDelegate(NnApiDelegate()));
+    // only need to modify the graph once upon the first invocation.
+    applied_nnapi_delegate_ = true;
+  }
+
+  // Invocations are always done in node order.
+  // Note that calling Invoke repeatedly will cause the original memory plan to
+  // be reused, unless either ResizeInputTensor() or AllocateTensors() has been
+  // called.
+  for (int execution_plan_index = 0;
+       execution_plan_index < execution_plan_.size(); execution_plan_index++) {
+    if (execution_plan_index == next_execution_plan_index_to_prepare_) {
+      TF_LITE_ENSURE_STATUS(PrepareOpsAndTensors());
+      TF_LITE_ENSURE(&context_, next_execution_plan_index_to_prepare_ >=
+                                    execution_plan_index);
+    }
+    int node_index = execution_plan_[execution_plan_index];
+    TfLiteNode& node = nodes_and_registration_[node_index].first;
+    const TfLiteRegistration& registration =
+        nodes_and_registration_[node_index].second;
+    TFLITE_SCOPED_OPERATOR_PROFILE(profiler_, node_index);
+
+    // TODO(ycling): This is an extra loop through inputs to check if the data
+    // need to be copied from Delegate buffer to raw memory, which is often not
+    // needed. We may want to cache this in prepare to know if this needs to be
+    // done for a node or not.
+    for (int i = 0; i < node.inputs->size; ++i) {
+      int tensor_index = node.inputs->data[i];
+      if (tensor_index == kOptionalTensor) {
+        continue;
+      }
+      TfLiteTensor* tensor = &tensors_[tensor_index];
+      if (tensor->delegate && tensor->delegate != node.delegate &&
+          tensor->data_is_stale) {
+        TF_LITE_ENSURE_STATUS(EnsureTensorDataIsReadable(tensor_index));
+      }
+      if (tensor->data.raw == nullptr && tensor->bytes > 0) {
+        if (registration.builtin_code == kTfLiteBuiltinReshape && i == 1) {
+          // In general, having a tensor here with no buffer will be an error.
+          // However, for the reshape operator, the second input tensor is only
+          // used for the shape, not for the data. Thus, null buffer is ok.
+          continue;
+        } else {
+          // In all other cases, we need to return an error as otherwise we will
+          // trigger a null pointer dereference (likely).
+          ReportError("Input tensor %d lacks data", tensor_index);
+          return kTfLiteError;
+        }
+      }
+    }
+
+    if (check_cancelled_func_ != nullptr &&
+        check_cancelled_func_(cancellation_data_)) {
+      ReportError("Client requested cancel during Invoke()");
+      return kTfLiteError;
+    }
+
+    EnsureTensorsVectorCapacity();
+    tensor_resized_since_op_invoke_ = false;
+
+    //SECDA: Added
+    //Only CONV2D
+    if(registration.builtin_code==3 && gd.on){
+      if(gd.t.profile)std::cout << std::endl << "--------------------Layer :" << gd.t.layer << " --------------------" << std::endl;
+      prf_start(1);
+      if (OpInvoke2(gd,registration, &node) == kTfLiteError) return ReportOpError(&context_, node, registration, node_index,"failed to invoke");
+      prf_end(1,gd.t.convtime);
+      gd.t.layer++;
+    }else{
+      if(gd.t.profile)if(registration.builtin_code==3)std::cout << std::endl << "--------------------Skipped CONV Layer :" << gd.t.layer << " --------------------" << std::endl;
+      if (OpInvoke(registration, &node) == kTfLiteError) return ReportOpError(&context_, node, registration, node_index,"failed to invoke");
+      if(registration.builtin_code==3)gd.t.layer++;
+    }
+
+    // Force execution prep for downstream ops if the latest op triggered the
+    // resize of a dynamic tensor.
+    if (tensor_resized_since_op_invoke_ &&
+        HasDynamicTensor(context_, node.outputs)) {
+      next_execution_plan_index_to_prepare_ = execution_plan_index + 1;
+
+      // This happens when an intermediate dynamic tensor is resized.
+      // We don't have to prepare all the ops, but we need to recompute
+      // the allocation plan.
+      //
+      // This is a workaround for b/127354079. It relies on the property that
+      // ArenaPlanner's behavior is deterministic. A better solution is being
+      // able to "Rewind" to a specific index in ArenaPlanner.
+      // TODO(b/127354079): Improve ArenaPlanner and remove this mechanism.
+      if (next_execution_plan_index_to_plan_allocation_ >
+          next_execution_plan_index_to_prepare_) {
+        next_execution_plan_index_to_plan_allocation_ = 0;
+        if (memory_planner_) {
+          TF_LITE_ENSURE_STATUS(memory_planner_->ResetAllocations());
+        }
+      }
+    }
+  }
+
+  return status;
+}
+
 TfLiteStatus Subgraph::ResizeTensor(TfLiteContext* context,
                                     TfLiteTensor* tensor,
                                     TfLiteIntArray* new_size) {

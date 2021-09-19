@@ -28,6 +28,8 @@ limitations under the License.
 #include "tensorflow/lite/kernels/cpu_backend_gemm_gemmlowp.h"
 #endif
 
+#include "tensorflow/lite/examples/label_image_secda/gemm_driver.h"
+
 namespace tflite {
 
 namespace cpu_backend_gemm {
@@ -106,6 +108,34 @@ void Gemm(const MatrixParams<LhsScalar>& lhs_params, const LhsScalar* lhs_data,
            quantization_flavor>::Run(lhs_params, lhs_data, rhs_params, rhs_data,
                                      dst_params, dst_data, params, context);
 }
+
+//SECDA: Added
+template <typename LhsScalar, typename RhsScalar, typename AccumScalar,
+          typename DstScalar, QuantizationFlavor quantization_flavor>
+void Gemm2(gemm_driver &gd,const MatrixParams<LhsScalar>& lhs_params, const LhsScalar* lhs_data,
+          const MatrixParams<RhsScalar>& rhs_params, const RhsScalar* rhs_data,
+          const MatrixParams<DstScalar>& dst_params, DstScalar* dst_data,
+          const GemmParams<AccumScalar, DstScalar, quantization_flavor>& params,
+          CpuBackendContext* context) {
+
+  gemmlowp::ScopedProfilingLabel label("cpu_backend_gemm::Gemm");
+  ValidateParams(lhs_params, rhs_params, dst_params, params);
+#ifndef TFLITE_WITH_RUY_GEMV
+  // if (dst_params.cols == 1) { //Check this
+  if (dst_params.cols == 1 && !gd.on) { //Check this
+    // GEMV case: try a custom fast GEMV path.
+    if (detail::CustomGemv(lhs_params, lhs_data, rhs_params, rhs_data,
+                           dst_params, dst_data, params, context)) {
+      return;
+    }
+  }
+#endif
+  gemmlowp::ScopedProfilingLabel label2("cpu_backend_gemm::Gemm: general GEMM");
+  GemmImpl<LhsScalar, RhsScalar, AccumScalar, DstScalar,
+           quantization_flavor>::Run2(gd,lhs_params, lhs_data, rhs_params, rhs_data,
+                                     dst_params, dst_data, params, context);
+}
+
 
 }  // namespace cpu_backend_gemm
 

@@ -33,6 +33,8 @@ limitations under the License.
 #include "tensorflow/lite/memory_planner.h"
 #include "tensorflow/lite/stderr_reporter.h"
 
+#include "tensorflow/lite/examples/label_image_secda/gemm_driver.h"
+
 namespace tflite {
 
 // Map statically from a c++ type to a TfLiteType (used below for safe casts).
@@ -349,6 +351,9 @@ class Interpreter {
   /// AllocateTensors().
   /// Returns status of success or failure.
   TfLiteStatus Invoke();
+
+  //SECDA: Added
+  TfLiteStatus Invoke2(gemm_driver &gd);
 
   /// Enable or disable the NN API (true to enable)
   void UseNNAPI(bool enable);

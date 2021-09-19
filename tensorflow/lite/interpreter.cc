@@ -167,6 +167,20 @@ TfLiteStatus Interpreter::Invoke() {
   return kTfLiteOk;
 }
 
+//SECDA: Added
+TfLiteStatus Interpreter::Invoke2(gemm_driver &gd) {
+  TF_LITE_ENSURE_STATUS(primary_subgraph().Invoke2(gd));
+
+  if (!allow_buffer_handle_output_) {
+    for (int tensor_index : outputs()) {
+      TF_LITE_ENSURE_STATUS(
+          primary_subgraph().EnsureTensorDataIsReadable(tensor_index));
+    }
+  }
+
+  return kTfLiteOk;
+}
+
 TfLiteStatus Interpreter::AddTensors(int tensors_to_add,
                                      int* first_new_tensor_index) {
   return primary_subgraph().AddTensors(tensors_to_add, first_new_tensor_index);

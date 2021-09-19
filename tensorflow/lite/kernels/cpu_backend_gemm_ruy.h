@@ -20,6 +20,8 @@ limitations under the License.
 #include "tensorflow/lite/kernels/cpu_backend_context.h"
 #include "tensorflow/lite/kernels/cpu_backend_gemm_params.h"
 
+#include "tensorflow/lite/examples/label_image_secda/gemm_driver.h"
+
 namespace tflite {
 namespace cpu_backend_gemm {
 namespace detail {
@@ -82,6 +84,14 @@ struct GemmImplUsingRuy {
     ruy::Mul<ruy::kAllPaths>(ruy_lhs, ruy_rhs, ruy_spec, context->ruy_context(),
                              &ruy_dst);
   }
+
+  //SECDA: Added
+  static void Run2(gemm_driver gd,
+    const MatrixParams<LhsScalar>& lhs_params, const LhsScalar* lhs_data,
+    const MatrixParams<RhsScalar>& rhs_params, const RhsScalar* rhs_data,
+    const MatrixParams<DstScalar>& dst_params, DstScalar* dst_data,
+    const GemmParams<AccumScalar, DstScalar, quantization_flavor>& params,
+    CpuBackendContext* context) {}
 };
 
 }  // namespace detail

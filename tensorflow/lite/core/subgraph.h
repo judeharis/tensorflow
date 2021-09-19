@@ -27,6 +27,8 @@ limitations under the License.
 #include "tensorflow/lite/memory_planner.h"
 #include "tensorflow/lite/util.h"
 
+#include "tensorflow/lite/kernels/secda_redirect.h"
+
 namespace tflite {
 
 // Forward declare since NNAPIDelegate uses Interpreter.
@@ -224,6 +226,9 @@ class Subgraph {
   // Returns status of success or failure.
   TfLiteStatus Invoke();
 
+  //SECDA: Added
+  TfLiteStatus Invoke2(gemm_driver &gd);
+
   // Entry point for C node plugin API to report an error.
   void ReportError(const char* format, ...);
 
@@ -331,6 +336,12 @@ class Subgraph {
   TfLiteStatus OpInvoke(const TfLiteRegistration& op_reg, TfLiteNode* node) {
     if (op_reg.invoke == nullptr) return kTfLiteError;
     return op_reg.invoke(&context_, node);
+  }
+
+  //SECDA: Added
+  TfLiteStatus OpInvoke2(gemm_driver &gd,const TfLiteRegistration& op_reg, TfLiteNode* node) {
+    if (op_reg.invoke == nullptr) return kTfLiteError;
+      return tflite::ops::builtin::conv::BeforeEval(gd,&context_, node);
   }
 
   // Call OpPrepare() for as many ops as possible, allocating memory for their

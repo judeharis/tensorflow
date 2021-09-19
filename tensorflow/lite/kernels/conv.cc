@@ -41,24 +41,26 @@ limitations under the License.
 #include "tensorflow/lite/kernels/op_macros.h"
 #include "tensorflow/lite/kernels/padding.h"
 
+#include "tensorflow/lite/kernels/secda_redirect.h"
+
 namespace tflite {
 namespace ops {
 namespace builtin {
 namespace conv {
 
-// This file has 4 implementation of Conv.
-enum KernelType {
-  kReference,
-  kGenericOptimized,  // Neon-free
-  // kMultithreadOptimized is a mixture of an Eigen-based kernel when threads
-  // are available and kGenericOptimized when we must use only one thread.
-  kMultithreadOptimized,
-  // The kernel uses use CBLAS interface for matrix multiplication.
-  // It's fast when an optimized CBLAS implementation is available (e.g. Apple
-  // Accelerate Framework), and it's slow when falling back to naive
-  // implementation.
-  kCblasOptimized,
-};
+// // This file has 4 implementation of Conv.
+// enum KernelType {
+//   kReference,
+//   kGenericOptimized,  // Neon-free
+//   // kMultithreadOptimized is a mixture of an Eigen-based kernel when threads
+//   // are available and kGenericOptimized when we must use only one thread.
+//   kMultithreadOptimized,
+//   // The kernel uses use CBLAS interface for matrix multiplication.
+//   // It's fast when an optimized CBLAS implementation is available (e.g. Apple
+//   // Accelerate Framework), and it's slow when falling back to naive
+//   // implementation.
+//   kCblasOptimized,
+// };
 
 const int kTensorNotAllocated = -1;
 
@@ -476,6 +478,71 @@ void EvalQuantized(TfLiteContext* context, TfLiteNode* node,
   }
 }
 
+//SECDA: Added
+template <KernelType kernel_type>
+void EvalQuantized2(gemm_driver &gd,TfLiteContext* context, TfLiteNode* node,
+                   TfLiteConvParams* params, OpData* data, TfLiteTensor* input,
+                   TfLiteTensor* filter, TfLiteTensor* bias,
+                   TfLiteTensor* im2col, TfLiteTensor* hwcn_weights,
+                   TfLiteTensor* output) {
+  auto input_offset = -input->params.zero_point;
+  auto filter_offset = -filter->params.zero_point;
+  auto output_offset = output->params.zero_point;
+  KernelType effective_kernel_type;
+  if ((kernel_type == kMultithreadOptimized ||
+       kernel_type == kCblasOptimized) &&
+      (params->dilation_width_factor != 1 ||
+       params->dilation_height_factor != 1)) {
+    // kMultithreadOptimized and kCblasOptimized do not support dilation.
+    // Therefore, fallback to optimized.
+    effective_kernel_type = kGenericOptimized;
+  } else {
+    effective_kernel_type = kernel_type;
+  }
+
+  ConvParams op_params;
+  op_params.padding_type = PaddingType::kSame;
+  op_params.padding_values.width = data->padding.width;
+  op_params.padding_values.height = data->padding.height;
+  op_params.stride_width = params->stride_width;
+  op_params.stride_height = params->stride_height;
+  op_params.dilation_width_factor = params->dilation_width_factor;
+  op_params.dilation_height_factor = params->dilation_height_factor;
+  op_params.input_offset = input_offset;
+  op_params.weights_offset = filter_offset;
+  op_params.output_offset = output_offset;
+  op_params.output_multiplier = data->output_multiplier;
+  op_params.output_shift = -data->output_shift;
+  op_params.quantized_activation_min = data->output_activation_min;
+  op_params.quantized_activation_max = data->output_activation_max;
+  switch (effective_kernel_type) {
+    case kReference: {
+      reference_ops::Conv(
+          op_params, GetTensorShape(input), GetTensorData<uint8_t>(input),
+          GetTensorShape(filter), GetTensorData<uint8_t>(filter),
+          GetTensorShape(bias), GetTensorData<int32_t>(bias),
+          GetTensorShape(output), GetTensorData<uint8_t>(output),
+          GetTensorShape(im2col), GetTensorData<uint8_t>(im2col),
+          /* cpu_backend_context = */ nullptr);
+      break;
+    }
+    case kGenericOptimized:
+    case kMultithreadOptimized:
+    case kCblasOptimized: {
+      // There is only one optimized implementation for Quantized Conv.
+      // SECDA: Added
+      optimized_ops::Conv2(gd,
+          op_params, GetTensorShape(input), GetTensorData<uint8_t>(input),
+          GetTensorShape(filter), GetTensorData<uint8_t>(filter),
+          GetTensorShape(bias), GetTensorData<int32_t>(bias),
+          GetTensorShape(output), GetTensorData<uint8_t>(output),
+          GetTensorShape(im2col), GetTensorData<uint8_t>(im2col),
+          CpuBackendContext::GetFromContext(context));
+      break;
+    }
+  }
+}
+
 template <KernelType kernel_type>
 void EvalQuantizedPerChannel(TfLiteContext* context, TfLiteNode* node,
                              TfLiteConvParams* params, OpData* data,
@@ -717,6 +784,65 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   return kTfLiteOk;
 }
 
+//SECDA: Added
+TfLiteStatus BeforeEval(gemm_driver &gd,TfLiteContext* context, TfLiteNode* node){
+  return Eval2<kMultithreadOptimized>(gd,context,node);
+}
+
+//SECDA: Added
+template <KernelType kernel_type>
+TfLiteStatus Eval2(gemm_driver &gd,TfLiteContext* context, TfLiteNode* node) {
+  auto* params = reinterpret_cast<TfLiteConvParams*>(node->builtin_data);
+  OpData* data = reinterpret_cast<OpData*>(node->user_data);
+
+  TfLiteTensor* output = &context->tensors[node->outputs->data[0]];
+  TfLiteTensor* input = &context->tensors[node->inputs->data[0]];
+  TfLiteTensor* filter = &context->tensors[node->inputs->data[1]];
+  bool has_bias = node->inputs->size == 3;
+  TfLiteTensor* bias =
+      has_bias ? &context->tensors[node->inputs->data[2]] : nullptr;
+  TfLiteTensor* im2col =
+      data->need_im2col
+          ? &context->tensors[node->temporaries->data[data->im2col_index]]
+          : nullptr;
+  TfLiteTensor* hwcn_weights =
+      data->need_hwcn_weights
+          ? &context->tensors[node->temporaries->data[data->hwcn_weights_index]]
+          : nullptr;
+
+  if (data->need_hwcn_weights && !data->have_weights_been_transposed) {
+    TransposeFloatTensor(filter, hwcn_weights);
+    data->have_weights_been_transposed = true;
+  }
+
+  // TODO(aselle): Consider whether float conv and quantized conv should be
+  // separate ops to avoid dispatch overhead here.
+  switch (input->type) {  // Already know in/outtypes are same.
+    case kTfLiteFloat32:
+      if (filter->type == kTfLiteUInt8 || filter->type == kTfLiteInt8) {
+        EvalHybrid<kernel_type>(context, node, params, data, input, filter,
+                                bias, im2col, hwcn_weights, output);
+      } else {
+        EvalFloat<kernel_type>(context, node, params, data, input, filter, bias,
+                               im2col, hwcn_weights, output);
+      }
+      break;
+    case kTfLiteUInt8:
+      //SECDA: Edited
+      EvalQuantized2<kernel_type>(gd,context, node, params, data, input, filter,
+                                 bias, im2col, hwcn_weights, output);
+      break;
+    case kTfLiteInt8:
+      EvalQuantizedPerChannel<kernel_type>(context, node, params, data, input,
+                                           filter, bias, output, im2col);
+      break;
+    default:
+      context->ReportError(context, "Type %d not currently supported.",
+                           input->type);
+      return kTfLiteError;
+  }
+  return kTfLiteOk;
+}
 }  // namespace conv
 
 TfLiteRegistration* Register_CONVOLUTION_REF() {
