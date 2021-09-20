@@ -587,8 +587,10 @@ void DataHandleCompute(gemm_driver &gd, int dcs,int depth, int t_depth,int bpl2r
   gd.t.layer_input_tile=0;
   uint8_t* results = dst_params.data;
 #ifdef VM_ACC
-  // int acc_imax = 2048 * 16;
   int acc_imax = 4096 * 16;
+#ifdef VM_ACC_D
+  acc_imax = 2048 * 16;
+#endif
   int acc_wmax = 8192 * 16;
 #else
   int acc_imax = 4096 * 16;
