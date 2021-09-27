@@ -14,95 +14,13 @@ common_copts = ["-Wall"]
 py_binary(
     name = "visualize",
     srcs = ["visualize.py"],
-    python_version = "PY3",
-    srcs_version = "PY2AND3",
-    deps = [
-        "//tensorflow/lite/python:schema_py",
+    data = [
+        "//tensorflow/lite/schema:schema.fbs",
         "//tensorflow/python:platform",
+        "@flatbuffers//:flatc",
     ],
-)
-
-py_test(
-    name = "visualize_test",
-    srcs = ["visualize_test.py"],
-    python_version = "PY3",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
-    tags = [
-        "no_mac",  # TODO(b/148247402): flatbuffers import broken on Mac OS.
-    ],
-    deps = [
-        ":test_utilities",
-        ":visualize",
-        "//tensorflow/python:client_testlib",
-        "//tensorflow/python:framework_test_lib",
-    ],
-)
-
-py_binary(
-    name = "convert_image_to_csv",
-    srcs = ["convert_image_to_csv.py"],
-    python_version = "PY3",
-    srcs_version = "PY2AND3",
-    deps = [
-        "//tensorflow:tensorflow_py_no_contrib",
-        "//tensorflow/python:platform",
-        "//tensorflow/python/keras",
-        "//third_party/py/numpy",
-        "@six_archive//:six",
-    ],
-)
-
-py_test(
-    name = "convert_image_to_csv_test",
-    srcs = ["convert_image_to_csv_test.py"],
-    data = ["//tensorflow/core:image_testdata"],
-    python_version = "PY3",
-    srcs_version = "PY2AND3",
-    deps = [
-        ":convert_image_to_csv",
-        "//tensorflow/python:client_testlib",
-        "//tensorflow/python:framework_test_lib",
-        "//tensorflow/python:platform",
-    ],
-)
-
-py_binary(
-    name = "strip_strings",
-    srcs = ["strip_strings.py"],
-    python_version = "PY3",
-    srcs_version = "PY2AND3",
-    deps = [
-        "//tensorflow/lite/python:schema_py",
-        "//tensorflow/python:platform",
-        "@flatbuffers//:runtime_py",
-    ],
-)
-
-py_test(
-    name = "strip_strings_test",
-    srcs = ["strip_strings_test.py"],
-    python_version = "PY3",
-    srcs_version = "PY2AND3",
-    tags = [
-        "no_mac",  # TODO(b/148247402): flatbuffers import broken on Mac OS.
-    ],
-    deps = [
-        ":strip_strings",
-        ":test_utilities",
-        "//tensorflow/lite/python:schema_py",
-        "//tensorflow/python:client_testlib",
-        "//tensorflow/python:framework_test_lib",
-    ],
-)
-
-py_library(
-    name = "test_utilities",
-    srcs = ["test_utilities.py"],
-    srcs_version = "PY2AND3",
-    deps = [
-        "//tensorflow/lite/python:schema_py",
-        "@flatbuffers//:runtime_py",
-    ],
 )
 
 tf_cc_binary(
@@ -166,9 +84,6 @@ cc_test(
     name = "verifier_test",
     size = "small",
     srcs = ["verifier_test.cc"],
-    data = [
-        "//tensorflow/lite:testdata/sparse_tensor.bin",
-    ],
     tags = [
         "tflite_not_portable",
     ],
@@ -191,7 +106,6 @@ cc_library(
     srcs = ["command_line_flags.cc"],
     hdrs = ["command_line_flags.h"],
     copts = tflite_copts(),
-    deps = ["//tensorflow/lite:minimal_logging"],
 )
 
 cc_test(

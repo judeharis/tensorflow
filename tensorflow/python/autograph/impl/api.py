@@ -30,7 +30,6 @@ import textwrap
 import traceback
 
 # pylint:disable=g-bad-import-order
-
 import six
 # pylint:enable=g-bad-import-order
 
@@ -43,7 +42,6 @@ from tensorflow.python.autograph.pyct import errors
 from tensorflow.python.autograph.pyct import inspect_utils
 from tensorflow.python.autograph.pyct import origin_info
 from tensorflow.python.autograph.utils import ag_logging as logging
-from tensorflow.python.eager import function
 from tensorflow.python.framework import errors_impl
 from tensorflow.python.util import tf_decorator
 from tensorflow.python.util import tf_inspect
@@ -192,7 +190,7 @@ def tf_convert(f, ctx, convert_by_default=True, user_requested=False):
 
   # TODO(mdan): Grab features from context.
   # Note: we pass the original context through to convert to properly handle the
-  # following scenario, which can be used inside TF implementations:
+  # following scenario, which can be used insite TF implementations:
   #
   #   ctx = ag_ctx.control_status_ctx()
   #   @function(autograph=False)  # Low-level graph code
@@ -314,24 +312,23 @@ def do_not_convert(func=None):
   return autograph_artifact(wrapper)
 
 
-def _attach_metadata(e, f):
+def _attach_metadata(e, f, converted):
   """Augments an error with the metadata necessary for rewrite."""
   if hasattr(e, 'ag_pass_through'):
     return
 
   metadata = getattr(e, 'ag_error_metadata', None)
-  source_map = f.ag_source_map
+  source_map = f.ag_source_map if converted else {}
 
   if metadata is None:
-    logging.log(1, 'Caught error in user callable %s', f, exc_info=True)
+    logging.log(
+        1, 'Caught error in %s (converted=%s)', f, converted, exc_info=True)
     message = '{}: {}'.format(e.__class__.__name__, e)
   else:
     message = None
 
   cause_tb = traceback.extract_tb(sys.exc_info()[2])[1:]
-
-  e.ag_error_metadata = _ErrorMetadata(
-      cause_tb, metadata, message, source_map, __file__)
+  e.ag_error_metadata = _ErrorMetadata(cause_tb, metadata, message, source_map)
 
 
 def _call_unconverted(f, args, kwargs, options, update_cache=True):
@@ -339,13 +336,17 @@ def _call_unconverted(f, args, kwargs, options, update_cache=True):
   if update_cache:
     conversion.cache_whitelisted(f, options)
 
-  if inspect.ismethod(f) and isinstance(f.__self__, function.TfMethodTarget):
+  if inspect_utils.istfmethodtarget(f):
     return f.__self__.call(args, kwargs)
 
-  if kwargs is not None:
-    return f(*args, **kwargs)
-  else:
-    return f(*args)
+  try:
+    if kwargs is not None:
+      return f(*args, **kwargs)
+    else:
+      return f(*args)
+  except Exception as e:  # pylint:disable=broad-except
+    _attach_metadata(e, f, False)
+    raise
 
 
 def _is_known_loaded_type(f, module_name, entity_name):
@@ -414,7 +415,7 @@ def converted_call(f,
     options = caller_fn_scope.callopts
 
   if conversion.is_in_whitelist_cache(f, options):
-    logging.log(2, 'Whitelisted %s: from cache', f)
+    logging.log(2, 'Whitelisted %s: from cache')
     return _call_unconverted(f, args, kwargs, options, False)
 
   if ag_ctx.control_status_ctx().status == ag_ctx.Status.DISABLED:
@@ -429,8 +430,7 @@ def converted_call(f,
   if isinstance(f, functools.partial):
     new_kwargs = {}
     if f.keywords is not None:
-      # Use copy to avoid mutating the underlying keywords.
-      new_kwargs = f.keywords.copy()
+      new_kwargs = f.keywords
     if kwargs is not None:
       new_kwargs.update(kwargs)
     new_args = f.args + args
@@ -501,15 +501,16 @@ def converted_call(f,
   # TODO(mdan): Move this entire block inside to_graph.
   try:  # Begin of transformation error guards
 
-    if inspect.ismethod(f) or inspect.isfunction(f):
+    if tf_inspect.isfunction(f) or tf_inspect.ismethod(f):
+      # Regular functions
       target_entity = f
-      effective_args = args
+      f_self = inspect_utils.getmethodself(f)
 
-      f_self = getattr(f, '__self__', None)
+      # TODO(b/119246461): This may be more elegantly handled using __get__?
       if f_self is not None:
-        if isinstance(f_self, function.TfMethodTarget):
-          f_self = f_self.target
-        effective_args = (f_self,) + effective_args
+        effective_args = (f_self,) + args
+      else:
+        effective_args = args
 
     elif hasattr(f, '__class__') and hasattr(f.__class__, '__call__'):
       # Callable objects. Dunder methods have special lookup rules, see:
@@ -521,7 +522,7 @@ def converted_call(f,
       target_entity = f
       raise NotImplementedError('unknown callable type "%s"' % type(f))
 
-    if not inspect.isclass(target_entity):
+    if not tf_inspect.isclass(target_entity):
       if not hasattr(target_entity, '__code__'):
         logging.log(2, 'Permanently whitelisted: %s: native binding',
                     target_entity)
@@ -540,7 +541,7 @@ def converted_call(f,
     if logging.has_verbosity(2):
       logging.log(2, 'Defaults of %s : %s', converted_f,
                   converted_f.__defaults__)
-      if not six.PY2:
+      if six.PY3:
         logging.log(2, 'KW defaults of %s : %s',
                     converted_f, converted_f.__kwdefaults__)
 
@@ -559,23 +560,20 @@ def converted_call(f,
     if is_autograph_strict_conversion_mode():
       raise
 
-    warning_template = (
-        'AutoGraph could not transform %s and will run it as-is.\n'
-        '%s'
-        'Cause: %s\n'
-        'To silence this warning, decorate the function with'
-        ' @tf.autograph.experimental.do_not_convert')
     if isinstance(e, errors.UnsupportedLanguageElementError):
       # Repeating the check made upon function entry because the state might
       # have updated in the meantime.
       if not conversion.is_in_whitelist_cache(f, options):
-        logging.warn(warning_template, target_entity, '', e)
+        logging.warn(
+            'AutoGraph could not transform %s and will run it as-is.\n'
+            'Cause: %s', target_entity, e)
     else:
-      file_bug_message = (
+      logging.warn(
+          'AutoGraph could not transform %s and will run it as-is.\n'
           'Please report this to the TensorFlow team. When filing the bug, set'
           ' the verbosity to 10 (on Linux, `export AUTOGRAPH_VERBOSITY=10`) and'
-          ' attach the full output.\n')
-      logging.warn(warning_template, target_entity, file_bug_message, e)
+          ' attach the full output.\n'
+          'Cause: %s', target_entity, e)
 
     return _call_unconverted(f, args, kwargs, options)
 
@@ -586,7 +584,7 @@ def converted_call(f,
       else:
         result = converted_f(*effective_args)
     except Exception as e:
-      _attach_metadata(e, converted_f)
+      _attach_metadata(e, converted_f, True)
       raise
 
   return result

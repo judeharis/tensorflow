@@ -20,7 +20,7 @@ limitations under the License.
 namespace stream_executor {
 namespace blas {
 
-std::string TransposeString(Transpose t) {
+string TransposeString(Transpose t) {
   switch (t) {
     case Transpose::kNoTranspose:
       return "NoTranspose";
@@ -33,7 +33,7 @@ std::string TransposeString(Transpose t) {
   }
 }
 
-std::string UpperLowerString(UpperLower ul) {
+string UpperLowerString(UpperLower ul) {
   switch (ul) {
     case UpperLower::kUpper:
       return "Upper";
@@ -44,7 +44,7 @@ std::string UpperLowerString(UpperLower ul) {
   }
 }
 
-std::string DiagonalString(Diagonal d) {
+string DiagonalString(Diagonal d) {
   switch (d) {
     case Diagonal::kUnit:
       return "Unit";
@@ -55,7 +55,7 @@ std::string DiagonalString(Diagonal d) {
   }
 }
 
-std::string SideString(Side s) {
+string SideString(Side s) {
   switch (s) {
     case Side::kLeft:
       return "Left";
@@ -68,11 +68,9 @@ std::string SideString(Side s) {
 
 // -- AlgorithmConfig
 
-std::string AlgorithmConfig::ToString() const {
-  return absl::StrCat(algorithm_);
-}
+string AlgorithmConfig::ToString() const { return absl::StrCat(algorithm_); }
 
-std::string ComputationTypeString(ComputationType ty) {
+string ComputationTypeString(ComputationType ty) {
   switch (ty) {
     case ComputationType::kF16:
       return "f16";

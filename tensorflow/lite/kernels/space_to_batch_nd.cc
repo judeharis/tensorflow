@@ -50,7 +50,7 @@ struct SpaceToBatchNDContext {
 
 // Currently, only 4D NHWC input/output op_context are supported.
 // The 4D array need to have exactly 2 spatial dimensions.
-// TODO(b/149952582): Support arbitrary dimension in SpaceToBatchND.
+// TODO(nupurgarg): Support arbitrary dimension in SpaceToBatchND.
 const int kInputDimensionNum = 4;
 const int kBlockSizeDimensionNum = 1;
 const int kSpatialDimensionNum = 2;
@@ -75,7 +75,6 @@ TfLiteStatus ResizeOutputTensor(TfLiteContext* context,
   for (int dim = 0; dim < kSpatialDimensionNum; ++dim) {
     int final_dim_size = (input_size->data[dim + 1] + paddings_data[dim * 2] +
                           paddings_data[dim * 2 + 1]);
-    TF_LITE_ENSURE(context, block_shape[dim] != 0);
     TF_LITE_ENSURE_EQ(context, final_dim_size % block_shape[dim], 0);
     output_size->data[dim + 1] = final_dim_size / block_shape[dim];
   }

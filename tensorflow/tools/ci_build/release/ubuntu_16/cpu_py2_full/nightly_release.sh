@@ -18,10 +18,12 @@ set -x
 
 source tensorflow/tools/ci_build/release/common.sh
 
+set_bazel_outdir
+
 # Install python dependencies
 install_ubuntu_16_pip_deps pip2.7
 
-install_bazelisk
+update_bazel_linux
 
 python2.7 tensorflow/tools/ci_build/update_version.py --nightly
 

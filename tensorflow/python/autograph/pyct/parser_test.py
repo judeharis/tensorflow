@@ -129,30 +129,6 @@ string""")
     f = self._eval_code(parser.dedent_block(code), 'f')
     self.assertEqual(f(), (1, 2, 3))
 
-  def test_dedent_block_continuation(self):
-
-    code = r"""
-    def f():
-      a = \
-          1
-      return a
-    """
-
-    f = self._eval_code(parser.dedent_block(code), 'f')
-    self.assertEqual(f(), 1)
-
-  def test_dedent_block_continuation_in_string(self):
-
-    code = r"""
-    def f():
-      a = "a \
-  b"
-      return a
-    """
-
-    f = self._eval_code(parser.dedent_block(code), 'f')
-    self.assertEqual(f(), 'a   b')
-
   def test_parse_expression(self):
     node = parser.parse_expression('a.b')
     self.assertEqual('a', node.value.id)
@@ -160,29 +136,16 @@ string""")
 
   def test_unparse(self):
     node = gast.If(
-        test=gast.Constant(1, kind=None),
+        test=gast.Num(1),
         body=[
             gast.Assign(
-                targets=[
-                    gast.Name(
-                        'a',
-                        ctx=gast.Store(),
-                        annotation=None,
-                        type_comment=None)
-                ],
-                value=gast.Name(
-                    'b', ctx=gast.Load(), annotation=None, type_comment=None))
+                targets=[gast.Name('a', gast.Store(), None)],
+                value=gast.Name('b', gast.Load(), None))
         ],
         orelse=[
             gast.Assign(
-                targets=[
-                    gast.Name(
-                        'a',
-                        ctx=gast.Store(),
-                        annotation=None,
-                        type_comment=None)
-                ],
-                value=gast.Constant('c', kind=None))
+                targets=[gast.Name('a', gast.Store(), None)],
+                value=gast.Str('c'))
         ])
 
     source = parser.unparse(node, indentation='  ')
@@ -190,9 +153,9 @@ string""")
         textwrap.dedent("""
             # coding=utf-8
             if 1:
-                a = b
+              a = b
             else:
-                a = 'c'
+              a = 'c'
         """).strip(), source.strip())
 
 

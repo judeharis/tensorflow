@@ -23,10 +23,10 @@ namespace thread {
 
 struct ThreadPoolOptions {
   // If not null, use this threadpool to schedule inter-op operation
-  thread::ThreadPoolInterface* inter_op_threadpool = nullptr;
+  thread::ThreadPoolInterface* inter_op_threadpool;
 
   // If not null, use this threadpool to schedule intra-op operation
-  thread::ThreadPoolInterface* intra_op_threadpool = nullptr;
+  thread::ThreadPoolInterface* intra_op_threadpool;
 };
 
 }  // namespace thread

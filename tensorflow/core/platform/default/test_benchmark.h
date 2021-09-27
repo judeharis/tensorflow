@@ -20,7 +20,6 @@ limitations under the License.
 #include <utility>
 #include <vector>
 
-#include "tensorflow/core/platform/logging.h"
 #include "tensorflow/core/platform/macros.h"
 #include "tensorflow/core/platform/platform.h"
 #include "tensorflow/core/platform/types.h"
@@ -65,14 +64,7 @@ namespace testing {
 // compiler from optimizing away 'c' as dead code.
 template <class T>
 void DoNotOptimize(const T& var) {
-#ifdef PLATFORM_WINDOWS
-  LOG(FATAL)
-      << "tensorflow::testing::DoNotOptimize is not implemented on windows. "
-      << "If needed, call an external no-op routine with the pointer to foil "
-      << "optimization.";
-#else
   asm volatile("" : "+m"(const_cast<T&>(var)));
-#endif
 }
 
 class Benchmark {

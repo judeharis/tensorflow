@@ -216,6 +216,7 @@ ENTRY entry {
 
 TEST_F(HloSchedulingTest, TuplesAreAccountedCorrectly) {
   auto builder = HloComputation::Builder(TestName());
+  const auto TUPLE_SIZE = 1;
   const Shape r1f32 = ShapeUtil::MakeShape(xla::F32, {6});
 
   // Wrap lit in abs because constants are considered free by
@@ -245,7 +246,7 @@ TEST_F(HloSchedulingTest, TuplesAreAccountedCorrectly) {
       ScheduleModule(
           module.get(),
           [](const BufferValue& buffer) {
-            return ShapeUtil::ByteSizeOf(buffer.shape(), 1);
+            return ShapeUtil::ByteSizeOf(buffer.shape(), TUPLE_SIZE);
           },
           ComputationSchedulerToModuleScheduler(ListMemoryScheduler)));
 

@@ -30,12 +30,12 @@ namespace tensorflow {
 //
 // The computation is built in the context of the given `client`, which may
 // subsequently be used to compile or execute the computation.
-Status ConvertGraphDefToXla(GraphDef graph_def, const tf2xla::Config& config,
-                            xla::Client* client,
+Status ConvertGraphDefToXla(const GraphDef& graph_def,
+                            const tf2xla::Config& config, xla::Client* client,
                             xla::XlaComputation* computation);
 
 // Similar to ConvertGraphDefToXla, but uses MLIR.
-Status ConvertGraphDefToXlaViaMlir(GraphDef graph_def,
+Status ConvertGraphDefToXlaViaMlir(const GraphDef& graph_def,
                                    const tf2xla::Config& config,
                                    xla::XlaComputation* computation);
 

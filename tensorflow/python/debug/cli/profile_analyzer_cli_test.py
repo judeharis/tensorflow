@@ -273,11 +273,11 @@ class ProfileAnalyzerListProfileTest(test_util.TensorFlowTestCase):
     prof_output = prof_analyzer.list_profile(["-f", ".*file2"]).lines
     _assert_at_least_one_line_matches(r"Add/123", prof_output)
     _assert_no_lines_match(r"Mul/456", prof_output)
-    # Filter by execution time.
+    # Fitler by execution time.
     prof_output = prof_analyzer.list_profile(["-e", "[5, 10]"]).lines
     _assert_at_least_one_line_matches(r"Mul/456", prof_output)
     _assert_no_lines_match(r"Add/123", prof_output)
-    # Filter by op time.
+    # Fitler by op time.
     prof_output = prof_analyzer.list_profile(["-o", ">=2"]).lines
     _assert_at_least_one_line_matches(r"Add/123", prof_output)
     _assert_no_lines_match(r"Mul/456", prof_output)

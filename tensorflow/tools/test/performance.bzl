@@ -39,7 +39,7 @@ def tf_cc_logged_benchmark(
             target,
         ],
         main = "run_and_gather_logs.py",
-        deps = [
+        additional_deps = [
             "//tensorflow/tools/test:run_and_gather_logs",
         ],
         **kwargs

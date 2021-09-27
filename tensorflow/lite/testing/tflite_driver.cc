@@ -18,13 +18,9 @@ limitations under the License.
 #include <complex>
 #include <memory>
 #include <vector>
-
 #include "absl/strings/escaping.h"
 #include "tensorflow/lite/builtin_op_data.h"
-#if !defined(__APPLE__)
 #include "tensorflow/lite/delegates/flex/delegate.h"
-#endif
-#include "tensorflow/lite/experimental/kernels/hashtable_ops.h"
 #include "tensorflow/lite/kernels/custom_ops_register.h"
 #include "tensorflow/lite/kernels/register.h"
 #include "tensorflow/lite/kernels/register_ref.h"
@@ -323,7 +319,6 @@ TfLiteDriver::TfLiteDriver(DelegateType delegate_type, bool reference_kernel)
         reinterpret_cast<ops::builtin::BuiltinOpResolver*>(resolver_.get());
     buildinop_resolver_->AddCustom("RFFT2D",
                                    tflite::ops::custom::Register_RFFT2D());
-    tflite::ops::custom::AddHashtableOps(buildinop_resolver_);
   }
 
   switch (delegate_type) {
@@ -333,15 +328,13 @@ TfLiteDriver::TfLiteDriver(DelegateType delegate_type, bool reference_kernel)
       delegate_ = evaluation::CreateNNAPIDelegate();
       break;
     case DelegateType::kGpu:
-      delegate_ = evaluation::CreateGPUDelegate();
+      delegate_ = evaluation::CreateGPUDelegate(/*model=*/nullptr);
       break;
     case DelegateType::kFlex:
-#if !defined(__APPLE__)
       delegate_ = Interpreter::TfLiteDelegatePtr(
           FlexDelegate::Create().release(), [](TfLiteDelegate* delegate) {
             delete static_cast<tflite::FlexDelegate*>(delegate);
           });
-#endif
       break;
   }
 }

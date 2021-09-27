@@ -19,9 +19,7 @@ limitations under the License.
 #ifdef INTEL_MKL
 
 #include <algorithm>
-#include <string>
 #include <vector>
-
 #include "tensorflow/core/framework/numeric_op.h"
 #include "tensorflow/core/framework/op.h"
 #include "tensorflow/core/framework/op_kernel.h"
@@ -32,13 +30,21 @@ limitations under the License.
 #include "tensorflow/core/platform/byte_order.h"
 #include "tensorflow/core/platform/cpu_info.h"
 #include "tensorflow/core/platform/macros.h"
-#include "tensorflow/core/util/mkl_types.h"
-#include "tensorflow/core/util/mkl_util.h"
 #include "tensorflow/core/util/tensor_format.h"
+
+#include "tensorflow/core/util/mkl_util.h"
 
 using mkldnn::stream;
 
 namespace tensorflow {
+
+#ifdef ENABLE_MKLDNN_V1
+#define ENGINE_CPU engine::kind::cpu
+#define OUTPUT_TF_MD output_tf_md
+#else
+#define ENGINE_CPU engine::cpu
+#define OUTPUT_TF_MD output_tf_pd
+#endif  // ENABLE_MKLDNN_V1
 
 typedef Eigen::ThreadPoolDevice CPUDevice;
 
@@ -102,10 +108,10 @@ class MklToTfOp : public OpKernel {
 
       // Allocate output tensor.
       TensorShape output_shape = input_shape.GetTfShape();
-      Tensor* output_tensor = nullptr;
+      Tensor* output_tensor = NULL;
       OP_REQUIRES_OK(context, context->allocate_output(
                                   input_number, output_shape, &output_tensor));
-      DCHECK(output_tensor);
+      CHECK_NOTNULL(output_tensor);
 
       // Check if input needs to be reordered
       if (input.IsReorderNeeded(OUTPUT_TF_MD)) {
@@ -156,6 +162,8 @@ TF_CALL_NUMBER_TYPES(REGISTER_CPU);
 TF_CALL_QUANTIZED_TYPES(REGISTER_CPU);
 
 #undef REGISTER_CPU
+#undef ENGINE_CPU
+#undef OUTPUT_TF_MD
 
 }  // namespace tensorflow
 #endif  // INTEL_MKL

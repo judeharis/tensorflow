@@ -17,7 +17,6 @@ limitations under the License.
 
 #include "llvm/ADT/Sequence.h"
 #include "llvm/ADT/StringExtras.h"
-#include "llvm/ADT/StringMap.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/FormatVariadic.h"
 #include "llvm/Support/InitLLVM.h"
@@ -26,8 +25,8 @@ limitations under the License.
 #include "llvm/TableGen/Main.h"
 #include "llvm/TableGen/Record.h"
 #include "llvm/TableGen/TableGenBackend.h"
-#include "mlir/Support/STLExtras.h"  // TF:llvm-project
-#include "mlir/TableGen/Operator.h"  // TF:llvm-project
+#include "mlir/Support/STLExtras.h"  // TF:local_config_mlir
+#include "mlir/TableGen/Operator.h"  // TF:local_config_mlir
 
 using llvm::raw_ostream;
 using llvm::RecordKeeper;
@@ -43,29 +42,12 @@ static std::string GetDefaultAttrExport(
   Attribute attr = named_attr.attr;
   StringRef storage_type = attr.getStorageType();
   // For some attribute types we have a general conversion, so use that.
-  if (!attr.isEnumAttr() && (storage_type.endswith("BoolAttr") ||
+  if (!attr.isEnumAttr() && (storage_type.endswith("IntegerAttr") ||
                              storage_type.endswith("FloatAttr") ||
-                             storage_type.endswith("IntegerAttr") ||
                              storage_type.endswith("StringAttr"))) {
     return "Convert" + attr.getReturnType().str();
   }
   return "Convert_" + named_attr.name.str();
-}
-
-static StringRef GetClientBuilder(const Operator& op) {
-  static const auto* kOpToXLABuilderMap =
-      new llvm::StringMap<StringRef>{{"ReverseOp", "Rev"},
-                                     {"ConcatenateOp", "ConcatInDim"},
-                                     {"ConvOp", "ConvGeneralDilated"}};
-
-  StringRef op_name = op.getCppClassName();
-
-  // Default case where the client builder method names closely follow the op
-  // names in the dialect. For e.g., AddOp -> xla::Add method.
-  if (!kOpToXLABuilderMap->count(op_name)) return op_name.drop_back(2);
-
-  // Otherwise, if the op to client builder method mapping is provided.
-  return kOpToXLABuilderMap->lookup(op_name);
 }
 
 static void BuildOperator(const Operator& op, raw_ostream* output) {
@@ -89,7 +71,7 @@ static void BuildOperator(const Operator& op, raw_ostream* output) {
       }
 
       // Otherwise, this is a varidiac operand list.
-      os << "    std::vector<xla::XlaOp> xla_arg_" << index << ";\n"
+      os << "    std::vector<xla::XlaOp> xla_arg_" << index << ";"
          << "    for (auto operand : xla_op.getODSOperands(" << operand_number++
          << "))\n      xla_arg_" << index
          << ".push_back(value_map[operand]);\n";
@@ -103,15 +85,10 @@ static void BuildOperator(const Operator& op, raw_ostream* output) {
        << op.getArgName(index) << "());\n";
   }
 
-  // Emit call to client API
-  os << "    auto xla_result = xla::" << GetClientBuilder(op) << "(";
-
-  // If all operands are variadic, then pass the builder explicitly to xla
-  // client API call
-  if (op.getNumOperands() == op.getNumVariadicOperands()) {
-    os << "lowering_context.builder";
-    if (op.getNumArgs() != 0) os << ", ";
-  }
+  // Assumes that the client builder method names closely follow the op names
+  // in the dialect. For e.g., AddOp -> xla::Add method.
+  StringRef op_name = op.getCppClassName();
+  os << "    auto xla_result = xla::" << op_name.drop_back(2) << "(";
 
   // Emit each of the arguments.
   interleaveComma(llvm::seq<int>(0, op.getNumArgs()), os,
@@ -131,12 +108,7 @@ static bool OperatorWritersMain(raw_ostream& os, RecordKeeper& records) {
   // Emit a function to generate an XLA operation for the operations with
   // auto-generated builders.
   os << "mlir::LogicalResult ExportXlaOperator(\n"
-        "mlir::Operation* op, OpLoweringContext lowering_context) {\n\n";
-
-  // Create a scoped object to assign sharding to generated XLA ops. Any HLO
-  // can have an attribute of "sharding".
-  os << "  xla::XlaScopedShardingAssignment sharding(lowering_context.builder, "
-        "CreateOpShardingFromAttribute(op));\n\n";
+        "mlir::Operation* op, OpLoweringContext lowering_context) {\n";
 
   // Retrieve all the definitions derived from HLO_Op and sort by record name.
   for (const auto* def : records.getAllDerivedDefinitions("HLO_Op")) {

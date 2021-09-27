@@ -41,16 +41,6 @@ filegroup(
     ],
 )
 
-filegroup(
-    name = "pywrap_required_hdrs",
-    srcs = [
-        "training/coordinator.h",
-    ],
-    visibility = [
-        "//tensorflow/python:__pkg__",
-    ],
-)
-
 cc_library(
     name = "gradients",
     srcs = [
@@ -243,7 +233,6 @@ cc_library_with_android_deps(
     deps = [
         "//tensorflow/core:core_cpu",
         "//tensorflow/core:lib",
-        "//tensorflow/core:lib_experimental",
         "//tensorflow/core:protos_all_cc",
     ],
 )

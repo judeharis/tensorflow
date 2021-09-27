@@ -20,23 +20,21 @@ from __future__ import print_function
 
 import collections
 import tempfile
-
 from absl.testing import parameterized
 import numpy as np
 from tensorflow.python import keras
 from tensorflow.python.data.ops import dataset_ops
 from tensorflow.python.distribute import combinations
-from tensorflow.python.distribute import parameter_server_strategy
 from tensorflow.python.distribute import strategy_combinations
 from tensorflow.python.distribute import tpu_strategy
 from tensorflow.python.distribute import values
 from tensorflow.python.eager import context
+from tensorflow.python.eager import test
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
 from tensorflow.python.keras import losses
 from tensorflow.python.keras.distribute import distribute_strategy_test as keras_test_lib
 from tensorflow.python.keras.distribute import distributed_training_utils
-from tensorflow.python.platform import test
 from tensorflow.python.training import gradient_descent
 
 
@@ -75,14 +73,16 @@ class TestDistributionStrategyWithCallbacks(test.TestCase,
 
   @combinations.generate(
       combinations.times(
-          keras_test_lib.all_strategy_combinations()))
-  def test_callbacks_in_fit(self, distribution):
+          keras_test_lib.all_strategy_combinations(),
+          combinations.combine(experimental_run_tf_function=[True, False])))
+  def test_callbacks_in_fit(self, distribution, experimental_run_tf_function):
     with distribution.scope():
       model = keras_test_lib.get_model()
       model.compile(
           optimizer='sgd',
           loss='mse',
-          metrics=['mae'])
+          metrics=['mae'],
+          experimental_run_tf_function=experimental_run_tf_function)
 
     dataset = keras_test_lib.get_dataset(distribution)
     counter = Counter()
@@ -129,14 +129,16 @@ class TestDistributionStrategyWithCallbacks(test.TestCase,
 
   @combinations.generate(
       combinations.times(
-          keras_test_lib.all_strategy_combinations()))
-  def test_callbacks_in_eval(self, distribution):
+          keras_test_lib.all_strategy_combinations(),
+          combinations.combine(experimental_run_tf_function=[True, False])))
+  def test_callbacks_in_eval(self, distribution, experimental_run_tf_function):
     with distribution.scope():
       model = keras_test_lib.get_model()
       model.compile(
           optimizer='sgd',
           loss='mse',
-          metrics=['mae'])
+          metrics=['mae'],
+          experimental_run_tf_function=experimental_run_tf_function)
 
     dataset = keras_test_lib.get_dataset(distribution)
     counter = Counter()
@@ -153,14 +155,17 @@ class TestDistributionStrategyWithCallbacks(test.TestCase,
 
   @combinations.generate(
       combinations.times(
-          keras_test_lib.all_strategy_combinations()))
-  def test_callbacks_in_predict(self, distribution):
+          keras_test_lib.all_strategy_combinations(),
+          combinations.combine(experimental_run_tf_function=[True, False])))
+  def test_callbacks_in_predict(self, distribution,
+                                experimental_run_tf_function):
     with distribution.scope():
       model = keras_test_lib.get_model()
       model.compile(
           optimizer='sgd',
           loss='mse',
-          metrics=['mae'])
+          metrics=['mae'],
+          experimental_run_tf_function=experimental_run_tf_function)
 
     dataset = keras_test_lib.get_dataset(distribution)
     counter = Counter()
@@ -192,8 +197,9 @@ class TestDistributionStrategyErrorCases(test.TestCase, parameterized.TestCase):
     with self.cached_session():
       a = constant_op.constant([1, 2], shape=(1, 2))
       b = constant_op.constant([[1, 2], [1, 2]], shape=(2, 2))
-      x = values.DistributedValues((a, b))
-      y = values.DistributedValues((a, a))
+      device_map = values.ReplicaDeviceMap(('/device:CPU:0', '/device:GPU:0'))
+      x = values.DistributedValues(device_map, (a, b))
+      y = values.DistributedValues(device_map, (a, a))
       # Removed device and input tensor shape details from the error message
       # since the order of the device and the corresponding input tensor shape
       # is not deterministic over different runs.
@@ -216,8 +222,9 @@ class TestDistributionStrategyErrorCases(test.TestCase, parameterized.TestCase):
     with self.cached_session():
       a = constant_op.constant([1, 2], shape=(1, 2), dtype=dtypes.int32)
       b = constant_op.constant([1, 2], shape=(1, 2), dtype=dtypes.float64)
-      x = values.DistributedValues((a, b))
-      y = values.DistributedValues((a, a))
+      device_map = values.ReplicaDeviceMap(('/device:CPU:0', '/device:GPU:0'))
+      x = values.DistributedValues(device_map, (a, b))
+      y = values.DistributedValues(device_map, (a, a))
       # Removed device and input tensor dtype details from the error message
       # since the order of the device and the corresponding input tensor dtype
       # is not deterministic over different runs.
@@ -234,8 +241,10 @@ class TestDistributionStrategyErrorCases(test.TestCase, parameterized.TestCase):
           distribution=[
               strategy_combinations.mirrored_strategy_with_gpu_and_cpu,
           ],
-          mode=['graph', 'eager']))
-  def test_unsupported_features(self, distribution, mode):
+          mode=['graph', 'eager'],
+          experimental_run_tf_function=[True, False]))
+  def test_unsupported_features(self, distribution,
+                                experimental_run_tf_function, mode):
     with self.cached_session():
       with distribution.scope():
         model = keras_test_lib.get_model()
@@ -245,11 +254,15 @@ class TestDistributionStrategyErrorCases(test.TestCase, parameterized.TestCase):
         model.compile(
             optimizer,
             loss,
-            metrics=metrics)
+            metrics=metrics,
+            experimental_run_tf_function=experimental_run_tf_function)
 
       dataset = keras_test_lib.get_dataset(distribution)
+      exception_error_message = (
+          '`validation_split` argument is not supported when ')
+
       # Test with validation split
-      with self.assertRaises(ValueError):
+      with self.assertRaisesRegexp(ValueError, exception_error_message):
         model.fit(
             dataset,
             epochs=1,
@@ -260,7 +273,9 @@ class TestDistributionStrategyErrorCases(test.TestCase, parameterized.TestCase):
 
       # Test with sample weight.
       sample_weight = np.random.random((10,))
-      with self.assertRaises(ValueError):
+      with self.assertRaisesRegexp(
+          ValueError, '`sample_weight` argument is not supported when.*'
+          'dataset'):
         model.fit(
             dataset,
             epochs=1,
@@ -271,13 +286,94 @@ class TestDistributionStrategyErrorCases(test.TestCase, parameterized.TestCase):
       # Test with not specifying the `steps` argument for dataset with infinite
       # cardinality.
       dataset = dataset.repeat()
-      with self.assertRaises(ValueError):
+      with self.assertRaisesRegexp(
+          ValueError, 'When passing an infinitely '
+          'repeating dataset, you must specify the '
+          '`steps_per_epoch` argument'):
         model.fit(dataset, epochs=1, verbose=0)
-      with self.assertRaises(ValueError):
+      with self.assertRaisesRegexp(
+          ValueError, 'When passing an infinitely '
+          'repeating dataset, you must specify the '
+          '`steps` argument'):
         model.evaluate(dataset, verbose=0)
 
-      with self.assertRaises(ValueError):
+      with self.assertRaisesRegexp(
+          ValueError, 'When passing an infinitely '
+          'repeating dataset, you must specify the '
+          '`steps` argument'):
         model.predict(dataset, verbose=0)
+
+  @combinations.generate(
+      combinations.combine(
+          distribution=[
+              strategy_combinations.mirrored_strategy_with_gpu_and_cpu,
+          ],
+          mode=['graph', 'eager'],
+          experimental_run_tf_function=[True, False]))
+  def test_calling_with_unsupported_predefined_callbacks(
+      self, distribution, experimental_run_tf_function):
+    with self.cached_session():
+      with distribution.scope():
+        model = keras_test_lib.get_model()
+        optimizer = gradient_descent.GradientDescentOptimizer(0.001)
+        loss = 'mse'
+        metrics = ['mae']
+        model.compile(
+            optimizer,
+            loss,
+            metrics=metrics,
+            experimental_run_tf_function=experimental_run_tf_function)
+
+      dataset = keras_test_lib.get_dataset(distribution)
+
+      def schedule(_):
+        return 0.001
+
+      with self.assertRaisesRegexp(
+          ValueError, 'You must specify a Keras Optimizer V2 when '
+          'using'):
+        model.fit(
+            dataset,
+            epochs=1,
+            steps_per_epoch=2,
+            verbose=0,
+            callbacks=[keras.callbacks.LearningRateScheduler(schedule)])
+
+      with self.assertRaisesRegexp(
+          ValueError, 'You must specify a Keras Optimizer V2 when '
+          'using'):
+        model.fit(
+            dataset,
+            epochs=1,
+            steps_per_epoch=2,
+            verbose=0,
+            callbacks=[keras.callbacks.ReduceLROnPlateau()])
+
+  @combinations.generate(
+      combinations.combine(
+          distribution=[strategy_combinations.one_device_strategy],
+          mode=['eager'],
+          experimental_run_tf_function=[True, False]))
+  def test_distribution_strategy_with_run_eagerly(self, distribution,
+                                                  experimental_run_tf_function):
+    with distribution.scope():
+      x = keras.layers.Input(shape=(1,))
+      y = keras.layers.Dense(1, kernel_initializer='ones')(x)
+      model = keras.models.Model(x, y)
+
+      if experimental_run_tf_function:
+        model.compile(
+            'sgd',
+            run_eagerly=True,
+            experimental_run_tf_function=experimental_run_tf_function)
+      else:
+        err_msg = ('We currently do not support enabling `run_eagerly` with '
+                   'distribution strategy.')
+        with self.assertRaisesRegex(ValueError, err_msg):
+          model.compile(
+              'sgd',
+              run_eagerly=True,
+              experimental_run_tf_function=experimental_run_tf_function)
 
   @combinations.generate(
       combinations.combine(
@@ -285,9 +381,10 @@ class TestDistributionStrategyErrorCases(test.TestCase, parameterized.TestCase):
               strategy_combinations.mirrored_strategy_with_gpu_and_cpu,
               strategy_combinations.one_device_strategy,
           ],
-          mode=['graph', 'eager']))
+          mode=['graph', 'eager'],
+          experimental_run_tf_function=[True, False]))
   def test_distribution_strategy_on_subclassed_model(
-      self, distribution):
+      self, distribution, experimental_run_tf_function):
     with distribution.scope():
 
       class _SimpleMLP(keras.Model):
@@ -308,10 +405,10 @@ class TestDistributionStrategyErrorCases(test.TestCase, parameterized.TestCase):
             '`Sequential` model that is created without `input_shape`/'
             '`input_dim` set in its first layer or a subclassed model.'):
           model.compile(
-              'sgd')
+              'sgd', experimental_run_tf_function=experimental_run_tf_function)
       else:
         model.compile(
-            'sgd')
+            'sgd', experimental_run_tf_function=experimental_run_tf_function)
 
   @combinations.generate(
       combinations.combine(
@@ -319,9 +416,10 @@ class TestDistributionStrategyErrorCases(test.TestCase, parameterized.TestCase):
               strategy_combinations.mirrored_strategy_with_gpu_and_cpu,
               strategy_combinations.one_device_strategy,
           ],
-          mode=['graph', 'eager']))
+          mode=['graph', 'eager'],
+          experimental_run_tf_function=[True, False]))
   def test_distribution_strategy_on_deferred_sequential_model(
-      self, distribution):
+      self, distribution, experimental_run_tf_function):
     with distribution.scope():
       model = keras.models.Sequential()
       model.add(keras.layers.Dense(16, activation='relu'))
@@ -329,7 +427,7 @@ class TestDistributionStrategyErrorCases(test.TestCase, parameterized.TestCase):
 
       if context.executing_eagerly():
         model.compile(
-            'sgd')
+            'sgd', experimental_run_tf_function=experimental_run_tf_function)
       else:
         with self.assertRaisesRegexp(
             ValueError,
@@ -338,7 +436,7 @@ class TestDistributionStrategyErrorCases(test.TestCase, parameterized.TestCase):
             '`input_shape`/`input_dim` set in its first layer or '
             'a subclassed model.'):
           model.compile(
-              'sgd')
+              'sgd', experimental_run_tf_function=experimental_run_tf_function)
 
   @combinations.generate(
       keras_test_lib.all_strategy_combinations_minus_default())
@@ -364,9 +462,10 @@ class TestDistributionStrategyWithLossMasking(test.TestCase,
               strategy_combinations.mirrored_strategy_with_gpu_and_cpu,
           ],
           mode=['graph', 'eager'],
+          experimental_run_tf_function=[True, False],
           optimizer=strategy_combinations.gradient_descent_optimizer_keras_v2_fn
       ))
-  def test_masking(self, distribution, optimizer):
+  def test_masking(self, distribution, experimental_run_tf_function, optimizer):
     with self.cached_session():
       np.random.seed(1337)
       x = np.array([[[1], [1]], [[0], [0]]])
@@ -378,7 +477,8 @@ class TestDistributionStrategyWithLossMasking(test.TestCase,
                 keras.layers.Dense(1, kernel_initializer='one')))
         model.compile(
             loss='mse',
-            optimizer=optimizer())
+            optimizer=optimizer(),
+            experimental_run_tf_function=experimental_run_tf_function)
       y = np.array([[[1], [1]], [[1], [1]]])
       dataset = dataset_ops.Dataset.from_tensor_slices((x, y))
       dataset = dataset.repeat(100)
@@ -395,12 +495,11 @@ class TestDistributionStrategyWithNormalizationLayer(test.TestCase,
           keras_test_lib.all_strategy_combinations(),
           combinations.combine(
               fused=[True, False],
+              experimental_run_tf_function=[True, False],
               optimizer=strategy_combinations
               .gradient_descent_optimizer_keras_v2_fn)))
-  def test_batchnorm_correctness(self, distribution, fused, optimizer):
-    if isinstance(distribution.extended,
-                  parameter_server_strategy.ParameterServerStrategyExtended):
-      self.skipTest('b/152353796')
+  def test_batchnorm_correctness(self, distribution, fused, optimizer,
+                                 experimental_run_tf_function):
     with self.cached_session():
       with distribution.scope():
         model = keras.models.Sequential()
@@ -413,7 +512,8 @@ class TestDistributionStrategyWithNormalizationLayer(test.TestCase,
         model.add(norm)
         model.compile(
             loss='mse',
-            optimizer=optimizer())
+            optimizer=optimizer(),
+            experimental_run_tf_function=experimental_run_tf_function)
 
       # centered on 5.0, variance 10.0
       x = np.random.normal(loc=5.0, scale=10.0, size=(1000, 10, 20, 30))
@@ -442,15 +542,18 @@ class TestDistributionStrategySaveLoadWeights(test.TestCase,
       combinations.times(
           keras_test_lib.all_strategy_combinations_minus_default(),
           combinations.combine(
+              experimental_run_tf_function=[True, False],
               optimizer=strategy_combinations.rmsprop_optimizer_keras_v2_fn)))
-  def test_save_load_h5(self, distribution, optimizer):
+  def test_save_load_h5(self, distribution, optimizer,
+                        experimental_run_tf_function):
     with self.cached_session():
       dataset = keras_test_lib.get_dataset(distribution)
       with distribution.scope():
         model = keras_test_lib.get_model()
         model.compile(
             optimizer(),
-            'mse')
+            'mse',
+            experimental_run_tf_function=experimental_run_tf_function)
         model.fit(dataset, epochs=1, steps_per_epoch=1)
 
         weights_file = tempfile.mktemp('.h5')
@@ -459,7 +562,8 @@ class TestDistributionStrategySaveLoadWeights(test.TestCase,
         model_2 = keras_test_lib.get_model()
         model_2.compile(
             optimizer(),
-            'mse')
+            'mse',
+            experimental_run_tf_function=experimental_run_tf_function)
         model_2.load_weights(weights_file)
         model_2.predict(
             keras_test_lib.get_predict_dataset(distribution), steps=2)
@@ -469,8 +573,10 @@ class TestDistributionStrategySaveLoadWeights(test.TestCase,
       combinations.times(
           keras_test_lib.all_strategy_combinations_minus_default(),
           combinations.combine(
+              experimental_run_tf_function=[True, False],
               optimizer=strategy_combinations.rmsprop_optimizer_keras_v2_fn)))
-  def test_save_load_trackable(self, distribution, optimizer):
+  def test_save_load_trackable(self, distribution, optimizer,
+                               experimental_run_tf_function):
     # TODO(b/123533246): Enable the test for TPU once bug is fixed
     if (isinstance(distribution,
                    (tpu_strategy.TPUStrategy, tpu_strategy.TPUStrategyV1)) and
@@ -482,7 +588,8 @@ class TestDistributionStrategySaveLoadWeights(test.TestCase,
         model = keras_test_lib.get_model()
         model.compile(
             optimizer(),
-            'mse')
+            'mse',
+            experimental_run_tf_function=experimental_run_tf_function)
         model.fit(dataset, epochs=1, steps_per_epoch=1)
 
         weights_file = tempfile.mktemp()
@@ -491,7 +598,8 @@ class TestDistributionStrategySaveLoadWeights(test.TestCase,
         model_2 = keras_test_lib.get_model()
         model_2.compile(
             optimizer(),
-            'mse')
+            'mse',
+            experimental_run_tf_function=experimental_run_tf_function)
         model_2.load_weights(weights_file)
         model_2.predict(
             keras_test_lib.get_predict_dataset(distribution), steps=2)
@@ -502,8 +610,10 @@ class TestDistributionStrategyValidation(test.TestCase, parameterized.TestCase):
 
   @combinations.generate(
       combinations.times(
-          keras_test_lib.all_strategy_combinations_minus_default()))
-  def test_layer_outside_scope(self, distribution):
+          keras_test_lib.all_strategy_combinations_minus_default(),
+          combinations.combine(experimental_run_tf_function=[True, False])))
+  def test_layer_outside_scope(self, distribution,
+                               experimental_run_tf_function):
     with self.cached_session():
       with self.assertRaisesRegexp(
           ValueError, 'was not created in the distribution strategy'):
@@ -517,11 +627,15 @@ class TestDistributionStrategyValidation(test.TestCase, parameterized.TestCase):
           model.compile(
               optimizer,
               loss,
-              metrics=metrics)
+              metrics=metrics,
+              experimental_run_tf_function=experimental_run_tf_function)
 
   @combinations.generate(
-      keras_test_lib.all_strategy_combinations_minus_default())
-  def test_model_outside_scope(self, distribution):
+      combinations.times(
+          keras_test_lib.all_strategy_combinations_minus_default(),
+          combinations.combine(experimental_run_tf_function=[True, False])))
+  def test_model_outside_scope(self, distribution,
+                               experimental_run_tf_function):
     with self.cached_session():
       with self.assertRaisesRegexp(
           ValueError, 'was not created in the distribution strategy'):
@@ -532,7 +646,11 @@ class TestDistributionStrategyValidation(test.TestCase, parameterized.TestCase):
           optimizer = gradient_descent.GradientDescentOptimizer(0.001)
           loss = 'mse'
           metrics = ['mae', keras.metrics.CategoricalAccuracy()]
-          model.compile(optimizer, loss, metrics=metrics)
+          model.compile(
+              optimizer,
+              loss,
+              metrics=metrics,
+              experimental_run_tf_function=experimental_run_tf_function)
 
 
 class TestDistributionStrategyWithStaticShapes(test.TestCase,

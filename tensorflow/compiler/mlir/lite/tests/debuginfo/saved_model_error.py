@@ -21,7 +21,6 @@ from __future__ import division
 from __future__ import print_function
 
 import sys
-
 from absl import app
 
 import tensorflow.compat.v2 as tf
@@ -34,7 +33,7 @@ class TestModule(tf.Module):
 
   @tf.function(input_signature=[tf.TensorSpec(shape=[3, 3], dtype=tf.float32)])
   def model(self, x):
-    y = tf.math.betainc(x, 0.5, 1.0)  # Not supported
+    y = tf.math.reciprocal(x)  # Not supported
     return y + y
 
 
@@ -57,14 +56,14 @@ class TestGraphDebugInfo(object):
 # pylint: disable=line-too-long
 
 # CHECK-LABEL: testSavedModelDebugInfo
-# CHECK: error: 'tf.Betainc' op is neither a custom op nor a flex op
+# CHECK: error: 'tf.Reciprocal' op is neither a custom op nor a flex op
 # CHECK:                                  attrs=attr_protos, op_def=op_def)
 # CHECK:                                  ^
 # CHECK: {{.*tensorflow/python/ops/gen_math_ops.py:[0-9]+:[0-9]+: note: called from}}
-# CHECK:         "Betainc", a=a, b=b, x=x, name=name)
+# CHECK:         "Reciprocal", x=x, name=name)
 # CHECK:         ^
 # CHECK: {{.*tensorflow/compiler/mlir/lite/tests/debuginfo/saved_model_error.py:[0-9]+:[0-9]+: note: called from}}
-# CHECK:     y = tf.math.betainc(x, 0.5, 1.0)  # Not supported
+# CHECK:     y = tf.math.reciprocal(x)  # Not supported
 # CHECK:     ^
 # CHECK: <unknown>:0: error: failed while converting: 'main'
 

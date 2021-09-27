@@ -36,25 +36,6 @@ filegroup(
     ]),
 )
 
-filegroup(
-    name = "cpu_runtime_srcs",
-    srcs = [
-        "cpu_function_runtime.cc",
-        "executable_run_options.cc",
-    ],
-    visibility = [":friends"],
-)
-
-filegroup(
-    name = "cpu_runtime_hdrs",
-    srcs = [
-        "cpu_function_runtime.h",
-        "executable_run_options.h",
-        "types.h",
-    ],
-    visibility = [":friends"],
-)
-
 tf_proto_library_cc(
     name = "xla_data_proto",
     srcs = ["xla_data.proto"],
@@ -161,8 +142,7 @@ cc_library(
     hdrs = ["types.h"],
     visibility = [":friends"],
     deps = [
-        "//tensorflow/core/framework:numeric_types",
-        "//tensorflow/core/platform:types",
+        "//tensorflow/core:framework_lite",
         "//third_party/eigen3",
     ],
 )
@@ -252,7 +232,6 @@ cc_library(
         "//tensorflow/core/platform:numbers",
         "//third_party/eigen3",
         "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:inlined_vector",
         "@com_google_absl//absl/strings",
@@ -438,6 +417,7 @@ cc_library(
         ":array3d",
         ":array4d",
         ":shape_util",
+        ":sparse_index_array",
         ":status_macros",
         ":types",
         ":util",
@@ -483,6 +463,7 @@ cc_library(
         ":array4d",
         ":literal",
         ":shape_util",
+        ":sparse_index_array",
         ":status_macros",
         ":types",
         ":util",
@@ -541,7 +522,6 @@ cc_library(
 
 cc_library(
     name = "array",
-    srcs = ["array.cc"],
     hdrs = ["array.h"],
     deps = [
         ":status",
@@ -640,6 +620,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":types",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -741,7 +722,6 @@ tf_cc_test(
         ":text_literal_writer",
         ":types",
         "//tensorflow/core:lib",
-        "//tensorflow/core:test",
         "//tensorflow/core:test_main",
     ],
 )
@@ -860,6 +840,29 @@ tf_cc_test(
 )
 
 cc_library(
+    name = "sparse_index_array",
+    srcs = ["sparse_index_array.cc"],
+    hdrs = ["sparse_index_array.h"],
+    deps = [
+        ":array2d",
+        ":shape_util",
+        ":xla_data_proto_cc",
+        "@com_google_absl//absl/container:inlined_vector",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+tf_cc_test(
+    name = "sparse_index_array_test",
+    srcs = ["sparse_index_array_test.cc"],
+    deps = [
+        ":sparse_index_array",
+        ":test",
+        "//tensorflow/core:test_main",
+    ],
+)
+
+cc_library(
     name = "parse_flags_from_env",
     srcs = ["parse_flags_from_env.cc"],
     hdrs = ["parse_flags_from_env.h"],
@@ -902,7 +905,6 @@ cc_library(
             ":xla_proto_cc",
             "//tensorflow/core:framework_internal",
             "//tensorflow/core:lib",
-            "@com_google_absl//absl/base",
             "@com_google_absl//absl/container:flat_hash_map",
             "@com_google_absl//absl/container:node_hash_map",
             "@com_google_absl//absl/strings",
@@ -915,10 +917,7 @@ cc_library(
     srcs = ["cpu_function_runtime.cc"],
     hdrs = ["cpu_function_runtime.h"],
     visibility = [":friends"],
-    deps = [
-        "//tensorflow/core/platform:dynamic_annotations",
-        "//tensorflow/core/platform:types",
-    ],
+    deps = ["//tensorflow/core:framework_lite"],
 )
 
 tf_cc_test(
@@ -944,7 +943,6 @@ cc_library(
     name = "refcounting_hash_map",
     hdrs = ["refcounting_hash_map.h"],
     deps = [
-        "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/container:node_hash_map",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/synchronization",
@@ -957,7 +955,6 @@ tf_cc_test(
     deps = [
         ":refcounting_hash_map",
         ":test",
-        ":types",
         "//tensorflow/core:test_main",
     ],
 )

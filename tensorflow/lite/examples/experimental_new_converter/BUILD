@@ -6,6 +6,6 @@ package(
 py_binary(
     name = "stack_trace_example",
     srcs = ["stack_trace_example.py"],
-    python_version = "PY3",
+    python_version = "PY2",
     deps = ["//tensorflow:tensorflow_py"],
 )

@@ -18,8 +18,6 @@ limitations under the License.
 #include <algorithm>
 #include <vector>
 
-#include "tensorflow/core/platform/errors.h"
-
 #define EIGEN_USE_THREADS
 
 #define GEMMLOWP_ALLOW_SLOW_SCALAR_FALLBACK
@@ -229,12 +227,8 @@ class Im2ColConvFunctor {
       return;
     }
 
-    OP_REQUIRES(
-        context, output_width > 0,
-        errors::InvalidArgument("output_width must be strictly positive"));
-    OP_REQUIRES(
-        context, output_height > 0,
-        errors::InvalidArgument("output_height must be strictly positive"));
+    CHECK_GT(output_width, 0);
+    CHECK_GT(output_height, 0);
     int filter_left_offset;
     int filter_top_offset;
     if (padding == VALID) {
@@ -261,9 +255,6 @@ class Im2ColConvFunctor {
     // by the width, then the height. This is the standard memory order in the
     // image world if it helps to visualize it.
     const int filter_value_count = filter_width * filter_height * input_depth;
-    OP_REQUIRES(context, filter_value_count > 0,
-                errors::InvalidArgument(
-                    "filter patch must contain at least one element"));
     const int64 patches_per_chunk =
         kMaxChunkSize / (filter_value_count * sizeof(T1));
     const int64 chunk_value_count =

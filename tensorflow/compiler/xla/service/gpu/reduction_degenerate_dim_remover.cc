@@ -82,9 +82,20 @@ class ReductionDegenerateDimRemoverVisitor : public DfsHloRewriteVisitor {
   }
 };
 
+template <typename Visitor>
+static Status RunVisitor(HloModule *module, bool *changed) {
+  for (const auto &computation : module->computations()) {
+    Visitor visitor;
+    TF_RETURN_IF_ERROR(computation->Accept(&visitor));
+    *changed |= visitor.changed();
+  }
+  return Status::OK();
+}
+
 StatusOr<bool> ReductionDegenerateDimRemover::Run(HloModule *module) {
-  TF_ASSIGN_OR_RETURN(
-      bool changed, ReductionDegenerateDimRemoverVisitor().RunOnModule(module));
+  bool changed = false;
+  TF_RETURN_IF_ERROR(
+      RunVisitor<ReductionDegenerateDimRemoverVisitor>(module, &changed));
   return changed;
 }
 

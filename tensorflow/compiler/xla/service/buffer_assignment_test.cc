@@ -729,8 +729,7 @@ TEST_F(BufferAssignmentTest, PresetAssignments) {
   auto preset_assignments = absl::make_unique<PresetAssignments>();
   preset_assignments->add_chunk({mul, {}}, {/*offset=*/100, /*size=*/400});
   preset_assignments->add_chunk({add, {}}, {/*offset=*/550, /*size=*/400});
-  preset_assignments->assignment_information_for_space(/*memory_space=*/1)
-      ->size = 950;
+  preset_assignments->add_size(/*memory_space=*/1, /*size=*/950);
 
   auto buffers = RunBufferAssignmentWithPresetAssignments(
       module.get(), std::move(preset_assignments));
@@ -771,7 +770,7 @@ TEST_F(BufferAssignmentTest, PresetAssignments) {
 }
 
 TEST_F(BufferAssignmentTest, PresetAssignmentsWhile) {
-  // Tests preset assignments when there is no 1-to-1 correspondence between
+  // Tests preset assignments when there is no 1-to-1 corrspondance between
   // HloValue and HloBuffer (i.e., a while loop).
   auto module = CreateNewVerifiedModule();
   Shape f32vec10_color1 =
@@ -842,8 +841,7 @@ TEST_F(BufferAssignmentTest, PresetAssignmentsWhile) {
                                 {/*offset=*/100, /*size=*/40});
   preset_assignments->add_chunk({body_data_next, {}},
                                 {/*offset=*/100, /*size=*/40});
-  preset_assignments->assignment_information_for_space(/*memory_space=*/1)
-      ->size = 140;
+  preset_assignments->add_size(/*memory_space=*/1, /*size=*/140);
 
   auto buffers = RunBufferAssignmentWithPresetAssignments(
       module.get(), std::move(preset_assignments));

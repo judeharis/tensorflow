@@ -23,10 +23,10 @@ The class hierarchy is as follows:
       [extends] converter.Base
         [extends] transformer.Base
             [extends] gast.nodeTransformer
-          [uses] transformer.SourceInfo
+          [uses] transfomer.SourceInfo
         [uses] converter.EntityContext
           [uses] converter.ProgramContext
-          [uses] transformer.SourceInfo
+          [uses] transfomer.SourceInfo
 
 converter.Base is a specialization of transformer.Base for AutoGraph. It's a
 very lightweight subclass that adds a `ctx` attribute holding the corresponding

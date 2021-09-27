@@ -32,13 +32,10 @@ from tensorflow.python.util.tf_export import tf_export
 @keras_export('keras.layers.InputSpec')
 @tf_export(v1=['layers.InputSpec'])
 class InputSpec(object):
-  """Specifies the rank, dtype and shape of every input to a layer.
+  """Specifies the ndim, dtype and shape of every input to a layer.
 
-  Layers can expose (if appropriate) an `input_spec` attribute:
-  an instance of `InputSpec`, or a nested structure of `InputSpec` instances
-  (one per input tensor). These objects enable the layer to run input
-  compatibility checks for input structure, input rank, input shape, and
-  input dtype.
+  Every layer should expose (if appropriate) an `input_spec` attribute:
+  a list of instances of InputSpec (one per input tensor).
 
   A None entry in a shape is compatible with any dimension,
   a None shape is compatible with any shape.

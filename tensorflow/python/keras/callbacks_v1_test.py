@@ -26,7 +26,6 @@ import numpy as np
 
 from tensorflow.core.framework import summary_pb2
 from tensorflow.python import keras
-from tensorflow.python.framework import ops
 from tensorflow.python.framework import test_util
 from tensorflow.python.keras import callbacks_v1
 from tensorflow.python.keras import testing_utils
@@ -45,6 +44,7 @@ BATCH_SIZE = 5
 
 class TestTensorBoardV1(test.TestCase):
 
+  @test_util.run_deprecated_v1
   def test_TensorBoard(self):
     np.random.seed(1337)
 
@@ -76,7 +76,7 @@ class TestTensorBoardV1(test.TestCase):
         i %= max_batch_index
 
     # case: Sequential
-    with ops.Graph().as_default(), self.cached_session():
+    with self.cached_session():
       model = keras.models.Sequential()
       model.add(
           keras.layers.Dense(
@@ -151,12 +151,13 @@ class TestTensorBoardV1(test.TestCase):
           data_generator(True), len(x_train), epochs=2, callbacks=cbks)
       assert os.path.exists(temp_dir)
 
+  @test_util.run_deprecated_v1
   def test_TensorBoard_multi_input_output(self):
     np.random.seed(1337)
     tmpdir = self.get_temp_dir()
     self.addCleanup(shutil.rmtree, tmpdir, ignore_errors=True)
 
-    with ops.Graph().as_default(), self.cached_session():
+    with self.cached_session():
       filepath = os.path.join(tmpdir, 'logs')
 
       (x_train, y_train), (x_test, y_test) = testing_utils.get_test_data(
@@ -226,6 +227,7 @@ class TestTensorBoardV1(test.TestCase):
                           callbacks=callbacks_factory(histogram_freq=1))
       assert os.path.isdir(filepath)
 
+  @test_util.run_deprecated_v1
   def test_Tensorboard_histogram_summaries_in_test_function(self):
 
     class FileWriterStub(object):
@@ -270,7 +272,7 @@ class TestTensorBoardV1(test.TestCase):
     y_test = np_utils.to_categorical(y_test)
     y_train = np_utils.to_categorical(y_train)
 
-    with ops.Graph().as_default(), self.cached_session():
+    with self.cached_session():
       model = keras.models.Sequential()
       model.add(
           keras.layers.Dense(
@@ -303,6 +305,7 @@ class TestTensorBoardV1(test.TestCase):
 
       self.assertAllEqual(tsb.writer.steps_seen, [0, 1, 2, 3, 4, 5])
 
+  @test_util.run_deprecated_v1
   def test_Tensorboard_histogram_summaries_with_generator(self):
     np.random.seed(1337)
     tmpdir = self.get_temp_dir()
@@ -314,7 +317,7 @@ class TestTensorBoardV1(test.TestCase):
       while True:
         yield x, y
 
-    with ops.Graph().as_default(), self.cached_session():
+    with self.cached_session():
       model = testing_utils.get_small_sequential_mlp(
           num_hidden=10, num_classes=10, input_dim=100)
       model.compile(
@@ -387,6 +390,7 @@ class TestTensorBoardV1(test.TestCase):
 
       assert os.path.exists(temp_dir)
 
+  @test_util.run_deprecated_v1
   def test_Tensorboard_batch_logging(self):
 
     class FileWriterStub(object):
@@ -409,19 +413,19 @@ class TestTensorBoardV1(test.TestCase):
       def close(self):
         pass
 
-    with ops.Graph().as_default():
-      temp_dir = self.get_temp_dir()
-      self.addCleanup(shutil.rmtree, temp_dir, ignore_errors=True)
+    temp_dir = self.get_temp_dir()
+    self.addCleanup(shutil.rmtree, temp_dir, ignore_errors=True)
 
-      tb_cbk = callbacks_v1.TensorBoard(temp_dir, update_freq='batch')
-      tb_cbk.writer = FileWriterStub(temp_dir)
+    tb_cbk = callbacks_v1.TensorBoard(temp_dir, update_freq='batch')
+    tb_cbk.writer = FileWriterStub(temp_dir)
 
-      for batch in range(5):
-        tb_cbk.on_batch_end(batch, {'acc': batch})
-      self.assertEqual(tb_cbk.writer.batches_logged, [0, 1, 2, 3, 4])
-      self.assertEqual(tb_cbk.writer.summary_values, [0., 1., 2., 3., 4.])
-      self.assertEqual(tb_cbk.writer.summary_tags, ['batch_acc'] * 5)
+    for batch in range(5):
+      tb_cbk.on_batch_end(batch, {'acc': batch})
+    self.assertEqual(tb_cbk.writer.batches_logged, [0, 1, 2, 3, 4])
+    self.assertEqual(tb_cbk.writer.summary_values, [0., 1., 2., 3., 4.])
+    self.assertEqual(tb_cbk.writer.summary_tags, ['batch_acc'] * 5)
 
+  @test_util.run_deprecated_v1
   def test_Tensorboard_epoch_and_batch_logging(self):
 
     class FileWriterStub(object):
@@ -442,26 +446,25 @@ class TestTensorBoardV1(test.TestCase):
       def close(self):
         pass
 
-    with ops.Graph().as_default():
-      temp_dir = self.get_temp_dir()
-      self.addCleanup(shutil.rmtree, temp_dir, ignore_errors=True)
+    temp_dir = self.get_temp_dir()
+    self.addCleanup(shutil.rmtree, temp_dir, ignore_errors=True)
 
-      tb_cbk = callbacks_v1.TensorBoard(temp_dir, update_freq='batch')
-      tb_cbk.writer = FileWriterStub(temp_dir)
+    tb_cbk = callbacks_v1.TensorBoard(temp_dir, update_freq='batch')
+    tb_cbk.writer = FileWriterStub(temp_dir)
 
-      tb_cbk.on_batch_end(0, {'acc': 5.0})
-      tb_cbk.on_train_end()
-      batch_step, batch_summary = tb_cbk.writer.batch_summary
-      self.assertEqual(batch_step, 0)
-      self.assertEqual(batch_summary.value[0].simple_value, 5.0)
+    tb_cbk.on_batch_end(0, {'acc': 5.0})
+    tb_cbk.on_train_end()
+    batch_step, batch_summary = tb_cbk.writer.batch_summary
+    self.assertEqual(batch_step, 0)
+    self.assertEqual(batch_summary.value[0].simple_value, 5.0)
 
-      tb_cbk = callbacks_v1.TensorBoard(temp_dir, update_freq='epoch')
-      tb_cbk.writer = FileWriterStub(temp_dir)
-      tb_cbk.on_epoch_end(0, {'acc': 10.0})
-      tb_cbk.on_train_end()
-      epoch_step, epoch_summary = tb_cbk.writer.epoch_summary
-      self.assertEqual(epoch_step, 0)
-      self.assertEqual(epoch_summary.value[0].simple_value, 10.0)
+    tb_cbk = callbacks_v1.TensorBoard(temp_dir, update_freq='epoch')
+    tb_cbk.writer = FileWriterStub(temp_dir)
+    tb_cbk.on_epoch_end(0, {'acc': 10.0})
+    tb_cbk.on_train_end()
+    epoch_step, epoch_summary = tb_cbk.writer.epoch_summary
+    self.assertEqual(epoch_step, 0)
+    self.assertEqual(epoch_summary.value[0].simple_value, 10.0)
 
   @test_util.run_in_graph_and_eager_modes
   def test_Tensorboard_eager(self):
@@ -496,6 +499,7 @@ class TestTensorBoardV1(test.TestCase):
 
     self.assertTrue(os.path.exists(temp_dir))
 
+  @test_util.run_deprecated_v1
   def test_TensorBoard_update_freq(self):
 
     class FileWriterStub(object):
@@ -518,47 +522,46 @@ class TestTensorBoardV1(test.TestCase):
       def close(self):
         pass
 
-    with ops.Graph().as_default():
-      temp_dir = self.get_temp_dir()
-      self.addCleanup(shutil.rmtree, temp_dir, ignore_errors=True)
+    temp_dir = self.get_temp_dir()
+    self.addCleanup(shutil.rmtree, temp_dir, ignore_errors=True)
 
-      # Epoch mode
-      tb_cbk = callbacks_v1.TensorBoard(temp_dir, update_freq='epoch')
-      tb_cbk.writer = FileWriterStub(temp_dir)
+    # Epoch mode
+    tb_cbk = callbacks_v1.TensorBoard(temp_dir, update_freq='epoch')
+    tb_cbk.writer = FileWriterStub(temp_dir)
 
-      tb_cbk.on_batch_end(0, {'acc': 5.0, 'size': 1})
-      self.assertEqual(tb_cbk.writer.batch_summaries, [])
-      tb_cbk.on_epoch_end(0, {'acc': 10.0, 'size': 1})
-      self.assertEqual(len(tb_cbk.writer.epoch_summaries), 1)
-      tb_cbk.on_train_end()
+    tb_cbk.on_batch_end(0, {'acc': 5.0, 'size': 1})
+    self.assertEqual(tb_cbk.writer.batch_summaries, [])
+    tb_cbk.on_epoch_end(0, {'acc': 10.0, 'size': 1})
+    self.assertEqual(len(tb_cbk.writer.epoch_summaries), 1)
+    tb_cbk.on_train_end()
 
-      # Batch mode
-      tb_cbk = callbacks_v1.TensorBoard(temp_dir, update_freq='batch')
-      tb_cbk.writer = FileWriterStub(temp_dir)
+    # Batch mode
+    tb_cbk = callbacks_v1.TensorBoard(temp_dir, update_freq='batch')
+    tb_cbk.writer = FileWriterStub(temp_dir)
 
-      tb_cbk.on_batch_end(0, {'acc': 5.0, 'size': 1})
-      self.assertEqual(len(tb_cbk.writer.batch_summaries), 1)
-      tb_cbk.on_batch_end(0, {'acc': 5.0, 'size': 1})
-      self.assertEqual(len(tb_cbk.writer.batch_summaries), 2)
-      self.assertFalse(tb_cbk.writer.epoch_summaries)
-      tb_cbk.on_train_end()
+    tb_cbk.on_batch_end(0, {'acc': 5.0, 'size': 1})
+    self.assertEqual(len(tb_cbk.writer.batch_summaries), 1)
+    tb_cbk.on_batch_end(0, {'acc': 5.0, 'size': 1})
+    self.assertEqual(len(tb_cbk.writer.batch_summaries), 2)
+    self.assertFalse(tb_cbk.writer.epoch_summaries)
+    tb_cbk.on_train_end()
 
-      # Integer mode
-      tb_cbk = callbacks_v1.TensorBoard(temp_dir, update_freq=20)
-      tb_cbk.writer = FileWriterStub(temp_dir)
+    # Integer mode
+    tb_cbk = callbacks_v1.TensorBoard(temp_dir, update_freq=20)
+    tb_cbk.writer = FileWriterStub(temp_dir)
 
-      tb_cbk.on_batch_end(0, {'acc': 5.0, 'size': 10})
-      self.assertFalse(tb_cbk.writer.batch_summaries)
-      tb_cbk.on_batch_end(0, {'acc': 5.0, 'size': 10})
-      self.assertEqual(len(tb_cbk.writer.batch_summaries), 1)
-      tb_cbk.on_batch_end(0, {'acc': 5.0, 'size': 10})
-      self.assertEqual(len(tb_cbk.writer.batch_summaries), 1)
-      tb_cbk.on_batch_end(0, {'acc': 5.0, 'size': 10})
-      self.assertEqual(len(tb_cbk.writer.batch_summaries), 2)
-      tb_cbk.on_batch_end(0, {'acc': 10.0, 'size': 10})
-      self.assertEqual(len(tb_cbk.writer.batch_summaries), 2)
-      self.assertFalse(tb_cbk.writer.epoch_summaries)
-      tb_cbk.on_train_end()
+    tb_cbk.on_batch_end(0, {'acc': 5.0, 'size': 10})
+    self.assertFalse(tb_cbk.writer.batch_summaries)
+    tb_cbk.on_batch_end(0, {'acc': 5.0, 'size': 10})
+    self.assertEqual(len(tb_cbk.writer.batch_summaries), 1)
+    tb_cbk.on_batch_end(0, {'acc': 5.0, 'size': 10})
+    self.assertEqual(len(tb_cbk.writer.batch_summaries), 1)
+    tb_cbk.on_batch_end(0, {'acc': 5.0, 'size': 10})
+    self.assertEqual(len(tb_cbk.writer.batch_summaries), 2)
+    tb_cbk.on_batch_end(0, {'acc': 10.0, 'size': 10})
+    self.assertEqual(len(tb_cbk.writer.batch_summaries), 2)
+    self.assertFalse(tb_cbk.writer.epoch_summaries)
+    tb_cbk.on_train_end()
 
 
 if __name__ == '__main__':

@@ -23,6 +23,18 @@ limitations under the License.
 #include "tensorflow/lite/tools/benchmark/benchmark_utils.h"
 #include "tensorflow/lite/tools/benchmark/logging.h"
 
+#include <fstream>
+#include <unistd.h>
+#include <iostream>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <stdio.h>
+#include <errno.h>
+#include <fcntl.h> 
+
+using namespace std;
+
 namespace tflite {
 namespace benchmark {
 using tensorflow::Stat;
@@ -50,7 +62,7 @@ void BenchmarkLoggingListener::OnBenchmarkEnd(const BenchmarkResults& results) {
   TFLITE_LOG(INFO) << "Average inference timings in us: "
                    << "Warmup: " << warmup_us.avg() << ", "
                    << "Init: " << init_us << ", "
-                   << "Inference: " << inference_us.avg();
+                   << "no stats: " << inference_us.avg();
 }
 
 std::vector<Flag> BenchmarkModel::GetFlags() {
@@ -160,7 +172,6 @@ TfLiteStatus BenchmarkModel::Run() {
 
   LogParams();
 
-  const double model_size_mb = MayGetModelFileSize() / 1e6;
   const auto start_mem_usage = profiling::memory::GetMemoryUsage();
   int64_t initialization_start_us = profiling::time::NowMicros();
   TF_LITE_ENSURE_STATUS(Init());
@@ -168,10 +179,6 @@ TfLiteStatus BenchmarkModel::Run() {
   int64_t initialization_end_us = profiling::time::NowMicros();
   int64_t startup_latency_us = initialization_end_us - initialization_start_us;
   const auto init_mem_usage = init_end_mem_usage - start_mem_usage;
-
-  if (model_size_mb > 0) {
-    TFLITE_LOG(INFO) << "The input model file size (MB): " << model_size_mb;
-  }
   TFLITE_LOG(INFO) << "Initialized session in " << startup_latency_us / 1e3
                    << "ms.";
 
@@ -193,8 +200,8 @@ TfLiteStatus BenchmarkModel::Run() {
           params_.Get<float>("max_secs"), REGULAR, &status);
   const auto overall_mem_usage =
       profiling::memory::GetMemoryUsage() - start_mem_usage;
-  listeners_.OnBenchmarkEnd({model_size_mb, startup_latency_us, input_bytes,
-                             warmup_time_us, inference_time_us, init_mem_usage,
+  listeners_.OnBenchmarkEnd({startup_latency_us, input_bytes, warmup_time_us,
+                             inference_time_us, init_mem_usage,
                              overall_mem_usage});
 
   TFLITE_LOG(INFO)
@@ -204,6 +211,56 @@ TfLiteStatus BenchmarkModel::Run() {
   TFLITE_LOG(INFO) << "Peak memory footprint (MB): init="
                    << init_mem_usage.max_rss_kb / 1024.0
                    << " overall=" << overall_mem_usage.max_rss_kb / 1024.0;
+
+  
+  TFLITE_LOG(INFO) << "I was here";
+
+
+
+  // ofstream mefilee;
+  // mefilee.open ("/sys/class/gpio/gpio1000/value");
+  // mefilee << "0";
+  // mefilee.close();
+  // usleep(10000000);
+  // mefilee.open ("/sys/class/gpio/gpio1000/value");
+  // mefilee << "1";
+  // mefilee.close();
+
+
+  cout << "also here\n"; 
+
+  std::size_t base_addr = 1073741824;
+  std::size_t length = 8192;
+
+
+  fstream myfile;
+  TFLITE_LOG(INFO) << "i1";
+  std::size_t virt_base = base_addr & ~(getpagesize()- 1);
+  std::size_t virt_offset = base_addr - virt_base;
+
+  int fd = open ("/dev/mem", O_RDWR | O_SYNC);
+  void *addr =mmap(0,length+virt_offset,PROT_READ | PROT_WRITE, MAP_SHARED,fd,virt_base);
+  TFLITE_LOG(INFO) << "i2";
+  close(fd);
+
+  TFLITE_LOG(INFO) << "i3";
+  cout << "also here\n"; 
+
+  if (addr == (void*) -1 ) exit (EXIT_FAILURE);
+  int *array =reinterpret_cast<int*> (addr);
+  TFLITE_LOG(INFO) << "i4";
+
+  array[0] = 0x00000008;
+  array[1] = 0x00000118;
+
+  TFLITE_LOG(INFO) << "i5";
+  
+
+
+
+
+
+
 
   return status;
 }

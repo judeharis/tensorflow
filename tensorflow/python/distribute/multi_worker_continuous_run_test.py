@@ -20,7 +20,6 @@ from __future__ import print_function
 
 import json
 import os
-
 from absl.testing import parameterized
 import numpy as np
 

@@ -188,7 +188,7 @@ class FailTestRMA : public CollectiveRemoteAccessLocal {
   }
 
   mutex mu_;
-  int fail_after_ TF_GUARDED_BY(mu_);
+  int fail_after_ GUARDED_BY(mu_);
 };
 
 class HierarchicalTreeBroadcasterTest : public ::testing::Test {
@@ -201,7 +201,7 @@ class HierarchicalTreeBroadcasterTest : public ::testing::Test {
     if (col_exec_) col_exec_->Unref();
   }
 
-#if GOOGLE_CUDA || TENSORFLOW_USE_ROCM
+#ifdef GOOGLE_CUDA
   void InitGPUDevices() {
     auto device_factory = DeviceFactory::GetFactory("GPU");
     CHECK(device_factory);
@@ -214,7 +214,7 @@ class HierarchicalTreeBroadcasterTest : public ::testing::Test {
 
   void Init(int num_workers, int num_devices_per_worker, DataType dtype,
             const DeviceType& device_type, int fail_after) {
-#if GOOGLE_CUDA || TENSORFLOW_USE_ROCM
+#ifdef GOOGLE_CUDA
     InitGPUDevices();
 #endif
     VLOG(2) << "num_workers=" << num_workers
@@ -495,7 +495,6 @@ class HierarchicalTreeBroadcasterTest : public ::testing::Test {
             EXPECT_DOUBLE_EQ(expected[i], actual.template flat<T>()(i))
                 << "Mismatch at device " << di << " index " << i;
             break;
-          case DT_BOOL:
           case DT_INT32:
           case DT_INT64:
             EXPECT_EQ(expected[i], actual.template flat<T>()(i))
@@ -725,9 +724,9 @@ class HierarchicalTreeBroadcasterTest : public ::testing::Test {
   std::unique_ptr<tensorflow::DeviceMgr> dev_mgr_;
   std::unique_ptr<string> gpu_ring_order_;
   mutex mu_;
-  int bcast_recv_counter_ TF_GUARDED_BY(mu_) = 0;
-  int bcast_send_counter_ TF_GUARDED_BY(mu_) = 0;
-  int failure_count_ TF_GUARDED_BY(mu_) = 0;
+  int bcast_recv_counter_ GUARDED_BY(mu_) = 0;
+  int bcast_send_counter_ GUARDED_BY(mu_) = 0;
+  int failure_count_ GUARDED_BY(mu_) = 0;
 };
 
 TEST_F(HierarchicalTreeBroadcasterTest, InitializeParams1Task8GPU) {
@@ -850,15 +849,11 @@ TEST_F(HierarchicalTreeBroadcasterTest, InitializeParams4TasksVariableGPU) {
 // D = number of devices per worker
 // L = tensor length
 // A = abort after count
-// F = forward input
 #define DEF_TEST(B, T, W, D, L, A, F)                                      \
   TEST_F(HierarchicalTreeBroadcasterTest,                                  \
          DaTy##B##_DevTy##T##_Wkr##W##_Dev##D##_Len##L##_Abt##A##_Fw##F) { \
     DataType dtype = DT_##B;                                               \
     switch (dtype) {                                                       \
-      case DT_BOOL: {                                                      \
-        RunTest<bool>(dtype, DEVICE_##T, W, D, L, A, F);                   \
-      } break;                                                             \
       case DT_FLOAT: {                                                     \
         RunTest<float>(dtype, DEVICE_##T, W, D, L, A, F);                  \
       } break;                                                             \
@@ -876,7 +871,7 @@ TEST_F(HierarchicalTreeBroadcasterTest, InitializeParams4TasksVariableGPU) {
     }                                                                      \
   }
 
-#if !(GOOGLE_CUDA || TENSORFLOW_USE_ROCM)
+#ifndef GOOGLE_CUDA
 //       B      T    W  D  L  A  F
 DEF_TEST(FLOAT, CPU, 1, 2, 1, 0, false)
 DEF_TEST(FLOAT, CPU, 1, 2, 1001, 0, true)
@@ -884,10 +879,6 @@ DEF_TEST(FLOAT, CPU, 2, 1, 128, 0, false)
 DEF_TEST(FLOAT, CPU, 2, 4, 128, 0, true)
 DEF_TEST(FLOAT, CPU, 2, 8, 4095, 0, false)
 DEF_TEST(FLOAT, CPU, 4, 4, 1045991, 0, true)
-
-DEF_TEST(BOOL, CPU, 1, 4, 1, 0, false)
-DEF_TEST(BOOL, CPU, 2, 4, 1, 0, false)
-DEF_TEST(BOOL, CPU, 2, 4, 1001, 0, false)
 
 DEF_TEST(DOUBLE, CPU, 2, 4, 128, 0, false)
 DEF_TEST(INT32, CPU, 2, 4, 128, 0, true)
@@ -898,7 +889,7 @@ DEF_TEST(FLOAT, CPU, 2, 4, 128, 1, true)
 DEF_TEST(FLOAT, CPU, 2, 4, 128, 5, false)
 #endif
 
-#if GOOGLE_CUDA || TENSORFLOW_USE_ROCM
+#ifdef GOOGLE_CUDA
 // Can only set W=1 for GPU tests.
 //       B      T    W  D  L  A  F
 DEF_TEST(FLOAT, GPU, 1, 2, 1, 0, true)
@@ -907,9 +898,6 @@ DEF_TEST(FLOAT, GPU, 1, 3, 64, 0, true)
 DEF_TEST(FLOAT, GPU, 1, 8, 1001, 0, false)
 DEF_TEST(FLOAT, GPU, 1, 8, 4095, 0, true)
 DEF_TEST(FLOAT, GPU, 1, 8, 1045991, 0, false)
-
-DEF_TEST(BOOL, GPU, 1, 4, 1, 0, false)
-DEF_TEST(BOOL, GPU, 1, 4, 1001, 0, false)
 
 DEF_TEST(DOUBLE, GPU, 1, 8, 1001, 0, true)
 DEF_TEST(INT64, GPU, 1, 8, 1001, 0, false)

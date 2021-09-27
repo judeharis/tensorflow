@@ -37,10 +37,11 @@ def make_gather_tests(options):
           "constant_params": [False, True],
       },
       {
+          # TODO(b/123895910): add Nd support for strings.
           "params_dtype": [tf.string],
           "params_shape": [[8]],
           "indices_dtype": [tf.int32],
-          "indices_shape": [[3], [3, 2]],
+          "indices_shape": [[3]],
           "axis": [0],
           "constant_params": [False, True],
       }

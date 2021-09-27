@@ -106,7 +106,6 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   const TfLiteTensor* value = GetInput(context, node, 2);
 
   const int num_rows = SizeOfDimension(value, 0);
-  TF_LITE_ENSURE(context, num_rows != 0);
   const int row_bytes = value->bytes / num_rows;
   void* pointer = nullptr;
   DynamicBuffer buf;

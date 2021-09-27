@@ -19,6 +19,7 @@ limitations under the License.
 
 #include "grpcpp/generic/generic_stub.h"
 #include "grpcpp/grpcpp.h"
+
 #include "tensorflow/core/common_runtime/process_util.h"
 #include "tensorflow/core/distributed_runtime/rpc/grpc_client_cq_tag.h"
 #include "tensorflow/core/distributed_runtime/rpc/grpc_state.h"
@@ -175,8 +176,7 @@ class GrpcRemoteWorker : public WorkerInterface {
                           const CompleteGroupRequest* request,
                           CompleteGroupResponse* response,
                           StatusCallback done) override {
-    IssueRequest(request, response, completegroup_, std::move(done), call_opts,
-                 /*fail_fast=*/false);
+    IssueRequest(request, response, completegroup_, std::move(done), call_opts);
   }
 
   void CompleteInstanceAsync(CallOptions* call_opts,

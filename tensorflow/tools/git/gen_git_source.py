@@ -35,6 +35,8 @@ import os
 import shutil
 import subprocess
 
+import six
+
 
 def parse_branch_ref(filename):
   """Given a filename of a .git/HEAD file return ref path.
@@ -167,8 +169,8 @@ def get_git_version(git_base_path, git_tag_override):
         subprocess.check_output([
             "git",
             str("--git-dir=%s/.git" % git_base_path),
-            str("--work-tree=%s" % git_base_path), "describe", "--long",
-            "--tags"
+            str("--work-tree=" + six.ensure_str(git_base_path)), "describe",
+            "--long", "--tags"
         ]).strip())
     version_separator = b"-"
     if git_tag_override and val:

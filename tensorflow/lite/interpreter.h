@@ -34,6 +34,8 @@ limitations under the License.
 #include "tensorflow/lite/stderr_reporter.h"
 #include "tensorflow/lite/type_to_tflitetype.h"
 
+#include "tensorflow/lite/examples/label_image_secda/gemm_driver.h"
+
 namespace tflite {
 
 /// An interpreter for a graph of nodes that input and output from tensors.
@@ -331,14 +333,14 @@ class Interpreter {
   /// Returns status of success or failure.
   TfLiteStatus Invoke();
 
+  //SECDA: Added
+  TfLiteStatus Invoke2(gemm_driver &gd);
+
+
   /// Enable or disable the NN API (true to enable)
   void UseNNAPI(bool enable);
 
   /// Set the number of threads available to the interpreter.
-  ///
-  /// NOTE: num_threads should be >= -1.
-  /// User may pass -1 to let the TFLite interpreter set the no of threads
-  /// available to itself.
   void SetNumThreads(int num_threads);
 
   /// Allow float16 precision for FP32 calculation when possible.
@@ -409,11 +411,6 @@ class Interpreter {
   /// of the profiler and must ensure its validity.
   /// WARNING: This is an experimental API and subject to change.
   void SetProfiler(Profiler* profiler);
-
-  /// Same as SetProfiler except this interpreter takes ownership
-  /// of the provided profiler.
-  /// WARNING: This is an experimental API and subject to change.
-  void SetProfiler(std::unique_ptr<Profiler> profiler);
 
   /// Gets the profiler used for op tracing.
   /// WARNING: This is an experimental API and subject to change.
@@ -501,9 +498,6 @@ class Interpreter {
                                  TfLiteExternalContextType type,
                                  TfLiteExternalContext* ctx);
 
-  // Sets the profiler to all subgraphs.
-  void SetSubgraphProfiler(Profiler* profiler);
-
   // A pure C data structure used to communicate with the pure C plugin
   // interface. To avoid copying tensor metadata, this is also the definitive
   // structure to store tensors.
@@ -518,10 +512,6 @@ class Interpreter {
   // WARNING: This is an experimental API and subject to change.
   // TODO(b/116667551): Use TfLiteExternalContext for storing state.
   std::vector<TfLiteDelegatePtr> owned_delegates_;
-
-  // Profiler that has been installed and is owned by this interpreter instance.
-  // Useful if client profiler ownership is burdensome.
-  std::unique_ptr<Profiler> owned_profiler_;
 
   bool allow_buffer_handle_output_ = false;
 

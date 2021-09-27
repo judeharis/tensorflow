@@ -644,7 +644,6 @@ struct MemcpyRecord {
   CUcontext context;
   CUstream stream;
   uint32 correlation_id;
-  bool async;
   CUevent start_event;
   CUevent stop_event;
   uint64 start_timestamp;
@@ -745,10 +744,9 @@ class CudaEventRecorder {
   // Registers the start of a copy operation. The returned index should be
   // passed to StopMemcpy() after the memcpy has completed.
   size_t StartMemcpy(CuptiTracerEventType type, size_t size_bytes,
-                     CUcontext context, CUstream stream, uint32 correlation_id,
-                     bool async) {
-    MemcpyRecord record = {type,   size_bytes,     context,
-                           stream, correlation_id, async};
+                     CUcontext context, CUstream stream,
+                     uint32 correlation_id) {
+    MemcpyRecord record = {type, size_bytes, context, stream, correlation_id};
     record.start_timestamp = CuptiTracer::GetTimestamp();
     LogIfError(CreateAndRecordEvent(&record.start_event, stream));
     absl::MutexLock lock(&mutex_);
@@ -786,7 +784,7 @@ class CudaEventRecorder {
     // Synchronize all contexts, record end events, synchronize again.
     // This scheme is an unreliable measure to associate a event with the wall
     // time. There are chances that other threads might enque kernels which
-    // delay the second synchronization.
+    // delay the second synchornization.
     TF_RETURN_IF_ERROR(Synchronize());
     for (auto &pair : context_infos_) {
       TF_RETURN_IF_ERROR(ToStatus(cuCtxSetCurrent(pair.first)));
@@ -955,16 +953,17 @@ class CudaEventRecorder {
     event.memcpy_info.num_bytes = record.size_bytes;
     // TODO: support MemcpyD2D where destination != source;
     event.memcpy_info.destination = ordinal_;
-    event.memcpy_info.async = record.async;
+    // TODO: support differentiate sync and async memcpy.
+    event.memcpy_info.async = false;
     // TODO: set src_mem_kind and dst_mem_kind.
     collector_->AddEvent(std::move(event));
     return Status::OK();
   }
 
   absl::Mutex mutex_;
-  bool stopped_ TF_GUARDED_BY(mutex_) = false;
-  std::vector<KernelRecord> kernel_records_ TF_GUARDED_BY(mutex_);
-  std::vector<MemcpyRecord> memcpy_records_ TF_GUARDED_BY(mutex_);
+  bool stopped_ GUARDED_BY(mutex_) = false;
+  std::vector<KernelRecord> kernel_records_ GUARDED_BY(mutex_);
+  std::vector<MemcpyRecord> memcpy_records_ GUARDED_BY(mutex_);
 
   CuptiInterface *cupti_interface_;
   CuptiTraceCollector *collector_;
@@ -1037,7 +1036,7 @@ class CuptiDriverApiHookWithCudaEvent : public CuptiDriverApiHook {
           auto context = scoped_cuda_context.GetContext();
           if (!dev_id) return errors::Internal("Invalid CUDA stream");
           // Because annotation are per device, therefore we need to populate
-          // annotation for each device involved.
+          // annotation for each device invovled.
           collector_->annotation_map()->Add(*dev_id, cbdata->correlationId,
                                             annotation);
           record_indices.push_back(
@@ -1174,16 +1173,16 @@ class CuptiDriverApiHookWithCudaEvent : public CuptiDriverApiHook {
     auto params = static_cast<const T *>(cbdata->functionParams);
     *cbdata->correlationData =
         recorder->StartMemcpy(type, params->ByteCount, cbdata->context, nullptr,
-                              cbdata->correlationId, /*async*/ false);
+                              cbdata->correlationId);
   }
   template <typename T>
   static void StartMemcpyAsync(CuptiTracerEventType type,
                                const CUpti_CallbackData *cbdata,
                                CudaEventRecorder *recorder) {
     auto params = static_cast<const T *>(cbdata->functionParams);
-    *cbdata->correlationData = recorder->StartMemcpy(
-        type, params->ByteCount, cbdata->context, params->hStream,
-        cbdata->correlationId, /*async*/ true);
+    *cbdata->correlationData =
+        recorder->StartMemcpy(type, params->ByteCount, cbdata->context,
+                              params->hStream, cbdata->correlationId);
   }
 
   static CUmemorytype GetMemoryType(CUdeviceptr ptr) {
@@ -1348,7 +1347,7 @@ absl::string_view AnnotationMap::LookUp(uint32 device_id,
 }
 
 bool CuptiTracer::IsAvailable() const {
-  return NumGpus() && !activity_tracing_enabled_ && !api_tracing_enabled_;
+  return !activity_tracing_enabled_ && !api_tracing_enabled_;
 }
 
 int CuptiTracer::NumGpus() {

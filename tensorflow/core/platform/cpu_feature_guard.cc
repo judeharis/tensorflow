@@ -18,7 +18,6 @@ limitations under the License.
 #include <mutex>
 #include <string>
 
-#include "absl/base/call_once.h"
 #include "tensorflow/core/platform/byte_order.h"
 #include "tensorflow/core/platform/cpu_info.h"
 #include "tensorflow/core/platform/logging.h"
@@ -92,12 +91,12 @@ class CPUFeatureGuard {
 
 CPUFeatureGuard g_cpu_feature_guard_singleton;
 
-absl::once_flag g_cpu_feature_guard_warn_once_flag;
+std::once_flag g_cpu_feature_guard_warn_once_flag;
 
 }  // namespace
 
 void InfoAboutUnusedCPUFeatures() {
-  absl::call_once(g_cpu_feature_guard_warn_once_flag, [] {
+  std::call_once(g_cpu_feature_guard_warn_once_flag, [] {
     string missing_instructions;
 #if defined(_MSC_VER) && !defined(__clang__)
 

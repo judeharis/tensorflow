@@ -19,6 +19,7 @@ limitations under the License.
 #include <string.h>
 
 #include <map>
+#include <mutex>  // NOLINT(build/c++11): only using std::call_once, not mutex.
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -26,7 +27,6 @@ limitations under the License.
 
 // IWYU pragma: no_include "llvm/Config/Disassemblers.def.inc"
 // IWYU pragma: no_include "llvm/Config/Targets.def.inc"
-#include "absl/base/call_once.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
 #include "llvm/ADT/StringRef.h"
@@ -60,6 +60,7 @@ limitations under the License.
 #include "tensorflow/compiler/xla/service/cpu/compiler_functor.h"
 #include "tensorflow/compiler/xla/service/cpu/conv_canonicalization.h"
 #include "tensorflow/compiler/xla/service/cpu/cpu_executable.h"
+#include "tensorflow/compiler/xla/service/cpu/cpu_hlo_support_checker.h"
 #include "tensorflow/compiler/xla/service/cpu/cpu_instruction_fusion.h"
 #include "tensorflow/compiler/xla/service/cpu/cpu_layout_assignment.h"
 #include "tensorflow/compiler/xla/service/cpu/cpu_options.h"
@@ -93,7 +94,6 @@ limitations under the License.
 #include "tensorflow/compiler/xla/service/llvm_ir/llvm_util.h"
 #include "tensorflow/compiler/xla/service/map_inliner.h"
 #include "tensorflow/compiler/xla/service/reshape_mover.h"
-#include "tensorflow/compiler/xla/service/rng_bit_generator_expander.h"
 #include "tensorflow/compiler/xla/service/rng_expander.h"
 #include "tensorflow/compiler/xla/service/scatter_expander.h"
 #include "tensorflow/compiler/xla/service/slice_sinker.h"
@@ -167,7 +167,7 @@ namespace {
 // multiple invocations of the LLVM compilation pipeline with a different set of
 // flags. Therefore, we only pass command-line flags to LLVM once, before the
 // first module is compiled.
-absl::once_flag llvm_command_line_options_initialized;
+std::once_flag llvm_command_line_options_initialized;
 
 // This visitor records which HLO instructions should have profiling information
 // recorded.
@@ -242,13 +242,13 @@ Status CpuCompiler::RunHloPassesThroughLayoutAssn(
 
   // Expand random number generation.
   pipeline.AddPass<RngExpander>();
-  pipeline.AddPass<RngBitGeneratorExpander>(RandomAlgorithm::RNG_PHILOX);
 
   // Remove zero-sized HLO from the input so that other passes don't have to
   // handle it.
   pipeline.AddPass<ZeroSizedHloElimination>();
 
   pipeline.AddPass<DynamicIndexSplitter>();
+  pipeline.AddPass<CpuHloSupportChecker>();
 
   pipeline.AddPass<ConditionalToSelect>();
   pipeline.AddPass<MapInliner>();
@@ -256,8 +256,9 @@ Status CpuCompiler::RunHloPassesThroughLayoutAssn(
   pipeline.AddPass<CholeskyExpander>();
   pipeline.AddPass<TriangularSolveExpander>();
 
-  // Inline computations with a single call site.
-  pipeline.AddPass<CallInliner>(/*single_call_site=*/true);
+  // TODO(b/65775800): Fix wrong output bug in Call and remove the CallInliner
+  // pass.
+  pipeline.AddPass<CallInliner>();
   pipeline.AddPass<BatchDotSimplification>();
   pipeline.AddPass<DotDecomposer>();
   // After canonicalization, there may be more batch dots that can be
@@ -349,7 +350,7 @@ Status CpuCompiler::RunHloPassesAfterLayoutAssn(
   // duplicate or NOPs, so remove them with algebraic simplification and CSE.
   {
     auto& pass = pipeline.AddPass<HloPassFix<HloPassPipeline>>(
-        "simplification after layout assignment");
+        "simplification after layout assignement");
     pass.AddInvariantChecker<HloVerifier>(
         /*layout_sensitive=*/true,
         /*allow_mixed_precision=*/false,
@@ -548,7 +549,7 @@ struct OrcJITPostCompilationHook {
     if (!DumpingEnabledForHloModule(*module)) {
       return;
     }
-    DumpToFileInDir(*module, /*file_prefix=*/"", /*file_suffix=*/"o",
+    DumpToFileInDir(*module, /*file_suffix=*/"o",
                     absl::string_view(obj_file.getData().data(),
                                       obj_file.getData().size()));
   }
@@ -567,8 +568,8 @@ StatusOr<std::unique_ptr<Executable>> CpuCompiler::RunBackend(
   auto slow_compile_alarm = SlowCompilationAlarm();
 
   TF_RET_CHECK(stream_exec != nullptr);
-  absl::call_once(llvm_command_line_options_initialized,
-                  &llvm_ir::InitializeLLVMCommandLineOptions, module->config());
+  std::call_once(llvm_command_line_options_initialized,
+                 &llvm_ir::InitializeLLVMCommandLineOptions, module->config());
 
   ModuleHook pre_optimization_ir_hook;
   ModuleHook post_optimization_ir_hook;
@@ -704,9 +705,9 @@ CpuCompiler::CompileAheadOfTime(std::unique_ptr<HloModuleGroup> module_group,
   std::vector<std::unique_ptr<HloModule>> modules =
       module_group->ConsumeModules();
 
-  absl::call_once(llvm_command_line_options_initialized,
-                  &llvm_ir::InitializeLLVMCommandLineOptions,
-                  modules[0]->config());
+  std::call_once(llvm_command_line_options_initialized,
+                 &llvm_ir::InitializeLLVMCommandLineOptions,
+                 modules[0]->config());
 
   // We can pass just one llvm::TargetOptions when we compile the LLVM module,
   // so we bail if the configs have conflicting flags. At the moment, the only
@@ -820,7 +821,7 @@ CpuCompiler::CompileAheadOfTime(std::unique_ptr<HloModuleGroup> module_group,
     // BufferAssignment::ToString() includes a header, so no need for us to
     // print one ourselves.
     if (DumpingEnabledForHloModule(*module)) {
-      DumpToFileInDirOrStdout(*module, "", "buffer_assignment",
+      DumpToFileInDirOrStdout(*module, "buffer_assignment",
                               assignment->ToString());
     }
     DumpHloModuleIfEnabled(*module, *assignment, "after_optimizations");
@@ -889,7 +890,7 @@ CpuCompiler::CompileAheadOfTime(std::unique_ptr<HloModuleGroup> module_group,
       if (!DumpingEnabledForHloModule(*module)) {
         return;
       }
-      DumpToFileInDir(*module, /*file_prefix=*/"", /*file_suffix=*/"o",
+      DumpToFileInDir(*module, /*file_suffix=*/"o",
                       absl::string_view(obj_file.getData().data(),
                                         obj_file.getData().size()));
     };

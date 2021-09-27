@@ -29,8 +29,8 @@ namespace {
 
 class SingleOpModelWithNNAPI : public SingleOpModel {
  public:
-  explicit SingleOpModelWithNNAPI(const NnApi* nnapi) {
-    stateful_delegate_.reset(new StatefulNnApiDelegate(nnapi));
+  SingleOpModelWithNNAPI() {
+    stateful_delegate_.reset(new StatefulNnApiDelegate());
     auto* delegate = stateful_delegate_.get();
     this->SetApplyDelegate([delegate](Interpreter* interpreter) {
       interpreter->ModifyGraphWithDelegate(delegate);
@@ -43,17 +43,19 @@ class SingleOpModelWithNNAPI : public SingleOpModel {
     interpreter_->SetBufferHandle(index, handle, stateful_delegate_.get());
   }
 
+  TfLiteStatus InvokeWithoutAssert() { return interpreter_->Invoke(); }
+
  private:
   std::unique_ptr<StatefulNnApiDelegate> stateful_delegate_;
 };
 
 class FloatAddOpModel : public SingleOpModelWithNNAPI {
  public:
-  FloatAddOpModel(const NnApi* nnapi, const TensorData& input1,
-                  const TensorData& input2, const TensorData& output,
+  FloatAddOpModel(const TensorData& input1, const TensorData& input2,
+                  const TensorData& output,
                   ActivationFunctionType activation_type,
                   bool allow_fp32_relax_to_fp16 = false)
-      : SingleOpModelWithNNAPI(nnapi) {
+      : SingleOpModelWithNNAPI() {
     Init(input1, input2, output, activation_type, allow_fp32_relax_to_fp16);
   }
 
@@ -85,7 +87,7 @@ class FloatAddOpModel : public SingleOpModelWithNNAPI {
 struct NnApiErrnoTest : ::tflite::delegate::nnapi::NnApiDelegateMockTest {};
 
 TEST_F(NnApiErrnoTest, IsZeroWhenNoErrorOccurs) {
-  FloatAddOpModel m(nnapi_mock_->GetNnApi(), {TensorType_FLOAT32, {1, 2, 2, 1}},
+  FloatAddOpModel m({TensorType_FLOAT32, {1, 2, 2, 1}},
                     {TensorType_FLOAT32, {1, 2, 2, 1}},
                     {TensorType_FLOAT32, {}}, ActivationFunctionType_NONE);
   m.PopulateTensor<float>(m.input1(), {-2.0, 0.2, 0.7, 0.8});
@@ -98,21 +100,21 @@ TEST_F(NnApiErrnoTest, IsZeroWhenNoErrorOccurs) {
 TEST_F(NnApiErrnoTest, HasTheStatusOfTheNnApiCallFailedCallingInit) {
   nnapi_mock_->ExecutionCreateReturns<8>();
 
-  FloatAddOpModel m(nnapi_mock_->GetNnApi(), {TensorType_FLOAT32, {1, 2, 2, 1}},
+  FloatAddOpModel m({TensorType_FLOAT32, {1, 2, 2, 1}},
                     {TensorType_FLOAT32, {1, 2, 2, 1}},
                     {TensorType_FLOAT32, {}}, ActivationFunctionType_NONE);
 
   m.PopulateTensor<float>(m.input1(), {-2.0, 0.2, 0.7, 0.8});
   m.PopulateTensor<float>(m.input2(), {0.1, 0.2, 0.3, 0.5});
 
-  EXPECT_EQ(m.InvokeUnchecked(), kTfLiteError);
+  EXPECT_EQ(m.InvokeWithoutAssert(), kTfLiteError);
   EXPECT_EQ(m.GetDelegate()->GetNnApiErrno(), 8);
 }
 
 TEST_F(NnApiErrnoTest, HasTheStatusOfTheNnApiCallFailedCallingInvoke) {
   nnapi_mock_->ModelFinishReturns<-4>();
 
-  FloatAddOpModel m(nnapi_mock_->GetNnApi(), {TensorType_FLOAT32, {1, 2, 2, 1}},
+  FloatAddOpModel m({TensorType_FLOAT32, {1, 2, 2, 1}},
                     {TensorType_FLOAT32, {1, 2, 2, 1}},
                     {TensorType_FLOAT32, {}}, ActivationFunctionType_NONE);
 
@@ -121,7 +123,7 @@ TEST_F(NnApiErrnoTest, HasTheStatusOfTheNnApiCallFailedCallingInvoke) {
 
   // Failure is detected and the delegate is disabled.
   // Execution runs without it and succeeds
-  EXPECT_EQ(m.InvokeUnchecked(), kTfLiteOk);
+  EXPECT_EQ(m.InvokeWithoutAssert(), kTfLiteOk);
   // The delegate should store the value of the failure
   EXPECT_EQ(m.GetDelegate()->GetNnApiErrno(), -4);
 }
@@ -129,7 +131,7 @@ TEST_F(NnApiErrnoTest, HasTheStatusOfTheNnApiCallFailedCallingInvoke) {
 TEST_F(NnApiErrnoTest, ErrnoIsResetWhenRestoringDelegateForModel) {
   nnapi_mock_->ModelFinishReturns<-4>();
 
-  FloatAddOpModel m(nnapi_mock_->GetNnApi(), {TensorType_FLOAT32, {1, 2, 2, 1}},
+  FloatAddOpModel m({TensorType_FLOAT32, {1, 2, 2, 1}},
                     {TensorType_FLOAT32, {1, 2, 2, 1}},
                     {TensorType_FLOAT32, {}}, ActivationFunctionType_NONE);
 
@@ -138,7 +140,7 @@ TEST_F(NnApiErrnoTest, ErrnoIsResetWhenRestoringDelegateForModel) {
 
   // Failure is detected and the delegate is disabled.
   // Execution runs without it and succeeds
-  EXPECT_EQ(m.InvokeUnchecked(), kTfLiteOk);
+  EXPECT_EQ(m.InvokeWithoutAssert(), kTfLiteOk);
   // The delegate should store the value of the failure
   EXPECT_EQ(m.GetDelegate()->GetNnApiErrno(), -4);
 
@@ -147,7 +149,7 @@ TEST_F(NnApiErrnoTest, ErrnoIsResetWhenRestoringDelegateForModel) {
   // Need to restore the delegate since it was disabled because of the
   // previous failure.
   m.ApplyDelegate();
-  EXPECT_EQ(m.InvokeUnchecked(), kTfLiteOk);
+  EXPECT_EQ(m.InvokeWithoutAssert(), kTfLiteOk);
 
   // The error is still the last one recorded
   EXPECT_EQ(m.GetDelegate()->GetNnApiErrno(), 0);
@@ -156,7 +158,7 @@ TEST_F(NnApiErrnoTest, ErrnoIsResetWhenRestoringDelegateForModel) {
 TEST_F(NnApiErrnoTest, ErrnoIsUpdatedInCaseOfAnotherFailure) {
   nnapi_mock_->ModelFinishReturns<-4>();
 
-  FloatAddOpModel m(nnapi_mock_->GetNnApi(), {TensorType_FLOAT32, {1, 2, 2, 1}},
+  FloatAddOpModel m({TensorType_FLOAT32, {1, 2, 2, 1}},
                     {TensorType_FLOAT32, {1, 2, 2, 1}},
                     {TensorType_FLOAT32, {}}, ActivationFunctionType_NONE);
 
@@ -165,7 +167,7 @@ TEST_F(NnApiErrnoTest, ErrnoIsUpdatedInCaseOfAnotherFailure) {
 
   // Failure is detected and the delegate is disabled.
   // Execution runs without it and succeeds
-  EXPECT_EQ(m.InvokeUnchecked(), kTfLiteOk);
+  EXPECT_EQ(m.InvokeWithoutAssert(), kTfLiteOk);
   // The delegate should store the value of the failure
   EXPECT_EQ(m.GetDelegate()->GetNnApiErrno(), -4);
 
@@ -174,7 +176,7 @@ TEST_F(NnApiErrnoTest, ErrnoIsUpdatedInCaseOfAnotherFailure) {
   // Need to restore the delegate since it was disabled because of the
   // previous failure.
   m.ApplyDelegate();
-  EXPECT_EQ(m.InvokeUnchecked(), kTfLiteOk);
+  EXPECT_EQ(m.InvokeWithoutAssert(), kTfLiteOk);
 
   // The error is still the last one recorded
   EXPECT_EQ(m.GetDelegate()->GetNnApiErrno(), -5);

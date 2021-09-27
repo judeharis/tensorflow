@@ -24,7 +24,6 @@ py_library(
         ":load",
         ":loader",
         ":main_op",
-        ":method_name_updater",
         ":save",
         ":signature_constants",
         ":signature_def_utils",
@@ -101,11 +100,12 @@ tf_py_test(
     name = "loader_test",
     size = "small",
     srcs = ["loader_test.py"],
-    deps = [
+    additional_deps = [
         ":builder",
         ":loader",
         ":signature_def_utils",
         ":utils",
+        "@absl_py//absl/testing:parameterized",
         "//tensorflow/python:client",
         "//tensorflow/python:client_testlib",
         "//tensorflow/python:control_flow_ops",
@@ -115,7 +115,6 @@ tf_py_test(
         "//tensorflow/python:state_ops",
         "//tensorflow/python:training",
         "//tensorflow/python:variables",
-        "@absl_py//absl/testing:parameterized",
     ],
 )
 
@@ -156,9 +155,7 @@ tf_py_test(
     name = "saved_model_test",
     size = "small",
     srcs = ["saved_model_test.py"],
-    data = ["//tensorflow/cc/saved_model:saved_model_half_plus_two"],
-    tags = ["no_windows"],
-    deps = [
+    additional_deps = [
         ":builder",
         ":constants",
         ":loader",
@@ -181,6 +178,8 @@ tf_py_test(
         "//tensorflow/python:util",
         "//tensorflow/python:variables",
     ],
+    data = ["//tensorflow/cc/saved_model:saved_model_half_plus_two"],
+    tags = ["no_windows"],
 )
 
 py_library(
@@ -205,7 +204,7 @@ tf_py_test(
     name = "utils_test",
     size = "small",
     srcs = ["utils_test.py"],
-    deps = [
+    additional_deps = [
         ":utils",
         "//tensorflow/core:protos_all_py",
         "//tensorflow/python:array_ops",
@@ -235,7 +234,7 @@ tf_py_test(
     name = "signature_def_utils_test",
     size = "small",
     srcs = ["signature_def_utils_test.py"],
-    deps = [
+    additional_deps = [
         ":signature_constants",
         ":signature_def_utils",
         ":utils",
@@ -250,7 +249,7 @@ tf_py_test(
     name = "simple_save_test",
     size = "small",
     srcs = ["simple_save_test.py"],
-    deps = [
+    additional_deps = [
         ":loader",
         ":signature_constants",
         ":simple_save",
@@ -321,19 +320,19 @@ py_library(
 tf_py_test(
     name = "save_test",
     srcs = ["save_test.py"],
-    tags = ["no_rocm"],
-    deps = [
+    additional_deps = [
         ":loader",
         ":save",
         ":save_options",
         ":signature_constants",
         ":tag_constants",
+        "@absl_py//absl/testing:parameterized",
         "//tensorflow/core:protos_all_py",
         "//tensorflow/python:error_interpolation",
         "//tensorflow/python/eager:def_function",
         "//tensorflow/python/eager:test",
-        "@absl_py//absl/testing:parameterized",
     ],
+    tags = ["no_rocm"],
 )
 
 py_library(
@@ -387,39 +386,40 @@ py_library(
 cuda_py_test(
     name = "load_test",
     srcs = ["load_test.py"],
+    additional_deps = [
+        ":load",
+        ":save",
+        "@absl_py//absl/testing:parameterized",
+        "//tensorflow/python:constant_op",
+        "//tensorflow/python:control_flow_ops",
+        "//tensorflow/python:cond_v2",  # b/118513001
+        "//tensorflow/python:while_v2",  # b/118513001
+        "//tensorflow/python:dtypes",
+        "//tensorflow/python:lib",
+        "//tensorflow/python:tensor_spec",
+        "//tensorflow/python/eager:def_function",
+        "//tensorflow/python/eager:test",
+        "//tensorflow/python/module",
+        "//tensorflow/python/training/tracking:tracking",
+    ],
     shard_count = 10,
     tags = [
         "no_gpu",  # TODO(b/136560979): flaky
         "no_mac",  # TODO(b/124822121): Re-enable this test.
-    ],
-    deps = [
-        ":load",
-        ":save",
-        "//tensorflow/python:cond_v2",  # b/118513001
-        "//tensorflow/python:constant_op",
-        "//tensorflow/python:control_flow_ops",
-        "//tensorflow/python:dtypes",
-        "//tensorflow/python:lib",
-        "//tensorflow/python:tensor_spec",
-        "//tensorflow/python:while_v2",  # b/118513001
-        "//tensorflow/python/eager:def_function",
-        "//tensorflow/python/eager:test",
-        "//tensorflow/python/module",
-        "//tensorflow/python/training/tracking",
-        "@absl_py//absl/testing:parameterized",
     ],
 )
 
 tf_py_test(
     name = "load_v1_in_v2_test",
     srcs = ["load_v1_in_v2_test.py"],
-    deps = [
+    additional_deps = [
         ":builder",
         ":load",
         ":save",
         ":signature_def_utils",
         ":simple_save",
         ":utils",
+        "@absl_py//absl/testing:parameterized",
         "//tensorflow/python:array_ops",
         "//tensorflow/python:constant_op",
         "//tensorflow/python:dtypes",
@@ -428,11 +428,10 @@ tf_py_test(
         "//tensorflow/python:resource_variable_ops",
         "//tensorflow/python:session",
         "//tensorflow/python:tensor_spec",
-        "//tensorflow/python:variables",
         "//tensorflow/python/eager:def_function",
         "//tensorflow/python/eager:test",
-        "//tensorflow/python/training/tracking",
-        "@absl_py//absl/testing:parameterized",
+        "//tensorflow/python/training/tracking:tracking",
+        "//tensorflow/python:variables",
     ],
 )
 
@@ -450,7 +449,7 @@ py_library(
 tf_py_test(
     name = "revived_types_test",
     srcs = ["revived_types_test.py"],
-    deps = [
+    additional_deps = [
         ":revived_types",
         "//tensorflow/core:protos_all_py",
         "//tensorflow/python:client_testlib",
@@ -502,7 +501,7 @@ py_library(
 tf_py_test(
     name = "nested_structure_coder_test",
     srcs = ["nested_structure_coder_test.py"],
-    deps = [
+    additional_deps = [
         ":nested_structure_coder",
         "//tensorflow/core:protos_all_py",
         "//tensorflow/python:framework",
@@ -515,29 +514,5 @@ py_library(
     srcs = ["save_options.py"],
     deps = [
         "@six_archive//:six",
-    ],
-)
-
-py_library(
-    name = "method_name_updater",
-    srcs = ["method_name_updater.py"],
-    srcs_version = "PY2AND3",
-    deps = [
-        ":constants",
-        ":loader",
-        "//tensorflow/python:lib",
-        "//tensorflow/python:platform",
-        "//tensorflow/python:util",
-    ],
-)
-
-tf_py_test(
-    name = "method_name_updater_test",
-    srcs = ["method_name_updater_test.py"],
-    deps = [
-        ":method_name_updater",
-        "//tensorflow/core:protos_all_py",
-        "//tensorflow/python:framework",
-        "//tensorflow/python/eager:test",
     ],
 )

@@ -144,11 +144,6 @@ ConvolutionOpTest/ConvolutionOpTest/.+/\d+
 # dequantize_test
 DequantizeOpTest/Uint8
 
-# depth_to_space_test
-DepthToSpaceOpModel/Float32
-DepthToSpaceOpModel/UInt8
-DepthToSpaceOpModel/int8
-
 # div_test
 FloatDivOpTest/.+
 
@@ -234,7 +229,8 @@ CifgPeepholeNoProjectionNoClippingUnidirectionalLstmTest/NonLayerNormLstmBlackBo
 
 # maximum_minimum_test
 MaxMinOpTest/.+nt8Test,29
-MaximumOpTest/.+,29
+MaximumOpTest/+.
+MaxMinOpTest/.+
 
 # mul_test
 FloatMulOpTest/.+
@@ -287,7 +283,6 @@ ConstFloat(Sum|Prod|Max|Min)OpTest/NotKeepDims,29
 ConstFloat(Sum|Prod|Max|Min)OpTest/KeepDims,29
 ConstFloat(Mean|Any)OpTest/NotKeepDims
 ConstFloat(Mean|Any)OpTest/KeepDims
-ConstFloat(Sum|Prod|Max|Min)OpTest/ScalarAxis,29
 
 # reshape_test
 # Acceleration would be only for the test with shape being a constant tensor

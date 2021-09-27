@@ -155,7 +155,7 @@ Status TransposeShapeFn(InferenceContext* c) {
   TF_RETURN_IF_ERROR(c->WithValue(perm_elems, rank, &perm_elems));
 
   // If we know the rank of the input and the value of perm, we can return
-  // all shape information, otherwise we can only return rank information,
+  // all shape informantion, otherwise we can only return rank information,
   // but no information for the dimensions.
   if (perm != nullptr) {
     std::vector<int64> data;
@@ -2525,9 +2525,7 @@ REGISTER_OP("ExtractImagePatches")
     .Attr("ksizes: list(int) >= 4")
     .Attr("strides: list(int) >= 4")
     .Attr("rates: list(int) >= 4")
-    .Attr(
-        "T: {bfloat16, half, float, double, int8, int16, int32, int64, "
-        "uint8, uint16, uint32, uint64, complex64, complex128, bool}")
+    .Attr("T: realnumbertype")
     .Attr(GetPaddingAttrString())
     .SetShapeFn([](InferenceContext* c) {
       ShapeHandle input_shape;
@@ -2873,12 +2871,11 @@ REGISTER_OP("Dequantize")
     .Input("input: T")
     .Input("min_range: float")
     .Input("max_range: float")
-    .Output("output: dtype")
+    .Output("output: float")
     .Attr("T: quantizedtype")
     .Attr("mode: {'MIN_COMBINED', 'MIN_FIRST', 'SCALED'} = 'MIN_COMBINED'")
     .Attr("narrow_range: bool = false")
     .Attr("axis: int = -1")
-    .Attr("dtype: {bfloat16, float} = DT_FLOAT")
     .SetShapeFn([](InferenceContext* c) {
       int axis = -1;
       Status s = c->GetAttr("axis", &axis);

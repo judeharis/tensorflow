@@ -23,14 +23,12 @@ limitations under the License.
 #include "tensorflow/lite/kernels/internal/tensor.h"
 #include "tensorflow/lite/kernels/kernel_util.h"
 #include "tensorflow/lite/kernels/op_macros.h"
-
 namespace tflite {
 namespace ops {
 namespace builtin {
 namespace expand_dims {
-
-// Input indices
-enum { kInput = 0, kAxis };
+constexpr int kInput = 0;
+constexpr int kAxis = 1;
 
 namespace {
 TfLiteStatus ExpandTensorDim(TfLiteContext* context, const TfLiteTensor& input,
@@ -100,9 +98,6 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
                       GetAxisValueFromTensor(context, *axis, &axis_value));
     TF_LITE_ENSURE_OK(context,
                       ExpandTensorDim(context, *input, axis_value, output));
-  }
-  if (output->type == kTfLiteString) {
-    TfLiteTensorRealloc(input->bytes, output);
   }
   memcpy(output->data.raw, input->data.raw, input->bytes);
   return kTfLiteOk;

@@ -1,10 +1,8 @@
 // RUN: tf-mlir-translate -mlir-to-graphdef %s -o - | FileCheck %s
 
 func @main() {
-  tf_executor.graph {
-    tf_executor.island wraps "tf.NoOp"() {} : () -> () loc("noop")
-    tf_executor.fetch
-  }
+^bb0:
+  "_tf.NoOp"() {} : () -> () loc("noop")
   return
 }
 

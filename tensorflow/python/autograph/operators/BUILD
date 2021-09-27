@@ -23,7 +23,6 @@ py_library(
     srcs = [
         "__init__.py",
         "control_flow.py",
-        "control_flow_deprecated_py2.py",
         "data_structures.py",
         "exceptions.py",
         "logical.py",
@@ -67,16 +66,13 @@ py_test(
     name = "control_flow_test",
     srcs = ["control_flow_test.py"],
     python_version = "PY3",
-    srcs_version = "PY3",
+    srcs_version = "PY2AND3",
     tags = [
         "no_gpu",  # b/127001953
-        "no_oss_py2",
     ],
     deps = [
         ":operators",
         "//tensorflow/python:client_testlib",
-        # TODO(b/145618471): Remove this transitive dependency.
-        "//tensorflow/python/distribute:input_lib",
     ],
 )
 
@@ -112,10 +108,6 @@ py_test(
         ":operators",
         "//tensorflow/python:client_testlib",
         "//tensorflow/python/autograph/core",
-        # TODO(b/145618471): Remove this transitive dependency.
-        "//tensorflow/python/distribute:input_lib",
-        "//tensorflow/python/ops/parallel_for:control_flow_ops",
-        "//tensorflow/python/ops/signal",
     ],
 )
 

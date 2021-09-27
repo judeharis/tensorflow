@@ -69,9 +69,10 @@ import sys
 import numpy
 import tensorflow as tf
 
-from accuracy_utils import StreamingAccuracyStats
-from recognize_commands import RecognizeCommands
-from recognize_commands import RecognizeResult
+from tensorflow.contrib.framework.python.ops import audio_ops as contrib_audio
+from tensorflow.examples.speech_commands.accuracy_utils import StreamingAccuracyStats
+from tensorflow.examples.speech_commands.recognize_commands import RecognizeCommands
+from tensorflow.examples.speech_commands.recognize_commands import RecognizeResult
 from tensorflow.python.ops import io_ops
 
 FLAGS = None
@@ -81,8 +82,8 @@ def load_graph(mode_file):
   """Read a tensorflow model, and creates a default graph object."""
   graph = tf.Graph()
   with graph.as_default():
-    od_graph_def = tf.compat.v1.GraphDef()
-    with tf.io.gfile.GFile(mode_file, 'rb') as fid:
+    od_graph_def = tf.GraphDef()
+    with tf.gfile.GFile(mode_file, 'rb') as fid:
       serialized_graph = fid.read()
       od_graph_def.ParseFromString(serialized_graph)
       tf.import_graph_def(od_graph_def, name='')
@@ -100,10 +101,10 @@ def read_label_file(file_name):
 
 def read_wav_file(filename):
   """Load a wav file and return sample_rate and numpy data of float64 type."""
-  with tf.compat.v1.Session(graph=tf.Graph()) as sess:
-    wav_filename_placeholder = tf.compat.v1.placeholder(tf.string, [])
+  with tf.Session(graph=tf.Graph()) as sess:
+    wav_filename_placeholder = tf.placeholder(tf.string, [])
     wav_loader = io_ops.read_file(wav_filename_placeholder)
-    wav_decoder = tf.audio.decode_wav(wav_loader, desired_channels=1)
+    wav_decoder = contrib_audio.decode_wav(wav_loader, desired_channels=1)
     res = sess.run(wav_decoder, feed_dict={wav_filename_placeholder: filename})
   return res.sample_rate, res.audio.flatten()
 
@@ -132,12 +133,15 @@ def main(_):
   # Load model and create a tf session to process audio pieces
   recognize_graph = load_graph(FLAGS.model)
   with recognize_graph.as_default():
-    with tf.compat.v1.Session() as sess:
+    with tf.Session() as sess:
 
       # Get input and output tensor
-      data_tensor = sess.graph.get_tensor_by_name(FLAGS.input_names[0])
-      sample_rate_tensor = sess.graph.get_tensor_by_name(FLAGS.input_names[1])
-      output_softmax_tensor = sess.graph.get_tensor_by_name(FLAGS.output_name)
+      data_tensor = tf.get_default_graph().get_tensor_by_name(
+          FLAGS.input_names[0])
+      sample_rate_tensor = tf.get_default_graph().get_tensor_by_name(
+          FLAGS.input_names[1])
+      output_softmax_tensor = tf.get_default_graph().get_tensor_by_name(
+          FLAGS.output_name)
 
       # Inference along audio stream.
       for audio_data_offset in range(0, audio_data_end, clip_stride_samples):
@@ -157,7 +161,7 @@ def main(_):
           recognize_commands.process_latest_result(outputs, current_time_ms,
                                                    recognize_element)
         except ValueError as e:
-          tf.compat.v1.logging.error('Recognition processing failed: {}' % e)
+          tf.logging.error('Recognition processing failed: {}' % e)
           return
         if (recognize_element.is_new_command and
             recognize_element.founded_command != '_silence_'):
@@ -169,10 +173,10 @@ def main(_):
             try:
               recognition_state = stats.delta()
             except ValueError as e:
-              tf.compat.v1.logging.error(
+              tf.logging.error(
                   'Statistics delta computing failed: {}'.format(e))
             else:
-              tf.compat.v1.logging.info('{}ms {}:{}{}'.format(
+              tf.logging.info('{}ms {}:{}{}'.format(
                   current_time_ms, recognize_element.founded_command,
                   recognize_element.score, recognition_state))
               stats.print_accuracy_stats()
@@ -245,5 +249,5 @@ if __name__ == '__main__':
       help='Whether to print streaming accuracy on stdout.')
 
   FLAGS, unparsed = parser.parse_known_args()
-  tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
-  tf.compat.v1.app.run(main=main, argv=[sys.argv[0]] + unparsed)
+  tf.logging.set_verbosity(tf.logging.INFO)
+  tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)

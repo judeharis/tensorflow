@@ -32,9 +32,8 @@ _strategies = [
     strategy_combinations.tpu_strategy,
 ]
 
-# The presence of GPU strategies upsets TPU initialization,
-# despite their test instances being skipped early. This is a workaround
-# for b/145386854.
+# TODO(b/145386854): The presence of GPU strategies upsets TPU initialization,
+# despite their test instances being skipped early on.
 if "test_tpu" in sys.argv[0]:
   _strategies = [s for s in _strategies if "GPU" not in str(s)]
 

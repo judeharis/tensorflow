@@ -65,7 +65,7 @@ class FileSystemRegistryImpl : public FileSystemRegistry {
  private:
   mutable mutex mu_;
   mutable std::unordered_map<std::string, std::unique_ptr<FileSystem>> registry_
-      TF_GUARDED_BY(mu_);
+      GUARDED_BY(mu_);
 };
 
 Status FileSystemRegistryImpl::Register(const std::string& scheme,
@@ -281,12 +281,6 @@ Status Env::IsDirectory(const string& fname) {
   return fs->IsDirectory(fname);
 }
 
-Status Env::HasAtomicMove(const string& path, bool* has_atomic_move) {
-  FileSystem* fs;
-  TF_RETURN_IF_ERROR(GetFileSystemForFile(path, &fs));
-  return fs->HasAtomicMove(path, has_atomic_move);
-}
-
 Status Env::DeleteRecursively(const string& dirname, int64* undeleted_files,
                               int64* undeleted_dirs) {
   FileSystem* fs;
@@ -328,9 +322,9 @@ string Env::GetExecutablePath() {
 #ifdef __APPLE__
   uint32_t buffer_size(0U);
   _NSGetExecutablePath(nullptr, &buffer_size);
-  std::vector<char> unresolved_path(buffer_size);
-  _NSGetExecutablePath(unresolved_path.data(), &buffer_size);
-  CHECK(realpath(unresolved_path.data(), exe_path));
+  char unresolved_path[buffer_size];
+  _NSGetExecutablePath(unresolved_path, &buffer_size);
+  CHECK(realpath(unresolved_path, exe_path));
 #elif defined(__FreeBSD__)
   int mib[4] = {CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1};
   size_t exe_path_size = PATH_MAX;

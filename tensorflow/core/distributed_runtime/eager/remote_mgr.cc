@@ -75,15 +75,8 @@ Status RemoteMgr::GetMirroredResourceShape(
 
 Status RemoteMgr::GetRemoteTensorHandle(const tensorflow::TensorHandle* handle,
                                         int64* op_id, int32* output_num) {
-  // TODO(allenl): Consider supporting remote handles on custom devices.
-  absl::variant<Device*, CustomDevice*> device = handle->device();
-  if (VariantDeviceIsCustom(device)) {
-    return errors::Unimplemented(
-        "Custom devices and remote execution are currently not supported "
-        "together.");
-  }
   TF_RETURN_IF_ERROR(
-      handle->RemoteAddress(absl::get<Device*>(device), op_id, output_num));
+      handle->RemoteAddress(handle->device(), op_id, output_num));
   tensorflow::TensorHandle* h;
   TF_RETURN_IF_ERROR(
       GetTensorHandleImpl(RemoteTensorHandleInternal(*op_id, *output_num), &h));
@@ -162,8 +155,17 @@ Status RemoteMgr::DeserializeRemoteTensorHandle(const RemoteTensorHandle& in,
         in.op_device().empty() ? in.device() : in.op_device();
     TF_RETURN_IF_ERROR(
         parent_->FindDeviceFromName(device_name.c_str(), &device));
-    TF_RETURN_IF_ERROR(TensorHandle::CreateLazyRemoteHandle(
-        in.op_id(), in.output_num(), in.dtype(), device, parent_, out));
+    string remote_task;
+    if (!DeviceNameUtils::GetTaskName(device->parsed_name(), &remote_task)) {
+      return errors::InvalidArgument(
+          "Unable to find remote task corresponding to device ", device_name);
+    }
+    auto remote_handle_data = absl::make_unique<UnshapedRemoteTensorHandleData>(
+        in.op_id(), in.output_num(), remote_task, parent_->GetContextId(),
+        parent_);
+    remote_handle_data->ReleaseRemoteTensorHandle();
+    TF_RETURN_IF_ERROR(TensorHandle::CreateUnshapedRemoteHandle(
+        std::move(remote_handle_data), in.dtype(), device, parent_, out));
     std::vector<DtypeAndPartialTensorShape> dtypes_and_shapes;
     if (!GetMirroredResourceShape(RemoteTensorHandleInternal(in),
                                   &dtypes_and_shapes)

@@ -29,6 +29,7 @@ limitations under the License.
 #include "tensorflow/lite/delegates/gpu/common/model_builder.h"
 #include "tensorflow/lite/delegates/gpu/common/model_transformer.h"
 #include "tensorflow/lite/delegates/gpu/common/status.h"
+#include "tensorflow/lite/delegates/gpu/common/transformations/general_transformations.h"
 #include "tensorflow/lite/delegates/gpu/gl/api2.h"
 #include "tensorflow/lite/minimal_logging.h"
 
@@ -74,7 +75,14 @@ class Delegate {
     // Extract TFLite delegate execution plan from the context and convert it
     // into FlowGraph32.
     GraphFloat32 graph;
-    RETURN_IF_ERROR(BuildFinalModel(context, delegate_params, &graph));
+    RETURN_IF_ERROR(BuildModel(context, delegate_params, &graph));
+
+    // Apply general transformations on the graph.
+    NullTransformationReporter reporter;
+    ModelTransformer transformer(&graph, &reporter);
+    if (!ApplyGeneralTransformations(&transformer)) {
+      return InternalError("Graph general transformations failed");
+    }
 
     std::vector<uint32_t> input_refs;
     {
@@ -94,19 +102,11 @@ class Delegate {
     }
 
     std::unique_ptr<InferenceBuilder> builder;
-    bool graph_is_destroyed;
-    Status status = InitializeOpenClApi(&graph, &builder, &graph_is_destroyed);
+    Status status = InitializeOpenClApi(&graph, &builder);
     if (!status.ok()) {
       context->ReportError(context, "%s", status.error_message().c_str());
       context->ReportError(context, "Falling back to OpenGL");
-
-      // Graph need to be re-created because it is moved above.
-      GraphFloat32 graph2;
-      if (graph_is_destroyed) {
-        RETURN_IF_ERROR(BuildFinalModel(context, delegate_params, &graph2));
-      }
-      RETURN_IF_ERROR(
-          InitializeOpenGlApi(graph_is_destroyed ? &graph2 : &graph, &builder));
+      RETURN_IF_ERROR(InitializeOpenGlApi(&graph, &builder));
     }
 
     // At this point tflite didn't allocate tensors yet, therefore, collect
@@ -166,9 +166,7 @@ class Delegate {
 
  private:
   Status InitializeOpenClApi(GraphFloat32* graph,
-                             std::unique_ptr<InferenceBuilder>* builder,
-                             bool* graph_is_destroyed) {
-    *graph_is_destroyed = false;
+                             std::unique_ptr<InferenceBuilder>* builder) {
     cl::InferenceEnvironmentOptions env_options;
     cl::InferenceEnvironmentProperties properties;
     RETURN_IF_ERROR(cl::NewInferenceEnvironment(env_options, &cl_environment_,
@@ -189,7 +187,6 @@ class Delegate {
       }
     }
     options.usage = ToUsage(options_.inference_preference);
-    *graph_is_destroyed = true;
     RETURN_IF_ERROR(cl_environment_->NewInferenceBuilder(
         options, std::move(*graph), builder));
     TFLITE_LOG_PROD_ONCE(tflite::TFLITE_LOG_INFO,

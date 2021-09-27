@@ -130,7 +130,6 @@ class DilationOp : public OpKernel {
     ParseSizes(context, strides_, rates_, padding_, &stride_rows, &stride_cols,
                &rate_rows, &rate_cols, &pad_top, &pad_left, &out_rows,
                &out_cols);
-    if (!context->status().ok()) return;
 
     // Output tensor is of the following dimensions:
     // [ batch, out_rows, out_cols, depth ]
@@ -230,7 +229,6 @@ class DilationBackpropInputOp : public OpKernel {
     ParseSizes(context, strides_, rates_, padding_, &stride_rows, &stride_cols,
                &rate_rows, &rate_cols, &pad_top, &pad_left, &out_rows,
                &out_cols);
-    if (!context->status().ok()) return;
 
     // Verify that the incoming gradient tensor has the expected size
     // [ batch, out_rows, out_cols, depth ]
@@ -320,10 +318,8 @@ struct DilationBackpropInput<CPUDevice, T> {
                 }
               }
             }
-            if (h_in_max < input_rows && w_in_max < input_cols) {
-              in_backprop(b, h_in_max, w_in_max, d) +=
-                  out_backprop(b, h_out, w_out, d);
-            }
+            in_backprop(b, h_in_max, w_in_max, d) +=
+                out_backprop(b, h_out, w_out, d);
           }
         }
       }
@@ -353,7 +349,6 @@ class DilationBackpropFilterOp : public OpKernel {
     ParseSizes(context, strides_, rates_, padding_, &stride_rows, &stride_cols,
                &rate_rows, &rate_cols, &pad_top, &pad_left, &out_rows,
                &out_cols);
-    if (!context->status().ok()) return;
 
     // Verify that the incoming gradient tensor has the expected size
     // [ batch, out_rows, out_cols, depth ]
@@ -443,10 +438,8 @@ struct DilationBackpropFilter<CPUDevice, T> {
                 }
               }
             }
-            if (h_max < filter_rows && w_max < filter_cols) {
-              filter_backprop(h_max, w_max, d) +=
-                  out_backprop(b, h_out, w_out, d);
-            }
+            filter_backprop(h_max, w_max, d) +=
+                out_backprop(b, h_out, w_out, d);
           }
         }
       }

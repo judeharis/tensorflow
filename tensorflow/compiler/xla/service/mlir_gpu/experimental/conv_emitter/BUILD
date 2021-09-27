@@ -31,21 +31,17 @@ cc_library(
         "//tensorflow/compiler/xla/service:hlo",
         "//tensorflow/compiler/xla/service/llvm_ir:llvm_util",
         "@com_google_absl//absl/types:span",
-        "@llvm-project//llvm:support",
-        "@llvm-project//mlir:AffineOps",
-        "@llvm-project//mlir:IR",
-        "@llvm-project//mlir:StandardOps",
-        "@llvm-project//mlir:TransformUtils",
+        "@llvm//:support",
+        "@local_config_mlir//:AffineOps",
+        "@local_config_mlir//:IR",
+        "@local_config_mlir//:StandardOps",
+        "@local_config_mlir//:TransformUtils",
     ],
 )
 
 tf_cc_test(
     name = "conv_emitter_test",
     srcs = ["conv_emitter_test.cc"],
-    tags = [
-        "no_oss",  # TODO(b/148143101): Test should pass in OSS.
-        "no_rocm",
-    ],
     deps = [
         ":conv_emitter",
         "//tensorflow/compiler/xla/service:hlo_parser",
@@ -54,13 +50,13 @@ tf_cc_test(
         "//tensorflow/core:test",
         "//tensorflow/core:test_main",
         "//tensorflow/core/platform:test",
-        "@llvm-project//llvm:support",
-        "@llvm-project//mlir:AffineToStandardTransforms",
-        "@llvm-project//mlir:AllPassesAndDialects",
-        "@llvm-project//mlir:CFGTransforms",
-        "@llvm-project//mlir:IR",
-        "@llvm-project//mlir:LLVMTransforms",
-        "@llvm-project//mlir:Pass",
-        "@llvm-project//mlir:Transforms",
+        "@llvm//:support",
+        "@local_config_mlir//:AffineDialectRegistration",
+        "@local_config_mlir//:AffineToStandardTransforms",
+        "@local_config_mlir//:IR",
+        "@local_config_mlir//:LLVMTransforms",
+        "@local_config_mlir//:Pass",
+        "@local_config_mlir//:StandardDialectRegistration",
+        "@local_config_mlir//:Transforms",
     ],
 )

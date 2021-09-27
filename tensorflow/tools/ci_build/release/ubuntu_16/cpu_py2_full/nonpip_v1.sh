@@ -21,7 +21,7 @@ source tensorflow/tools/ci_build/release/common.sh
 # Install python dependencies
 install_ubuntu_16_pip_deps pip2.7
 
-install_bazelisk
+update_bazel_linux
 
 # Run configure.
 export TF_NEED_GCP=1

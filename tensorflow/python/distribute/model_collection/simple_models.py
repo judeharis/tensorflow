@@ -42,22 +42,26 @@ def _get_data_for_simple_models():
 
 
 class SimpleFunctionalModel(model_collection_base.ModelAndInput):
-  """A simple functional model and its inputs."""
+  """A simple functinal model and its inputs."""
 
   def get_model(self, **kwargs):
-    output_name = 'output_1'
+    output_name = 'output_layer'
 
     x = keras.layers.Input(shape=(3,), dtype=dtypes.float32)
     y = keras.layers.Dense(5, dtype=dtypes.float32, name=output_name)(x)
 
     model = keras.Model(inputs=x, outputs=y)
     optimizer = gradient_descent.SGD(learning_rate=0.001)
+    experimental_run_tf_function = kwargs.pop('experimental_run_tf_function',
+                                              None)
+    assert experimental_run_tf_function is not None
     model.compile(
         loss='mse',
         metrics=['mae'],
-        optimizer=optimizer)
+        optimizer=optimizer,
+        experimental_run_tf_function=experimental_run_tf_function)
 
-    return model
+    return model, output_name
 
   def get_data(self):
     return _get_data_for_simple_models()
@@ -70,19 +74,23 @@ class SimpleSequentialModel(model_collection_base.ModelAndInput):
   """A simple sequential model and its inputs."""
 
   def get_model(self, **kwargs):
-    output_name = 'output_1'
+    output_name = 'output_layer'
 
     model = keras.Sequential()
     y = keras.layers.Dense(
         5, dtype=dtypes.float32, name=output_name, input_dim=3)
     model.add(y)
     optimizer = gradient_descent.SGD(learning_rate=0.001)
+    experimental_run_tf_function = kwargs.pop('experimental_run_tf_function',
+                                              None)
+    assert experimental_run_tf_function is not None
     model.compile(
         loss='mse',
         metrics=['mae'],
-        optimizer=optimizer)
+        optimizer=optimizer,
+        experimental_run_tf_function=experimental_run_tf_function)
 
-    return model
+    return model, output_name
 
   def get_data(self):
     return _get_data_for_simple_models()
@@ -93,9 +101,11 @@ class SimpleSequentialModel(model_collection_base.ModelAndInput):
 
 class _SimpleModel(keras.Model):
 
+  output_name = 'output_layer'
+
   def __init__(self):
-    super(_SimpleModel, self).__init__()
-    self._dense_layer = keras.layers.Dense(5, dtype=dtypes.float32)
+    self._dense_layer = keras.layers.Dense(
+        5, dtype=dtypes.float32, name=self.output_name)
 
   def call(self, inputs):
     return self._dense_layer(inputs)
@@ -107,13 +117,17 @@ class SimpleSubclassModel(model_collection_base.ModelAndInput):
   def get_model(self, **kwargs):
     model = _SimpleModel()
     optimizer = gradient_descent.SGD(learning_rate=0.001)
+    experimental_run_tf_function = kwargs.pop('experimental_run_tf_function',
+                                              None)
+    assert experimental_run_tf_function is not None
     model.compile(
         loss='mse',
         metrics=['mae'],
         cloning=False,
-        optimizer=optimizer)
+        optimizer=optimizer,
+        experimental_run_tf_function=experimental_run_tf_function)
 
-    return model
+    return model, model.output_name
 
   def get_data(self):
     return _get_data_for_simple_models()
@@ -137,7 +151,7 @@ class SimpleTFModuleModel(model_collection_base.ModelAndInput):
 
   def get_model(self, **kwargs):
     model = _SimpleModule()
-    return model
+    return model, 'foo'
 
   def get_data(self):
     return _get_data_for_simple_models()

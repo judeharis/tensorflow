@@ -104,7 +104,7 @@ if [[ "$RELEASE_BUILD" == 1 ]]; then
   # Overriding eigen strong inline speeds up the compiling of conv_grad_ops_3d.cc and conv_ops_3d.cc
   # by 20 minutes. See https://github.com/tensorflow/tensorflow/issues/10521
   # Because this hurts the performance of TF, we don't override it in release build.
-  export TF_OVERRIDE_EIGEN_STRONG_INLINE=0
+  export TF_OVERRIDE_EIGEN_STRONG_INLINE=1
 else
   export TF_OVERRIDE_EIGEN_STRONG_INLINE=1
 fi
@@ -141,7 +141,6 @@ bazel build --announce_rc --config=opt ${EXTRA_BUILD_FLAGS}  \
   tensorflow/lite:framework tensorflow/lite/examples/minimal:minimal || exit $?
 
 bazel build --announce_rc --config=opt ${EXTRA_BUILD_FLAGS} \
-  --define=no_tensorflow_py_deps=true \
   --output_filter=^$ \
   tensorflow/tools/pip_package:build_pip_package || exit $?
 

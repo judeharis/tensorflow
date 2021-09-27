@@ -24,7 +24,6 @@ from __future__ import print_function
 import enum
 
 # pylint:disable=g-bad-import-order
-
 import gast
 # pylint:enable=g-bad-import-order
 
@@ -58,10 +57,6 @@ class Basic(NoValue):
             ' from. See origin_information.py.')
   DIRECTIVES = ('User directives associated with a statement or a variable.'
                 ' Typically, they affect the immediately-enclosing statement.')
-
-  EXTRA_LOOP_TEST = (
-      'A special annotation containing additional test code to be executed in'
-      ' for loops.')
 
 
 class Static(NoValue):

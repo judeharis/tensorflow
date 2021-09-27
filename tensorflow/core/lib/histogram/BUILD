@@ -1,8 +1,3 @@
-load(
-    "//tensorflow/core/platform:rules_cc.bzl",
-    "cc_library",
-)
-
 package(
     default_visibility = [
         # tensorflow/core:lib effectively exposes all targets under tensorflow/core/lib/**
@@ -31,20 +26,18 @@ cc_library(
     alwayslink = True,
 )
 
-# Export source files needed for mobile builds, which do not use granular targets.
 filegroup(
-    name = "mobile_srcs_only_runtime",
+    name = "legacy_lib_histogram_all_headers",
     srcs = [
-        "histogram.cc",
         "histogram.h",
     ],
     visibility = ["//tensorflow/core:__pkg__"],
 )
 
 filegroup(
-    name = "legacy_lib_histogram_all_headers",
+    name = "legacy_lib_histogram_all_srcs",
     srcs = [
-        "histogram.h",
+        "histogram.cc",
     ],
     visibility = ["//tensorflow/core:__pkg__"],
 )

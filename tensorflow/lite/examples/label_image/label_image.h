@@ -30,7 +30,6 @@ struct Settings {
   bool profiling = false;
   bool allow_fp16 = false;
   bool gl_backend = false;
-  bool hexagon_delegate = false;
   int loop_count = 1;
   float input_mean = 127.5f;
   float input_std = 127.5f;
@@ -43,6 +42,12 @@ struct Settings {
   int number_of_results = 5;
   int max_profiling_buffer_entries = 1024;
   int number_of_warmup_runs = 2;
+
+  // SECDA Custom args
+  bool accon = false;
+  int trys = 1;
+  bool acc_prof = 1;
+  bool acc_store = 1;
 };
 
 }  // namespace label_image

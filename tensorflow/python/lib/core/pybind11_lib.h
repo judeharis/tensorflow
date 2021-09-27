@@ -45,14 +45,14 @@ inline py::object pyo(PyObject* ptr) {
   return py::reinterpret_steal<py::object>(ptr);
 }
 
-// Raise an exception if the PyErrOccurred flag is set or else return the Python
+// Raise an exception if the PyErrOcurred flag is set or else return the Python
 // object.
 
 inline py::object pyo_or_throw(PyObject* ptr) {
   if (PyErr_Occurred() || ptr == nullptr) {
     throw py::error_already_set();
   }
-  return pyo(ptr);
+  return py::reinterpret_steal<py::object>(ptr);
 }
 
 void throwTypeError(const char* error_message) {

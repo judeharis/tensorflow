@@ -15,7 +15,7 @@
 """Implementation of the Keras API meant to be a high-level API for TensorFlow.
 
 Detailed documentation and user guides are available at
-[tensorflow.org](https://www.tensorflow.org/guide/keras).
+[keras.io](https://keras.io).
 """
 from __future__ import absolute_import
 from __future__ import division

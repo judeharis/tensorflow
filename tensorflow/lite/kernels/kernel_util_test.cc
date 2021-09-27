@@ -30,18 +30,14 @@ class KernelUtilTest : public ::testing::Test {
 
     memset(&tensor1_, 0, sizeof(TfLiteTensor));
     memset(&tensor2_, 0, sizeof(TfLiteTensor));
-    memset(&tensor3_, 0, sizeof(TfLiteTensor));
     tensor1_.dims = nullptr;
     tensor2_.dims = nullptr;
-    tensor3_.dims = nullptr;
     tensor1_.allocation_type = kTfLiteMmapRo;
     tensor2_.allocation_type = kTfLiteMmapRo;
-    tensor3_.allocation_type = kTfLiteMmapRo;
   }
   ~KernelUtilTest() override {
     TfLiteTensorFree(&tensor1_);
     TfLiteTensorFree(&tensor2_);
-    TfLiteTensorFree(&tensor3_);
   }
 
   void SetShape(TfLiteTensor* tensor, std::initializer_list<int> dims) {
@@ -66,7 +62,6 @@ class KernelUtilTest : public ::testing::Test {
   TfLiteContext context_;
   TfLiteTensor tensor1_;
   TfLiteTensor tensor2_;
-  TfLiteTensor tensor3_;
 };
 
 TEST_F(KernelUtilTest, SameShapeEmpty) {
@@ -145,95 +140,6 @@ TEST_F(KernelUtilTest, BroadcastShapeDifferentSizes) {
   SetShape(&tensor2_, {1, 3, 1});
   EXPECT_EQ(kTfLiteOk, CalculateShapeForBroadcast(&context_, &tensor1_,
                                                   &tensor2_, &output));
-  EXPECT_THAT(GetShape(output), ::testing::ElementsAre(1, 2, 3, 4));
-  TfLiteIntArrayFree(output);
-}
-
-TEST_F(KernelUtilTest, BroadcastShapeIncompatibleDimOnThreeTensors) {
-  TfLiteIntArray* output = nullptr;
-  SetShape(&tensor1_, {1, 2});
-  SetShape(&tensor2_, {1, 3});
-  SetShape(&tensor3_, {1, 4});
-  EXPECT_NE(kTfLiteOk,
-            CalculateShapeForBroadcast(&context_, &tensor1_, &tensor2_,
-                                       &tensor3_, &output));
-  EXPECT_EQ(output, nullptr);
-}
-
-TEST_F(KernelUtilTest, BroadcastShapeOnesOnThreeTensors) {
-  TfLiteIntArray* output = nullptr;
-  SetShape(&tensor1_, {1, 1});
-  SetShape(&tensor2_, {1, 1});
-  SetShape(&tensor3_, {1, 3});
-  EXPECT_EQ(kTfLiteOk,
-            CalculateShapeForBroadcast(&context_, &tensor1_, &tensor2_,
-                                       &tensor3_, &output));
-  TfLiteIntArrayFree(output);
-
-  SetShape(&tensor1_, {1, 2});
-  SetShape(&tensor2_, {1, 1});
-  SetShape(&tensor3_, {1, 1});
-  EXPECT_EQ(kTfLiteOk,
-            CalculateShapeForBroadcast(&context_, &tensor1_, &tensor2_,
-                                       &tensor3_, &output));
-  TfLiteIntArrayFree(output);
-
-  SetShape(&tensor1_, {1, 1});
-  SetShape(&tensor2_, {1, 4});
-  SetShape(&tensor3_, {1, 1});
-  EXPECT_EQ(kTfLiteOk,
-            CalculateShapeForBroadcast(&context_, &tensor1_, &tensor2_,
-                                       &tensor3_, &output));
-  TfLiteIntArrayFree(output);
-}
-
-TEST_F(KernelUtilTest, BroadcastShapeScalarsOnThreeTensors) {
-  TfLiteIntArray* output = nullptr;
-  SetShape(&tensor1_, {1, 2});
-  SetShape(&tensor2_, {});
-  SetShape(&tensor3_, {});
-  EXPECT_EQ(kTfLiteOk,
-            CalculateShapeForBroadcast(&context_, &tensor1_, &tensor2_,
-                                       &tensor3_, &output));
-  EXPECT_THAT(GetShape(output), ::testing::ElementsAre(1, 2));
-  TfLiteIntArrayFree(output);
-
-  SetShape(&tensor1_, {});
-  SetShape(&tensor2_, {2});
-  SetShape(&tensor3_, {});
-  EXPECT_EQ(kTfLiteOk,
-            CalculateShapeForBroadcast(&context_, &tensor1_, &tensor2_,
-                                       &tensor3_, &output));
-  EXPECT_THAT(GetShape(output), ::testing::ElementsAre(2));
-  TfLiteIntArrayFree(output);
-
-  SetShape(&tensor1_, {});
-  SetShape(&tensor2_, {});
-  SetShape(&tensor3_, {3, 2, 1});
-  EXPECT_EQ(kTfLiteOk,
-            CalculateShapeForBroadcast(&context_, &tensor1_, &tensor2_,
-                                       &tensor3_, &output));
-  EXPECT_THAT(GetShape(output), ::testing::ElementsAre(3, 2, 1));
-  TfLiteIntArrayFree(output);
-}
-
-TEST_F(KernelUtilTest, BroadcastShapeDifferentSizesOnThreeTensors) {
-  TfLiteIntArray* output = nullptr;
-  SetShape(&tensor1_, {1, 2});
-  SetShape(&tensor2_, {3, 1, 1});
-  SetShape(&tensor3_, {3, 1});
-  EXPECT_EQ(kTfLiteOk,
-            CalculateShapeForBroadcast(&context_, &tensor1_, &tensor2_,
-                                       &tensor3_, &output));
-  EXPECT_THAT(GetShape(output), ::testing::ElementsAre(3, 3, 2));
-  TfLiteIntArrayFree(output);
-
-  SetShape(&tensor1_, {3, 4});
-  SetShape(&tensor2_, {1, 3, 1});
-  SetShape(&tensor3_, {1, 2, 1, 1});
-  EXPECT_EQ(kTfLiteOk,
-            CalculateShapeForBroadcast(&context_, &tensor1_, &tensor2_,
-                                       &tensor3_, &output));
   EXPECT_THAT(GetShape(output), ::testing::ElementsAre(1, 2, 3, 4));
   TfLiteIntArrayFree(output);
 }
@@ -426,8 +332,8 @@ TEST_F(KernelUtilTest, CheckAndPopulateShift) {
   int shift;
   int32_t output_activation_min;
   int32_t output_activation_max;
-  std::vector<int32_t> per_channel_multiplier(3);
-  std::vector<int> per_channel_shift(3);
+  std::vector<int32_t> per_channel_multiplier(1);
+  std::vector<int> per_channel_shift(1);
 
   // Call and verify results for per channel case.
   EXPECT_EQ(
@@ -435,12 +341,11 @@ TEST_F(KernelUtilTest, CheckAndPopulateShift) {
       PopulateConvolutionQuantizationParams(
           &context, &input, &filter, &bias, &output, kTfLiteActRelu,
           &multiplier, &shift, &output_activation_min, &output_activation_max,
-          per_channel_multiplier.data(), per_channel_shift.data(), 3));
-  // Since the filter scale has a size of one but the number of channels is
-  // three, in our TC we expect three 1073741824 as output
-  EXPECT_THAT(per_channel_multiplier,
-              ::testing::ElementsAre(1073741824, 1073741824, 1073741824));
-  EXPECT_THAT(per_channel_shift, ::testing::ElementsAre(-1, -1, -1));
+          per_channel_multiplier.data(), per_channel_shift.data()));
+  // Since the filter scale has a size of one i.e number of channels is one in
+  // our TC we expect 1073741824 as output
+  EXPECT_THAT(per_channel_multiplier, ::testing::ElementsAre(1073741824));
+  EXPECT_THAT(per_channel_shift, ::testing::ElementsAre(-1));
   EXPECT_EQ(shift, 1);
   EXPECT_EQ(multiplier, 1073741824);
 
@@ -546,7 +451,7 @@ TEST_F(KernelUtilTest, CheckAndPopulateZeroValue) {
       PopulateConvolutionQuantizationParams(
           &context, &input, &filter, &bias, &output, kTfLiteActRelu,
           &multiplier, &shift, &output_activation_min, &output_activation_max,
-          per_channel_multiplier.data(), per_channel_shift.data(), 3));
+          per_channel_multiplier.data(), per_channel_shift.data()));
   EXPECT_THAT(per_channel_multiplier,
               ::testing::ElementsAre(1073741824, 1073741824, 0));
   EXPECT_THAT(per_channel_shift, ::testing::ElementsAre(-30, -31, 0));
@@ -637,8 +542,8 @@ TEST_F(KernelUtilTest, CheckAndPopulateUint8) {
   int shift;
   int32_t output_activation_min;
   int32_t output_activation_max;
-  std::vector<int32_t> per_channel_multiplier(3);
-  std::vector<int> per_channel_shift(3);
+  std::vector<int32_t> per_channel_multiplier(1);
+  std::vector<int> per_channel_shift(1);
 
   // Call and verify results for per channel case.
   EXPECT_EQ(
@@ -646,10 +551,9 @@ TEST_F(KernelUtilTest, CheckAndPopulateUint8) {
       PopulateConvolutionQuantizationParams(
           &context, &input, &filter, &bias, &output, kTfLiteActRelu,
           &multiplier, &shift, &output_activation_min, &output_activation_max,
-          per_channel_multiplier.data(), per_channel_shift.data(), 3));
-  EXPECT_THAT(per_channel_multiplier,
-              ::testing::ElementsAre(1073741824, 1073741824, 1073741824));
-  EXPECT_THAT(per_channel_shift, ::testing::ElementsAre(-30, -30, -30));
+          per_channel_multiplier.data(), per_channel_shift.data()));
+  EXPECT_THAT(per_channel_multiplier, ::testing::ElementsAre(1073741824));
+  EXPECT_THAT(per_channel_shift, ::testing::ElementsAre(-30));
 
   // Release.
   TfLiteTensorFree(&input);
@@ -720,8 +624,8 @@ TEST_F(KernelUtilTest, CheckAndPopulateWithoutBias) {
   int shift;
   int32_t output_activation_min;
   int32_t output_activation_max;
-  std::vector<int32_t> per_channel_multiplier(3);
-  std::vector<int> per_channel_shift(3);
+  std::vector<int32_t> per_channel_multiplier(1);
+  std::vector<int> per_channel_shift(1);
 
   // Call and verify results for per channel case.
   EXPECT_EQ(
@@ -729,10 +633,9 @@ TEST_F(KernelUtilTest, CheckAndPopulateWithoutBias) {
       PopulateConvolutionQuantizationParams(
           &context, &input, &filter, nullptr, &output, kTfLiteActRelu,
           &multiplier, &shift, &output_activation_min, &output_activation_max,
-          per_channel_multiplier.data(), per_channel_shift.data(), 3));
-  EXPECT_THAT(per_channel_multiplier,
-              ::testing::ElementsAre(1073741824, 1073741824, 1073741824));
-  EXPECT_THAT(per_channel_shift, ::testing::ElementsAre(-30, -30, -30));
+          per_channel_multiplier.data(), per_channel_shift.data()));
+  EXPECT_THAT(per_channel_multiplier, ::testing::ElementsAre(1073741824));
+  EXPECT_THAT(per_channel_shift, ::testing::ElementsAre(-30));
 
   // Release.
   TfLiteTensorFree(&input);

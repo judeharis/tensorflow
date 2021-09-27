@@ -406,7 +406,7 @@ TEST_F(ModelPrunerTest, PruningForwardsCtrlDependencies) {
 }
 */
 
-TEST_F(ModelPrunerTest, PruningPreservesFetch) {
+TEST_F(ModelPrunerTest, PruningPerservesFetch) {
   // Build a simple graph with a few trivially prunable ops.
   GrapplerItem item;
   {
@@ -445,7 +445,7 @@ TEST_F(ModelPrunerTest, PruningPreservesFetch) {
   test::ExpectTensorEqual<float>(actual_tensors[0], expected_tensors[0]);
 }
 
-TEST_F(ModelPrunerTest, PruningPreservesCrossDeviceIdentity) {
+TEST_F(ModelPrunerTest, PruningPerservesCrossDeviceIdentity) {
   GrapplerItem item;
   {
     tensorflow::Scope s = tensorflow::Scope::NewRootScope();

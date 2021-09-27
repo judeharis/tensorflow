@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-"""Utility functions for control flow.
+"""Utilty functions for control flow.
 
 This file is necessary to avoid cyclic dependencies between ops.py and
 control_flow_ops.py.

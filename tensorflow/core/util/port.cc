@@ -34,14 +34,6 @@ bool IsBuiltWithROCm() {
 #endif
 }
 
-bool IsBuiltWithXLA() {
-#if TENSORFLOW_USE_XLA
-  return true;
-#else
-  return false;
-#endif
-}
-
 bool IsBuiltWithNvcc() {
 #if TENSORFLOW_USE_NVCC
   return true;

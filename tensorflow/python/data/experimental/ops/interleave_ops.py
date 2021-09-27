@@ -76,11 +76,9 @@ def parallel_interleave(map_func,
     cycle_length: The number of input `Dataset`s to interleave from in parallel.
     block_length: The number of consecutive elements to pull from an input
       `Dataset` before advancing to the next input `Dataset`.
-    sloppy: A boolean controlling whether determinism should be traded for
-      performance by allowing elements to be produced out of order.  If
-      `sloppy` is `None`, the `tf.data.Options.experimental_deterministic`
-      dataset option (`True` by default) is used to decide whether to enforce a
-      deterministic order.
+    sloppy: If false, elements are produced in deterministic order. Otherwise,
+      the implementation is allowed, for the sake of expediency, to produce
+      elements in a non-deterministic order.
     buffer_output_elements: The number of elements each iterator being
       interleaved should buffer (similar to the `.prefetch()` transformation for
       each interleaved iterator).
@@ -155,7 +153,7 @@ def sample_from_datasets_v2(datasets, weights=None, seed=None):
       `datasets`.
     seed: (Optional.) A `tf.int64` scalar `tf.Tensor`, representing the
       random seed that will be used to create the distribution. See
-      `tf.random.set_seed` for behavior.
+      `tf.compat.v1.set_random_seed` for behavior.
 
   Returns:
     A dataset that interleaves elements from `datasets` at random, according to

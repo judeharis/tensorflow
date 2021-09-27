@@ -56,8 +56,8 @@ limitations under the License.
 /// TfLiteInterpreterInvoke(interpreter);
 ///
 /// // Extract the output tensor data.
-/// const TfLiteTensor* output_tensor =
-//      TfLiteInterpreterGetOutputTensor(interpreter, 0);
+/// TfLiteTensor* output_tensor =
+//      TfLiteInterpreterGetInputTensor(interpreter, 0);
 /// TfLiteTensorCopyToBuffer(output_tensor, output.data(),
 ///                          output.size() * sizeof(float));
 ///
@@ -164,7 +164,7 @@ TFL_CAPI_EXPORT extern void TfLiteInterpreterDelete(
     TfLiteInterpreter* interpreter);
 
 // Returns the number of input tensors associated with the model.
-TFL_CAPI_EXPORT extern int32_t TfLiteInterpreterGetInputTensorCount(
+TFL_CAPI_EXPORT extern int TfLiteInterpreterGetInputTensorCount(
     const TfLiteInterpreter* interpreter);
 
 // Returns the tensor associated with the input index.

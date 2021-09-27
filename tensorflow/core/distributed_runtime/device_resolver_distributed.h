@@ -50,8 +50,7 @@ class DeviceResolverDistributed : public DeviceResolverInterface {
  protected:
   // Loads attr_table_ with device attributes retrieved from remote task.
   void RefreshRemoteAttributes(const string& device, const string& task,
-                               const StatusCallback& done)
-      TF_LOCKS_EXCLUDED(mu_);
+                               const StatusCallback& done) LOCKS_EXCLUDED(mu_);
 
   // Subroutine used by GetAllDeviceAttributesAsync.  Recursively extends
   // *attributes with DeviceAttributes of the corresponding device named
@@ -64,7 +63,7 @@ class DeviceResolverDistributed : public DeviceResolverInterface {
   WorkerCacheInterface* worker_cache_;  // Not owned
   const string task_name_;
   mutex mu_;
-  absl::flat_hash_map<string, DeviceAttributes> attr_table_ TF_GUARDED_BY(mu_);
+  absl::flat_hash_map<string, DeviceAttributes> attr_table_ GUARDED_BY(mu_);
 };
 
 }  // namespace tensorflow

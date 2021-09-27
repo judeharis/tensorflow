@@ -33,7 +33,6 @@ from tensorflow.python.data.ops import dataset_ops
 from tensorflow.python.eager import context
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes
-from tensorflow.python.framework import ops
 from tensorflow.python.framework import random_seed
 from tensorflow.python.framework import test_util
 from tensorflow.python.keras import keras_parameterized
@@ -44,7 +43,6 @@ from tensorflow.python.keras.utils import np_utils
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import control_flow_ops
 from tensorflow.python.ops import gen_math_ops
-from tensorflow.python.ops import nn
 from tensorflow.python.ops import variables
 from tensorflow.python.platform import test
 from tensorflow.python.platform import tf_logging as logging
@@ -79,15 +77,7 @@ class LSTMV2Test(keras_parameterized.TestCase):
         recurrent_dropout=recurrent_dropout,
         unroll=unroll,
         use_bias=use_bias)
-    self.assertFalse(layer._could_use_gpu_kernel)
-
-  @test_util.run_v2_only
-  def test_use_on_default_activation_with_gpu_kernel(self):
-    layer = rnn.LSTM(1, activation=nn.tanh)
-    self.assertTrue(layer._could_use_gpu_kernel)
-
-    layer = rnn.LSTM(1, recurrent_activation=nn.sigmoid)
-    self.assertTrue(layer._could_use_gpu_kernel)
+    self.assertFalse(layer.could_use_cudnn)
 
   def test_static_shape_inference_LSTM(self):
     # Github issue: 15165
@@ -255,9 +245,6 @@ class LSTMV2Test(keras_parameterized.TestCase):
     model.train_on_batch([inputs] + initial_state, targets)
 
   def test_return_state(self):
-    if test.is_built_with_rocm():
-      self.skipTest('Skipping the test as ROCm MIOpen does not '
-                    'support padded input yet.')
     num_states = 2
     timesteps = 3
     embedding_dim = 4
@@ -326,9 +313,6 @@ class LSTMV2Test(keras_parameterized.TestCase):
 
   @test_util.run_v2_only
   def test_lstm_v2_feature_parity_with_canonical_lstm(self):
-    if test.is_built_with_rocm():
-      self.skipTest('Skipping the test as ROCm MIOpen does not '
-                    'support padded input yet.')
     input_shape = 10
     rnn_state_size = 8
     timestep = 4
@@ -373,9 +357,6 @@ class LSTMV2Test(keras_parameterized.TestCase):
 
   @parameterized.named_parameters(('v0', 0), ('v1', 1), ('v2', 2))
   def test_implementation_mode_LSTM(self, implementation_mode):
-    if test.is_built_with_rocm():
-      self.skipTest('Skipping the test as ROCm MIOpen does not '
-                    'support padded input yet.')
     num_samples = 2
     timesteps = 3
     embedding_dim = 4
@@ -418,9 +399,6 @@ class LSTMV2Test(keras_parameterized.TestCase):
     model.fit(inputs, targets, epochs=1, batch_size=2, verbose=1)
 
   def test_masking_with_stacking_LSTM(self):
-    if test.is_built_with_rocm():
-      self.skipTest('Skipping the test as ROCm MIOpen does not '
-                    'support padded input yet.')
     inputs = np.random.random((2, 3, 4))
     targets = np.abs(np.random.random((2, 3, 5)))
     targets /= targets.sum(axis=-1, keepdims=True)
@@ -594,9 +572,6 @@ class LSTMV2Test(keras_parameterized.TestCase):
 
   @test_util.run_v2_only
   def test_float64_LSTM(self):
-    if test.is_built_with_rocm():
-      self.skipTest('Skipping the test as ROCm MIOpen does not '
-                    'support float64 yet.')
     num_samples = 2
     timesteps = 3
     embedding_dim = 4
@@ -633,9 +608,6 @@ class LSTMV2Test(keras_parameterized.TestCase):
       self.assertEqual(len(layer.get_losses_for(x)), 1)
 
   def test_statefulness_LSTM(self):
-    if test.is_built_with_rocm():
-      self.skipTest('Skipping the test as ROCm MIOpen does not '
-                    'support padded input yet.')
     num_samples = 2
     timesteps = 3
     embedding_dim = 4
@@ -655,7 +627,8 @@ class LSTMV2Test(keras_parameterized.TestCase):
     model.compile(
         optimizer=gradient_descent.GradientDescentOptimizer(0.01),
         loss='mse',
-        run_eagerly=testing_utils.should_run_eagerly())
+        run_eagerly=testing_utils.should_run_eagerly(),
+        experimental_run_tf_function=testing_utils.should_run_tf_function())
     out1 = model.predict(np.ones((num_samples, timesteps)))
     self.assertEqual(out1.shape, (num_samples, units))
 
@@ -727,7 +700,8 @@ class LSTMV2Test(keras_parameterized.TestCase):
     model.compile(
         optimizer='adam',
         loss='sparse_categorical_crossentropy',
-        run_eagerly=testing_utils.should_run_eagerly())
+        run_eagerly=testing_utils.should_run_eagerly(),
+        experimental_run_tf_function=testing_utils.should_run_tf_function())
     model.fit(x, y, epochs=1, shuffle=False)
 
   def test_dropout_LSTM(self):
@@ -769,10 +743,6 @@ class LSTMV2Test(keras_parameterized.TestCase):
 
   @test_util.run_v2_only
   def test_explicit_device_with_go_backward_and_mask(self):
-    if test.is_built_with_rocm():
-      self.skipTest('Skipping the test as ROCm MIOpen does not '
-                    'support padded input yet.')
-
     batch_size = 8
     timestep = 7
     masksteps = 5
@@ -796,22 +766,22 @@ class LSTMV2Test(keras_parameterized.TestCase):
       outputs_trimmed = lstm(inputs[:, :masksteps])
     self.assertAllClose(outputs_masked[:, -masksteps:], outputs_trimmed)
 
+  @test_util.run_deprecated_v1
   def test_v1_session_behavior(self):
-    with ops.get_default_graph().as_default():
-      # See b/139132348 for more details.
-      x = np.random.uniform(size=(100, 4, 8))
-      y = np.random.uniform(size=(100, 1))
-      dataset = dataset_ops.Dataset.from_tensor_slices(
-          (x, y)).shuffle(100).batch(32)
+    # See b/139132348 for more details.
+    x = np.random.uniform(size=(100, 4, 8))
+    y = np.random.uniform(size=(100, 1))
+    dataset = dataset_ops.Dataset.from_tensor_slices(
+        (x, y)).shuffle(100).batch(32)
 
-      inp = keras.layers.Input(shape=(4, 8))
-      layer = rnn.LSTM(1)(inp)
-      layer = keras.layers.Dense(1)(layer)
+    inp = keras.layers.Input(shape=(4, 8))
+    layer = rnn.LSTM(1)(inp)
+    layer = keras.layers.Dense(1)(layer)
 
-      model = keras.models.Model(inp, layer)
+    model = keras.models.Model(inp, layer)
 
-      model.compile(loss='mse', optimizer='sgd')
-      model.fit(dataset)
+    model.compile(loss='mse', optimizer='sgd')
+    model.fit(dataset)
 
 
 @keras_parameterized.run_all_keras_modes(config=_config)
@@ -836,7 +806,8 @@ class LSTMGraphRewriteTest(keras_parameterized.TestCase):
     model.compile(
         optimizer='sgd',
         loss=['categorical_crossentropy', None],
-        run_eagerly=testing_utils.should_run_eagerly())
+        run_eagerly=testing_utils.should_run_eagerly(),
+        experimental_run_tf_function=testing_utils.should_run_tf_function())
 
     existing_loss = 0
     for _ in range(self.epoch):
@@ -870,10 +841,6 @@ class LSTMGraphRewriteTest(keras_parameterized.TestCase):
 
   @test_util.run_v2_only
   def test_LSTM_runtime_with_mask(self):
-    if test.is_built_with_rocm():
-      self.skipTest('Skipping the test as ROCm MIOpen does not '
-                    'support padded input yet.')
-
     # Masking will affect which backend is selected based on whether the mask
     # is strictly right padded.
     layer = rnn.LSTM(self.rnn_state_size, return_runtime=True)
@@ -900,7 +867,8 @@ class LSTMGraphRewriteTest(keras_parameterized.TestCase):
     model.compile(
         optimizer='sgd',
         loss=['categorical_crossentropy', None],
-        run_eagerly=testing_utils.should_run_eagerly())
+        run_eagerly=testing_utils.should_run_eagerly(),
+        experimental_run_tf_function=testing_utils.should_run_tf_function())
 
     model.fit(x_train, y_train)
 
@@ -1085,9 +1053,8 @@ class LSTMPerformanceTest(test.Benchmark):
                  ' of normal LSTM, got {0:.2f}'.format(v2_vs_normal))
 
   def benchmark_performance_graph(self):
-    with ops.get_default_graph().as_default():
-      with session_lib.Session(config=_config):
-        self._benchmark_performance_with_standard_cudnn_impl()
+    with context.graph_mode(), session_lib.Session(config=_config):
+      self._benchmark_performance_with_standard_cudnn_impl()
 
   def benchmark_performance_eager(self):
     with context.eager_mode():

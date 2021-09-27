@@ -23,7 +23,6 @@ limitations under the License.
 #include "absl/memory/memory.h"
 #include "absl/strings/str_replace.h"
 #include "absl/strings/substitute.h"
-#include "tensorflow/compiler/jit/defs.h"
 #include "tensorflow/core/common_runtime/device.h"
 #include "tensorflow/core/common_runtime/device_mgr.h"
 #include "tensorflow/core/common_runtime/device_set.h"
@@ -44,7 +43,6 @@ limitations under the License.
 #include "tensorflow/core/graph/algorithm.h"
 #include "tensorflow/core/graph/control_flow.h"
 #include "tensorflow/core/graph/graph_constructor.h"
-#include "tensorflow/core/graph/graph_node_util.h"
 #include "tensorflow/core/graph/tensor_id.h"
 #include "tensorflow/core/grappler/graph_view.h"
 #include "tensorflow/core/grappler/grappler_item.h"
@@ -806,13 +804,14 @@ bool LowerAsMultiDeviceFunctionIsOn(const Node* n) {
   return CheckBoolAttr(n, kLowerAsMultiDeviceFunctionAttr);
 }
 
-bool MarkedForXlaCompilation(const NodeDef& n) {
-  auto is_enabled = [&](std::string attr_name) -> bool {
-    auto it = n.attr().find(attr_name);
-    return it != n.attr().end() && (!it->second.s().empty() || it->second.b());
-  };
-  return is_enabled("_xla_compile_id") || is_enabled("_tpu_replicate") ||
-         is_enabled(kXlaMustCompileAttr);
+bool MarkedForTpuCompilation(const Node* n) {
+  static constexpr const char* const kTpuReplicateAttr = "_tpu_replicate";
+  return CheckStringAttr(n, kTpuReplicateAttr);
+}
+
+bool MarkedForXlaCompilation(const Node* n) {
+  static constexpr const char* const kXlaClusterAttr = "_xla_compile_id";
+  return CheckStringAttr(n, kXlaClusterAttr);
 }
 
 const bool IsExemptFromSideEffectsExecutionValidation(const string& op) {
@@ -1177,7 +1176,7 @@ Status InlineFunctionCalls(const GrapplerItem& item,
                            GraphDef* output_graph) {
   bool is_aggressive = opt_level == RewriterConfig::AGGRESSIVE;
   VLOG(2) << "Inline function calls: grappler_item_id=" << item.id
-          << " (aggressive_mode=" << is_aggressive << ")";
+          << " (aggessive_mode=" << is_aggressive << ")";
 
   FunctionLibraryDefinition flib_def =
       FunctionLibraryDefinition(OpRegistry::Global(), item.graph.library());
@@ -1232,7 +1231,8 @@ Status InlineFunctionCalls(const GrapplerItem& item,
     // Skip nodes that are not function calls.
     if (!IsFunctionCall(flib_def, *n)) continue;
     // Skip function calls that we plan to compile later.
-    if (MarkedForXlaCompilation(n->def())) continue;
+    if (MarkedForTpuCompilation(n)) continue;
+    if (MarkedForXlaCompilation(n)) continue;
 
     // Function body that we will inline into the main graph. It can be a
     // function instantiation, or a gradient function instantiated from
@@ -1436,9 +1436,7 @@ Status FunctionOptimizer::RunFunctionOptimizerPass(
 
     // Do not specialize if function has custom gradient or marked nospecialize.
     const string grad_func = ctx.function_library().FindGradient(func_name);
-    const bool no_specialize = !grad_func.empty() ||
-                               MarkedNoSpecialize(*func) ||
-                               MarkedForXlaCompilation(node);
+    const bool no_specialize = !grad_func.empty() || MarkedNoSpecialize(*func);
 
     if (specialization_worthy && !no_specialize) {
       // TODO(ezhulenev): Specialize function call if input has a known shape.

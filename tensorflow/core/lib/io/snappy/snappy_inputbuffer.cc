@@ -32,25 +32,17 @@ SnappyInputBuffer::SnappyInputBuffer(
 
 Status SnappyInputBuffer::ReadNBytes(int64 bytes_to_read, tstring* result) {
   result->clear();
-  result->resize_uninitialized(bytes_to_read);
-
-  char* result_ptr = result->mdata();
-
   // Read as many bytes as possible from cache.
-  size_t bytes_read = ReadBytesFromCache(bytes_to_read, result_ptr);
-  bytes_to_read -= bytes_read;
-  result_ptr += bytes_read;
+  bytes_to_read -= ReadBytesFromCache(bytes_to_read, result);
 
   while (bytes_to_read > 0) {
     // At this point we can be sure that cache has been emptied.
-    DCHECK_EQ(avail_out_, 0);
+    DCHECK(avail_out_ == 0);
 
     // Now that the cache is empty we need to inflate more data.
     TF_RETURN_IF_ERROR(Inflate());
 
-    bytes_read = ReadBytesFromCache(bytes_to_read, result_ptr);
-    bytes_to_read -= bytes_read;
-    result_ptr += bytes_read;
+    bytes_to_read -= ReadBytesFromCache(bytes_to_read, result);
   }
 
   return Status::OK();
@@ -68,10 +60,10 @@ Status SnappyInputBuffer::Reset() {
 }
 
 size_t SnappyInputBuffer::ReadBytesFromCache(size_t bytes_to_read,
-                                             char* result_ptr) {
+                                             tstring* result) {
   size_t can_read_bytes = std::min(bytes_to_read, avail_out_);
   if (can_read_bytes > 0) {
-    memcpy(result_ptr, next_out_, can_read_bytes);
+    result->append(next_out_, can_read_bytes);
     next_out_ += can_read_bytes;
     avail_out_ -= can_read_bytes;
   }

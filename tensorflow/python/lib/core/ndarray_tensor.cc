@@ -16,7 +16,6 @@ limitations under the License.
 #include "tensorflow/python/lib/core/ndarray_tensor.h"
 
 #include <cstring>
-#include <optional>
 
 #include "tensorflow/core/lib/core/coding.h"
 #include "tensorflow/core/lib/core/errors.h"
@@ -73,13 +72,6 @@ Status PyArrayDescr_to_TF_DataType(PyArray_Descr* descr,
   PyObject* key;
   PyObject* value;
   Py_ssize_t pos = 0;
-
-  // Return an error if the fields attribute is null.
-  // Occurs with an improper conversion attempt to resource.
-  if (descr->fields == nullptr) {
-    return errors::Internal("Unexpected numpy data type");
-  }
-
   if (PyDict_Next(descr->fields, &pos, &key, &value)) {
     // In Python 3, the keys of numpy custom struct types are unicode, unlike
     // Python 2, where the keys are bytes.
@@ -547,7 +539,8 @@ Status PyArrayToTF_Tensor(PyObject* ndarray, Safe_TF_TensorPtr* out_tensor) {
 }
 
 Status TF_TensorToTensor(const TF_Tensor* src, Tensor* dst);
-TF_Tensor* TF_TensorFromTensor(const tensorflow::Tensor& src, Status* status);
+TF_Tensor* TF_TensorFromTensor(const tensorflow::Tensor& src,
+                               TF_Status* status);
 
 Status NdarrayToTensor(PyObject* obj, Tensor* ret) {
   Safe_TF_TensorPtr tf_tensor = make_safe(static_cast<TF_Tensor*>(nullptr));
@@ -559,10 +552,12 @@ Status NdarrayToTensor(PyObject* obj, Tensor* ret) {
 }
 
 Status TensorToNdarray(const Tensor& t, PyObject** ret) {
-  Status status;
-  Safe_TF_TensorPtr tf_tensor = make_safe(TF_TensorFromTensor(t, &status));
-  if (!status.ok()) {
-    return status;
+  TF_Status* status = TF_NewStatus();
+  Safe_TF_TensorPtr tf_tensor = make_safe(TF_TensorFromTensor(t, status));
+  Status tf_status = StatusFromTF_Status(status);
+  TF_DeleteStatus(status);
+  if (!tf_status.ok()) {
+    return tf_status;
   }
   return TF_TensorToPyArray(std::move(tf_tensor), ret);
 }

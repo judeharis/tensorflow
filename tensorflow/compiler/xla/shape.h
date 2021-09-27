@@ -151,7 +151,7 @@ class Shape {
 
   void Clear() {
     element_type_ = PRIMITIVE_TYPE_INVALID;
-    clear_dimensions();
+    dimensions_.clear();
     tuple_shapes_.clear();
     clear_layout();
   }

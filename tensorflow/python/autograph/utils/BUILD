@@ -23,7 +23,6 @@ py_library(
     srcs = [
         "__init__.py",
         "ag_logging.py",
-        "compat_util.py",
         "context_managers.py",
         "misc.py",
         "py_func.py",

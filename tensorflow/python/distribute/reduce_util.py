@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Utilities for reduce operations."""
+"""Utilites for reduce operations."""
 
 from __future__ import absolute_import
 from __future__ import division

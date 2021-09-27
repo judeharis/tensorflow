@@ -59,14 +59,15 @@ namespace ruy {
 // inline storage, avoiding a heap allocation. However, we can't effectively
 // guard that assumption, and that's not a big concern anyway because the
 // latency of a small heap allocation is probably low compared to the intrinsic
-// latency of what this Wait function does.
-void Wait(const std::function<bool()>& condition, const Duration& spin_duration,
-          std::condition_variable* condvar, std::mutex* mutex);
+// latency of what this WaitUntil function does.
+void WaitUntil(const std::function<bool()>& condition,
+               const Duration& spin_duration, std::condition_variable* condvar,
+               std::mutex* mutex);
 
 // Convenience overload using a default `spin_duration`.
 // TODO(benoitjacob): let this be controlled from the ruy API.
-void Wait(const std::function<bool()>& condition,
-          std::condition_variable* condvar, std::mutex* mutex);
+void WaitUntil(const std::function<bool()>& condition,
+               std::condition_variable* condvar, std::mutex* mutex);
 
 }  // namespace ruy
 

@@ -18,7 +18,6 @@ limitations under the License.
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include "absl/strings/str_cat.h"
 #include "tensorflow/core/lib/core/threadpool.h"
 #include "tensorflow/core/platform/env_time.h"
 #include "tensorflow/core/platform/notification.h"
@@ -82,7 +81,7 @@ TEST(RecorderTest, Multithreaded) {
         uint64 start_time = Env::Default()->NowNanos();
         uint64 end_time = start_time + kNanosInSec;
         TraceMeRecorder::Record({/*activity_id=*/j++,
-                                 /*name=*/absl::StrCat(i), start_time,
+                                 /*name=*/strings::StrCat(i), start_time,
                                  end_time});
       };
       thread_count.fetch_add(1, std::memory_order_relaxed);

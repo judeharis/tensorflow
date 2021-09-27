@@ -12,7 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-// Writes a flatbuffer of a currently loaded TensorFlow Lite subgraph.
+// Writes a flatbuffer of a currently loaded TensorFlow Lite interpreter.
 //
 // Usage:
 //  From command line:
@@ -23,33 +23,34 @@ limitations under the License.
 //   std::unique_ptr<Interpreter> interpreter;
 //   // Build Interpreter however
 //   // ... <omitted>
-//   SubgraphWriter(&interpreter->primary_subgraph()).Write("output.tflite");
+//   InterpreterWriter(interpreter.get()).Write("output.tflite");
 #ifndef TENSORFLOW_LITE_EXPERIMENTAL_WRITER_WRITER_LIB_H_
 #define TENSORFLOW_LITE_EXPERIMENTAL_WRITER_WRITER_LIB_H_
 #include <iostream>
 #include <unordered_map>
-
 #include "tensorflow/lite/builtin_op_data.h"
 #include "tensorflow/lite/context_util.h"
-#include "tensorflow/lite/core/subgraph.h"
 #include "tensorflow/lite/experimental/writer/enum_mapping.h"
+#include "tensorflow/lite/interpreter.h"
 #include "tensorflow/lite/schema/reflection/schema_generated.h"
 #include "tensorflow/lite/version.h"
 
 namespace tflite {
 
-// Handles writing TensorFlow Lite running subgraph to a serialized TF lite
+// Handles writing TensorFlow Lite running interpreter to a serialized TF lite
 // file format.
-class SubgraphWriter {
+class InterpreterWriter {
  public:
   typedef flatbuffers::Offset<Operator> (*CustomWriter)(
-      flatbuffers::FlatBufferBuilder* fbb, Subgraph* subgraph, int node_index,
+      flatbuffers::FlatBufferBuilder* fbb, Interpreter* interpreter,
+      int node_index,
       flatbuffers::Offset<flatbuffers::Vector<uint8_t>>* output_options,
       CustomOptionsFormat* custom_options_format);
 
-  // Construct an subgraph writer for the specified `subgraph`. Then,
+  // Construct an interpreter writer for the specified `interpreter`. Then,
   // a uses .Write() or .GetBuffer(...)  to extract the data.
-  explicit SubgraphWriter(Subgraph* subgraph) : subgraph_(subgraph) {
+  explicit InterpreterWriter(Interpreter* interpreter)
+      : interpreter_(interpreter) {
     buffers_.push_back(std::make_pair(nullptr, 0));
   }
 
@@ -105,8 +106,8 @@ class SubgraphWriter {
     return result.first->second;
   }
 
-  // The subgraph we are writing
-  Subgraph* subgraph_;
+  // The interpreter we are writing
+  Interpreter* interpreter_;
   // Keep track of byte buffers
   std::vector<std::pair<const uint8_t*, size_t>> buffers_;
   // List of op codes and mappings from builtin or custom op to opcode
@@ -115,7 +116,7 @@ class SubgraphWriter {
     std::string custom;
   };
   std::set<int> unused_tensors_;
-  // For every tensor index in the subgraph, the index in the written.
+  // For every tensor index in the interpreter, the index in the written.
   // This is different due to temporary and unused tensors not being written.
   std::vector<int> tensor_to_written_tensor_;
   // List of used opcodes

@@ -20,7 +20,7 @@ from __future__ import print_function
 
 
 def auto_cast_partition_dtype():
-  """Whether incompatible row-partitioning dtypes should be auto-converted.
+  """Whether incopmatible row-partitioning dtypes should be auto-converted.
 
   If true, then operations that combine RaggedTensors but have different
   row-partitioning tensor dtypes will be automatically cast to a

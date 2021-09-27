@@ -1,8 +1,3 @@
-load(
-    "//tensorflow/core/platform:rules_cc.bzl",
-    "cc_library",
-)
-
 package(
     default_visibility = [
         # tensorflow/core:lib effectively exposes all targets under tensorflow/core/lib/**
@@ -22,7 +17,7 @@ cc_library(
         "//tensorflow/core/platform:stringpiece",
         "//tensorflow/core/platform:types",
         "@com_google_absl//absl/base",
-        "@zlib",
+        "@zlib_archive//:zlib",
     ],
 )
 

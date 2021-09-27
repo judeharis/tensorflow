@@ -73,7 +73,9 @@ Status InputBuffer::ReadLine(T* result) {
 }
 
 template Status InputBuffer::ReadLine<string>(string* result);
+#ifdef USE_TSTRING
 template Status InputBuffer::ReadLine<tstring>(tstring* result);
+#endif  // USE_TSTRING
 
 Status InputBuffer::ReadNBytes(int64 bytes_to_read, string* result) {
   result->clear();

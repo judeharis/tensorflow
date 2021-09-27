@@ -144,7 +144,7 @@ class ReconstructNonDebugGraphTest(test_util.TensorFlowTestCase):
       self._compareOriginalAndReconstructedGraphDefs(
           sess, c, expected_output=400.0)
 
-  def testReconstructGraphWithCond(self):
+  def testReonstructGraphWithCond(self):
     with session.Session(config=self._no_rewrite_session_config()) as sess:
       x = variables.Variable(10.0, name="x")
       y = variables.Variable(20.0, name="y")

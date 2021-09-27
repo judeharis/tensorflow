@@ -34,19 +34,16 @@ namespace eager {
 
 // RemoteExecuteNode is an implementation of EagerNode which enqueues
 // an operation via RPC in a remote EagerService.
-class RemoteExecuteNode : public AsyncRemoteExecuteNode {
+class RemoteExecuteNode : public AsyncEagerNode {
  public:
-  RemoteExecuteNode(EagerContext* eager_context,
-                    std::unique_ptr<EnqueueRequest> request, Device* device,
-                    uint64 context_view_id, EagerClient* eager_client,
-                    const NodeDef& ndef, FunctionLibraryDefinition* lib_def,
+  RemoteExecuteNode(std::unique_ptr<EnqueueRequest> request, Device* device,
+                    EagerClient* eager_client, const NodeDef& ndef,
+                    FunctionLibraryDefinition* lib_def,
                     const gtl::InlinedVector<TensorHandle*, 4>& inputs,
                     absl::Span<TensorHandle*> retvals)
-      : AsyncRemoteExecuteNode(),
-        eager_context_(eager_context),
+      : AsyncEagerNode(),
         request_(std::move(request)),
         device_(device),
-        context_view_id_(context_view_id),
         eager_client_(eager_client),
         ndef_(ndef),
         lib_def_(lib_def),
@@ -64,16 +61,6 @@ class RemoteExecuteNode : public AsyncRemoteExecuteNode {
       handle->Ref();
     }
     eager_client_->Ref();
-
-    needs_remote_inputs_ = false;
-    for (const TensorHandle* input : inputs_) {
-      // TODO(bramandia): Should this be op_device() instead?
-      if (input->resource_device() != nullptr &&
-          input->resource_device() != device_) {
-        needs_remote_inputs_ = true;
-        break;
-      }
-    }
   }
 
   ~RemoteExecuteNode() override {
@@ -93,22 +80,10 @@ class RemoteExecuteNode : public AsyncRemoteExecuteNode {
 
   void RunAsync(StatusCallback done) override;
 
-  Status SyncExecutors() override { return eager_context_->SyncExecutors(); }
-
   void Abort(Status status) override {
-    int i = 0;
     for (auto handle : retvals_) {
-      handle->PoisonRemote(status, device_, context_view_id_);
-      ++i;
+      handle->Poison(status);
     }
-  }
-
-  const EagerClient* eager_client() const override { return eager_client_; }
-
-  bool needs_remote_inputs() const override { return needs_remote_inputs_; }
-
-  bool allow_multiple_pending_requests() const override {
-    return eager_client_->allow_multiple_pending_requests();
   }
 
   string DebugString() const override {
@@ -119,11 +94,8 @@ class RemoteExecuteNode : public AsyncRemoteExecuteNode {
   }
 
  private:
-  EagerContext* eager_context_;  // Not owned, and must outlive this node.
   std::unique_ptr<EnqueueRequest> request_;
   Device* device_;             // Not owned
-  uint64 context_view_id_;
-  bool needs_remote_inputs_;
   EagerClient* eager_client_;  // Not owned, and must outlive this node.
   const NodeDef ndef_;
   const FunctionLibraryDefinition* lib_def_;

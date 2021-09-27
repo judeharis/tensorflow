@@ -75,7 +75,7 @@ fi
 BASE_DIR=$(upsearch "${DOCKERFILE}")
 if [[ -z "${BASE_DIR}" ]]; then
   die "FAILED: Unable to find the base directory where the dockerfile "\
-"${DOCKERFILE} resides"
+"${DOCKERFFILE} resides"
 fi
 echo "Base directory: ${BASE_DIR}"
 

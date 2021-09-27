@@ -73,7 +73,7 @@ namespace xla {
 //     - EqualTo
 //     - CompatibleTo
 //     - IsScalar/IsEffectiveScalar/IsArray/IsTuple
-//     - IsDenseArray
+//     - IsDenseArray/IsSparseArray
 //     - WithLayout: layout shape's layout matches the given pattern (e.g.
 //       Layout().WithDenseFormat())
 //     - WithLayoutEqualTo: shape's layout equals the argument (i.e. another
@@ -87,7 +87,7 @@ namespace xla {
 //
 //  Layout():
 //     - EqualTo
-//     - WithDenseFormat
+//     - WithDenseFormat/WithSparseFormat
 //
 // Op(), Shape(), and Layout() may be passed an argument of type
 // HloInstruction**, Shape**, or Layout**, respectively, or const versions of
@@ -506,6 +506,12 @@ class LayoutPattern {
     return AppendImpl(LayoutPatternFormatImpl(DENSE));
   }
 
+  // Modifies the pattern to match only if the layout has a sparse format.
+  constexpr auto WithSparseFormat() const
+      -> decltype(this->AppendImpl(LayoutPatternFormatImpl(SPARSE))) {
+    return AppendImpl(LayoutPatternFormatImpl(SPARSE));
+  }
+
  private:
   Impl impl_;
   LayoutType** matched_layout_;
@@ -910,10 +916,10 @@ class ShapePatternSubshapeImpl {
   }
 
  private:
-  ::xla::Shape* GetSubshape(::xla::Shape* shape) const {
+  Shape* GetSubshape(Shape* shape) const {
     return ShapeUtil::GetMutableSubshape(shape, index_);
   }
-  const ::xla::Shape* GetSubshape(const ::xla::Shape* shape) const {
+  const Shape* GetSubshape(const Shape* shape) const {
     return &ShapeUtil::GetSubshape(*shape, index_);
   }
 
@@ -1052,6 +1058,11 @@ class ShapePattern {
   constexpr auto IsDenseArray() const
       -> decltype(this->WithLayout(Layout().WithDenseFormat())) {
     return WithLayout(Layout().WithDenseFormat());
+  }
+
+  constexpr auto IsSparseArray() const
+      -> decltype(this->WithLayout(Layout().WithSparseFormat())) {
+    return WithLayout(Layout().WithSparseFormat());
   }
 
   // Modifies the pattern to match only if the shape has a subshape that matches

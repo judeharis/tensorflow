@@ -36,13 +36,7 @@ inline uint64 Hash64(const char* data, size_t n) {
   return Hash64(data, n, 0xDECAFCAFFE);
 }
 
-inline uint64 Hash64(const char* data) { return Hash64(data, ::strlen(data)); }
-
 inline uint64 Hash64(const string& str) {
-  return Hash64(str.data(), str.size());
-}
-
-inline uint64 Hash64(const tstring& str) {
   return Hash64(str.data(), str.size());
 }
 
@@ -100,13 +94,6 @@ struct hash<string> {
 };
 
 template <>
-struct hash<tstring> {
-  size_t operator()(const tstring& s) const {
-    return static_cast<size_t>(Hash64(s.data(), s.size()));
-  }
-};
-
-template <>
 struct hash<StringPiece> {
   size_t operator()(StringPiece sp) const {
     return static_cast<size_t>(Hash64(sp.data(), sp.size()));
@@ -122,14 +109,5 @@ struct hash<std::pair<T, U>> {
 };
 
 }  // namespace tensorflow
-
-namespace std {
-template <>
-struct hash<tensorflow::tstring> {
-  size_t operator()(const tensorflow::tstring& s) const {
-    return static_cast<size_t>(tensorflow::Hash64(s.data(), s.size()));
-  }
-};
-}  // namespace std
 
 #endif  // TENSORFLOW_CORE_PLATFORM_HASH_H_

@@ -25,21 +25,6 @@ limitations under the License.
 namespace tensorflow {
 namespace grappler {
 
-namespace {
-constexpr std::array<const char*, 3> kSloppyAttrOps = {
-    "ParallelInterleaveDatasetV2",
-    "ParallelMapDataset",
-    "ParseExampleDataset",
-};
-
-constexpr std::array<const char*, 4> kDeterministicAttrOps = {
-    "LegacyParallelInterleaveDatasetV2",
-    "ParallelInterleaveDatasetV3",
-    "ParallelInterleaveDatasetV4",
-    "ParallelMapDatasetV2",
-};
-}  // anonymous namespace
-
 Status MakeSloppy::OptimizeAndCollectStats(Cluster* cluster,
                                            const GrapplerItem& item,
                                            GraphDef* output,
@@ -48,20 +33,11 @@ Status MakeSloppy::OptimizeAndCollectStats(Cluster* cluster,
   MutableGraphView graph(output);
 
   for (NodeDef& node : *output->mutable_node()) {
-    for (const auto& op_name : kSloppyAttrOps) {
-      if (node.op() == op_name) {
-        (*node.mutable_attr())["sloppy"].set_b(true);
-        stats->num_changes++;
-        break;
-      }
-    }
-    for (const auto& op_name : kDeterministicAttrOps) {
-      if (node.op() == op_name &&
-          node.attr().at("deterministic").s() == "default") {
-        (*node.mutable_attr())["deterministic"].set_s("false");
-        stats->num_changes++;
-        break;
-      }
+    if (node.op() == "ParallelInterleaveDatasetV2" ||
+        node.op() == "ParallelMapDataset" ||
+        node.op() == "ParseExampleDataset") {
+      (*node.mutable_attr())["sloppy"].set_b(true);
+      stats->num_changes++;
     }
   }
   return Status::OK();

@@ -197,7 +197,7 @@ PyObject* TFE_Py_TapeSetIsStopped();
 //    forwardprop to, given the gradients of the output tensors, produce the
 //    gradients of the input tensors. This function is automatically transposed
 //    during forwardprop.
-//  - forward_function is an optional special-case for forwardprop, taking input
+//  - forward_function is an optional special-case for fowardprop, taking input
 //    jvps and returning output jvps.
 //
 // Records an operation both for backprop (gradient tape) and forwardprop
@@ -257,6 +257,7 @@ PyObject* TFE_Py_TapeGradient(PyObject* tape, PyObject* target,
 // correctly formatted (i.e. EagerTensors). If it doesn't find EagerTensors,
 // it will simply fail with a NotImplementedError.
 //
+// The first PyObject* is unused.
 // The "args" PyObject* is meant to be a tuple with the following structure:
 //  Item 1: The TFE Context
 //  Item 2: device_name: Name of the device on which to execute the operation,
@@ -271,12 +272,11 @@ PyObject* TFE_Py_TapeGradient(PyObject* tape, PyObject* target,
 // This is named _C since there doesn't seem to be any way to make it visible
 // in the SWIG interface without renaming due to the use of the %native
 // directive.
-PyObject* TFE_Py_FastPathExecute_C(PyObject* args);
+PyObject* TFE_Py_FastPathExecute_C(PyObject*, PyObject* args);
 
 // Record the gradient for a given op.
 PyObject* TFE_Py_RecordGradient(PyObject* op_name, PyObject* inputs,
-                                PyObject* attrs, PyObject* results,
-                                PyObject* forward_pass_name_scope);
+                                PyObject* attrs, PyObject* results);
 
 // Returns all variables watched by the given tape in the order those variables
 // were created.
@@ -307,7 +307,7 @@ PyObject* TFE_Py_ForwardAccumulatorJVP(PyObject* accumulator, PyObject* tensor);
 // temporarily reset its state. This is useful when building forwardprop
 // versions of functions, where an accumulator will trigger function building
 // and then must process captured symbolic tensors while building it. Without
-// pushing and popping, accumulators ignore operations executed as a direct
+// pushing and poping, accumulators ignore operations executed as a direct
 // result of their own jvp computations.
 PyObject* TFE_Py_ForwardAccumulatorPushState();
 PyObject* TFE_Py_ForwardAccumulatorPopState();

@@ -15,9 +15,7 @@ limitations under the License.
 #include <string>
 
 #include "flatbuffers/flexbuffers.h"  // TF:flatbuffers
-#include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
-#include "tensorflow/lite/core/api/flatbuffer_conversions.h"
 #include "tensorflow/lite/core/subgraph.h"
 #include "tensorflow/lite/experimental/resource/lookup_interfaces.h"
 #include "tensorflow/lite/kernels/kernel_util.h"
@@ -28,10 +26,7 @@ namespace ops {
 namespace custom {
 namespace hashtable {
 
-static constexpr int kResourceHandleTensor = 0;
-static constexpr const char kSharedNameStr[] = "shared_name";
-static constexpr const char kKeyDtypeStr[] = "key_dtype";
-static constexpr const char kValueDtypeStr[] = "value_dtype";
+constexpr int kResourceHandleTensor = 0;
 
 // TODO(b/144728911): The following structure should be moved to
 // builtin_op_data.h when it is ready to become a builtin op.
@@ -46,18 +41,11 @@ void* InitHashtable(TfLiteContext* context, const char* buffer, size_t length) {
 
   const uint8_t* buffer_t = reinterpret_cast<const uint8_t*>(buffer);
   const flexbuffers::Map& m = flexbuffers::GetRoot(buffer_t, length).AsMap();
-  const std::string table_name = m[kSharedNameStr].AsString().str();
-
-  TfLiteType key_dtype, value_dtype;
-  ConvertTensorType(static_cast<TensorType>(m[kKeyDtypeStr].AsInt32()),
-                    &key_dtype, nullptr);
-  ConvertTensorType(static_cast<TensorType>(m[kValueDtypeStr].AsInt32()),
-                    &value_dtype, nullptr);
 
   TfLiteHashtableParams* option = new TfLiteHashtableParams;
-  option->table_name = table_name;
-  option->key_dtype = key_dtype;
-  option->value_dtype = value_dtype;
+  option->table_name = m["table_name"].AsString().str();
+  option->key_dtype = static_cast<TfLiteType>(m["key_dtype"].AsInt32());
+  option->value_dtype = static_cast<TfLiteType>(m["value_dtype"].AsInt32());
 
   return option;
 }
@@ -73,12 +61,12 @@ TfLiteStatus PrepareHashtable(TfLiteContext* context, TfLiteNode* node) {
   TF_LITE_ENSURE(context, node->user_data != nullptr);
   const auto* params =
       reinterpret_cast<const TfLiteHashtableParams*>(node->user_data);
-
   TF_LITE_ENSURE(context, !params->table_name.empty());
-  TF_LITE_ENSURE(context, (params->key_dtype == kTfLiteInt64 &&
-                           params->value_dtype == kTfLiteString) ||
-                              (params->key_dtype == kTfLiteString &&
-                               params->value_dtype == kTfLiteInt64));
+  TF_LITE_ENSURE(context, (params->key_dtype == kTfLiteInt32 ||
+                           params->key_dtype == kTfLiteString));
+  TF_LITE_ENSURE(context, (params->value_dtype == kTfLiteInt32 ||
+                           params->value_dtype == kTfLiteString ||
+                           params->value_dtype == kTfLiteFloat32));
 
   TfLiteTensor* resource_handle_tensor =
       GetOutput(context, node, kResourceHandleTensor);
@@ -90,7 +78,6 @@ TfLiteStatus PrepareHashtable(TfLiteContext* context, TfLiteNode* node) {
 }
 
 TfLiteStatus EvalHashtable(TfLiteContext* context, TfLiteNode* node) {
-  TF_LITE_ENSURE(context, node->user_data != nullptr);
   const auto* params =
       reinterpret_cast<const TfLiteHashtableParams*>(node->user_data);
 
@@ -113,9 +100,12 @@ TfLiteStatus EvalHashtable(TfLiteContext* context, TfLiteNode* node) {
 }  // namespace hashtable
 
 TfLiteRegistration* Register_HASHTABLE() {
-  static TfLiteRegistration r = {
-      hashtable::InitHashtable, hashtable::FreeHashtable,
-      hashtable::PrepareHashtable, hashtable::EvalHashtable};
+  static TfLiteRegistration r = {hashtable::InitHashtable,
+                                 hashtable::FreeHashtable,
+                                 hashtable::PrepareHashtable,
+                                 hashtable::EvalHashtable,
+                                 nullptr,
+                                 BuiltinOperator_CUSTOM};
   return &r;
 }
 

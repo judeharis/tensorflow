@@ -16,7 +16,6 @@ limitations under the License.
 // See docs in ../ops/array_ops.cc.
 #ifdef INTEL_MKL
 
-#include "mkldnn.hpp"
 #include "tensorflow/core/framework/op_kernel.h"
 #include "tensorflow/core/framework/register_types.h"
 #include "tensorflow/core/framework/tensor.h"
@@ -24,6 +23,8 @@ limitations under the License.
 #include "tensorflow/core/framework/types.h"
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/platform/logging.h"
+
+#include "mkldnn.hpp"
 #include "tensorflow/core/util/mkl_util.h"
 
 namespace tensorflow {
@@ -63,5 +64,4 @@ TF_CALL_float(REGISTER_MKL_CPU);
 TF_CALL_bfloat16(REGISTER_MKL_CPU);
 #undef REGISTER_MKL_CPU
 }  // namespace tensorflow
-
 #endif  // INTEL_MKL

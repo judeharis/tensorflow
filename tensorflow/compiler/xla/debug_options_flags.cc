@@ -15,9 +15,9 @@ limitations under the License.
 
 #include "tensorflow/compiler/xla/debug_options_flags.h"
 
+#include <mutex>  // NOLINT(build/c++11): only using std::call_once, not mutex.
 #include <vector>
 
-#include "absl/base/call_once.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/node_hash_map.h"
 #include "absl/strings/str_format.h"
@@ -34,13 +34,10 @@ DebugOptions DefaultDebugOptionsIgnoringFlags() {
   opts.set_xla_llvm_enable_invariant_load_metadata(true);
   opts.set_xla_llvm_disable_expensive_passes(false);
   opts.set_xla_backend_optimization_level(3);
-  opts.set_xla_gpu_autotune_level(4);
   opts.set_xla_cpu_multi_thread_eigen(true);
   opts.set_xla_gpu_cuda_data_dir("./cuda_sdk_lib");
   opts.set_xla_eliminate_hlo_implicit_broadcast(true);
   opts.set_xla_dump_hlo_as_html(false);
-  opts.set_xla_dump_include_timestamp(true);
-  opts.set_xla_dump_max_hlo_modules(-1);
 #ifdef INTEL_MKL
   opts.set_xla_cpu_use_mkl_dnn(true);
 #endif  // INTEL_MKL
@@ -62,11 +59,10 @@ DebugOptions DefaultDebugOptionsIgnoringFlags() {
 
   opts.set_xla_allow_excess_precision(true);
   opts.set_xla_force_host_platform_device_count(1);
-  opts.set_xla_gpu_deterministic_reductions(false);
   return opts;
 }
 
-static absl::once_flag flags_init;
+static std::once_flag flags_init;
 static DebugOptions* flag_values;
 static std::vector<tensorflow::Flag>* flag_objects;
 
@@ -209,8 +205,8 @@ static void AllocateFlags() {
     // warning if a pass was specified but never consumed any fuel, on the
     // theory that this is may be a typo.
     if (!initial_fuel->empty()) {
-      static absl::once_flag register_atexit_once;
-      absl::call_once(
+      static std::once_flag register_atexit_once;
+      std::call_once(
           register_atexit_once,
           +[] { std::atexit(WarnIfFuelWasNeverConsumed); });
     }
@@ -332,7 +328,7 @@ static void AllocateFlags() {
           "use multi-threaded Eigen mode."),
       tensorflow::Flag("xla_gpu_cuda_data_dir",
                        flag_values->mutable_xla_gpu_cuda_data_dir(),
-                       "If non-empty, specifies a local directory containing "
+                       "If non-empty, speficies a local directory containing "
                        "ptxas and nvvm libdevice files; otherwise we use "
                        "those from runfile directories."),
       tensorflow::Flag("xla_gpu_ftz",
@@ -351,7 +347,7 @@ static void AllocateFlags() {
           flag_values->xla_gpu_max_kernel_unroll_factor(),
           "Specify the maximum kernel unroll factor for the GPU backend."),
       tensorflow::Flag("xla_gpu_ptx_file", setter_for_xla_gpu_ptx_file, "",
-                       "If non-empty, specifies a file containing ptx to use. "
+                       "If non-empty, speficies a file containing ptx to use. "
                        "The filename prefix must have the same pattern as PTX "
                        "dumped by XLA. This allows to match one specific "
                        "module. General workflow. Get the generated module "
@@ -402,12 +398,10 @@ static void AllocateFlags() {
           "Crashes the program on extra verification failures, e.g. cuDNN "
           "cross checking failures"),
       tensorflow::Flag(
-          "xla_gpu_autotune_level",
-          int32_setter_for(&DebugOptions::set_xla_gpu_autotune_level),
-          flag_values->xla_gpu_autotune_level(),
-          "Set GEMM and Convolution auto-tuning level."
-          "0 = off; 1 = on; 2 = on+init; 3 = on+init+reinit; 4 = "
-          "on+init+reinit+check."),
+          "xla_gpu_disable_autotune",
+          bool_setter_for(&DebugOptions::set_xla_gpu_disable_autotune),
+          flag_values->xla_gpu_disable_autotune(),
+          "Disable GEMM and Convolution auto-tuning."),
       tensorflow::Flag(
           "xla_force_host_platform_device_count",
           int32_setter_for(
@@ -491,17 +485,6 @@ static void AllocateFlags() {
           "match this regular expression, in addition to dumping at the very "
           "beginning and end of compilation."),
       tensorflow::Flag(
-          "xla_dump_include_timestamp",
-          bool_setter_for(&DebugOptions::set_xla_dump_include_timestamp),
-          flag_values->xla_dump_include_timestamp(),
-          "If specified, includes a timestamp in the dumped filenames."),
-      tensorflow::Flag(
-          "xla_dump_max_hlo_modules",
-          int32_setter_for(&DebugOptions::set_xla_dump_max_hlo_modules),
-          flag_values->xla_dump_max_hlo_modules(),
-          "Max number of hlo module dumps in a directory. Set to < 0 for "
-          "unbounded."),
-      tensorflow::Flag(
           "xla_hlo_graph_addresses",
           bool_setter_for(&DebugOptions::set_xla_hlo_graph_addresses),
           flag_values->xla_hlo_graph_addresses(),
@@ -529,29 +512,23 @@ static void AllocateFlags() {
                        flag_values->xla_gpu_algorithm_blacklist_path(),
                        "An AlgorithmBlacklist text proto file as a blacklist "
                        "of convolutions to avoid to use."),
-
-      tensorflow::Flag(
-          "xla_gpu_deterministic_reductions",
-          bool_setter_for(&DebugOptions::set_xla_gpu_deterministic_reductions),
-          flag_values->xla_gpu_deterministic_reductions(),
-          "Always run deterministic reductions on GPU"),
   });
   ParseFlagsFromEnvAndDieIfUnknown("XLA_FLAGS", *flag_objects);
 }
 
 void AppendDebugOptionsFlags(std::vector<tensorflow::Flag>* flag_list) {
-  absl::call_once(flags_init, &AllocateFlags);
+  std::call_once(flags_init, &AllocateFlags);
   flag_list->insert(flag_list->end(), flag_objects->begin(),
                     flag_objects->end());
 }
 
 xla::DebugOptions GetDebugOptionsFromFlags() {
-  absl::call_once(flags_init, &AllocateFlags);
+  std::call_once(flags_init, &AllocateFlags);
   return *flag_values;
 }
 
 void ResetThreadLocalFuel() {
-  absl::call_once(flags_init, &AllocateFlags);
+  std::call_once(flags_init, &AllocateFlags);
 
   thread_fuel.reset(new absl::node_hash_map<string, std::atomic<int64>>());
   CHECK(initial_fuel != nullptr);
@@ -561,7 +538,7 @@ void ResetThreadLocalFuel() {
 }
 
 bool ConsumeFuel(absl::string_view pass, bool* just_ran_out) {
-  absl::call_once(flags_init, &AllocateFlags);
+  std::call_once(flags_init, &AllocateFlags);
   if (just_ran_out != nullptr) {
     *just_ran_out = false;
   }

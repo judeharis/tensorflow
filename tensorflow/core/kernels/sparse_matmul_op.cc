@@ -892,14 +892,14 @@ class LibxsmmSparseMatMul {
     // sure the same cache entry is not used from two threads at a time.
     std::multimap<std::tuple<int, int, int, int>,
                   std::unique_ptr<TensorInfoCacheEntry>>
-        entries TF_GUARDED_BY(lock);
+        entries GUARDED_BY(lock);
 
     TensorInfoCache() : lock(), entries() {}
     // Look up and remove first entry with these parameters, creating one if
     // there isn't one
     std::unique_ptr<TensorInfoCacheEntry> take_cache_entry(int M, int K, int N,
                                                            int max_threads)
-        TF_LOCKS_EXCLUDED(lock) {
+        LOCKS_EXCLUDED(lock) {
       tensorflow::mutex_lock ml(lock);
       auto key = std::make_tuple(M, K, N, max_threads);
       auto it = entries.find(key);
@@ -918,7 +918,7 @@ class LibxsmmSparseMatMul {
     }
     // Add a cache entry with certain parameters
     void return_cache_entry(std::unique_ptr<TensorInfoCacheEntry> e)
-        TF_LOCKS_EXCLUDED(lock) {
+        LOCKS_EXCLUDED(lock) {
       tensorflow::mutex_lock ml(lock);
       auto key = std::make_tuple(e->M, e->K, e->N, e->max_threads);
       entries.insert(std::make_pair(key, std::move(e)));
@@ -1039,10 +1039,6 @@ class SparseMatMulOp : public OpKernel {
     if (transpose_b) {
       // TODO(agarwal): avoid transposing the matrix here and directly handle
       // transpose in CreateDenseSlices.
-      OP_REQUIRES(ctx, right->dim_size(0) != 0,
-                  errors::InvalidArgument("b has an entry 0 in it's shape."));
-      OP_REQUIRES(ctx, right->dim_size(1) != 0,
-                  errors::InvalidArgument("b has an entry 0 in it's shape."));
       right_tr.reset(
           new Tensor(right->dtype(),
                      TensorShape({right->dim_size(1), right->dim_size(0)})));
@@ -1241,9 +1237,7 @@ inline BlockingCounter* SparseMatMul<TL, TR>::ShuffleMatrix(
     const DeviceBase::CpuWorkerThreads* thread_pool, MatrixR* buffer) {
   DCHECK_EQ(N % 2, 0);
   DCHECK_LE(kNumOperands * sizeof(float) / sizeof(TR), N);
-  // Note(nikhilsarda): This heuristic is optimal in benchmarks as of
-  // Jan 21, 2020.
-  int num_threads = std::min(thread_pool->num_threads, 8);
+  int num_threads = std::min(thread_pool->num_threads, 16);
   BlockingCounter* counter = new BlockingCounter(num_threads);
   DCHECK_EQ(N, buffer->dimension(1));
   auto shuffle_work = [&mat, slice_row_start, slice_num_rows, slice_col_start,

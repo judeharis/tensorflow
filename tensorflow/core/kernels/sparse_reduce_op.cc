@@ -202,9 +202,9 @@ class SparseReduceOp : public OpKernel {
     }
 
     auto CoordinatesToFlatIndex = [](ArraySlice<int64> coords,
-                                     ArraySlice<int64> strides) -> int64 {
+                                     ArraySlice<int64> strides) {
       if (strides.empty()) {  // Reduce all.
-        return 0;
+        return 0LL;
       }
       CHECK_EQ(coords.size(), strides.size());
       int64 idx = 0;

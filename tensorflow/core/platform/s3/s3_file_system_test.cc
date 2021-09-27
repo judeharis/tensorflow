@@ -54,7 +54,8 @@ class S3FileSystemTest : public ::testing::Test {
 
     content->resize(file_size);
     StringPiece result;
-    TF_RETURN_IF_ERROR(reader->Read(0, file_size, &result, &(*content)[0]));
+    TF_RETURN_IF_ERROR(
+        reader->Read(0, file_size, &result, gtl::string_as_array(content)));
     if (file_size != result.size()) {
       return errors::DataLoss("expected ", file_size, " got ", result.size(),
                               " bytes");
@@ -77,13 +78,14 @@ TEST_F(S3FileSystemTest, NewRandomAccessFile) {
   string got;
   got.resize(content.size());
   StringPiece result;
-  TF_EXPECT_OK(reader->Read(0, content.size(), &result, &got[0]));
+  TF_EXPECT_OK(
+      reader->Read(0, content.size(), &result, gtl::string_as_array(&got)));
   EXPECT_EQ(content.size(), result.size());
   EXPECT_EQ(content, result);
 
   got.clear();
   got.resize(4);
-  TF_EXPECT_OK(reader->Read(2, 4, &result, &got[0]));
+  TF_EXPECT_OK(reader->Read(2, 4, &result, gtl::string_as_array(&got)));
   EXPECT_EQ(4, result.size());
   EXPECT_EQ(content.substr(2, 4), result);
 }
@@ -226,14 +228,6 @@ TEST_F(S3FileSystemTest, StatFile) {
   TF_EXPECT_OK(s3fs.Stat(fname, &stat));
   EXPECT_EQ(4, stat.length);
   EXPECT_FALSE(stat.is_directory);
-}
-
-TEST_F(S3FileSystemTest, HasAtomicMove) {
-  const string fname = TmpDir("HasAtomicMove");
-  TF_ASSERT_OK(WriteString(fname, "test"));
-  bool has_atomic_move = true;
-  TF_EXPECT_OK(s3fs.NeedsTempLocation(fname, &has_atomic_move).code());
-  EXPECT_EQ(has_atomic_move, false);
 }
 
 }  // namespace

@@ -33,28 +33,17 @@ class UnsupportedFeaturesChecker(gast.NodeVisitor):
     if (node.attr is not None
         and node.attr.startswith('__') and not node.attr.endswith('__')):
       raise errors.UnsupportedLanguageElementError(
-          'mangled names are not yet supported')
-    self.generic_visit(node)
-
-  def visit_For(self, node):
-    if node.orelse:
-      raise errors.UnsupportedLanguageElementError(
-          'for/else statement not yet supported')
-    self.generic_visit(node)
-
-  def visit_While(self, node):
-    if node.orelse:
-      raise errors.UnsupportedLanguageElementError(
-          'while/else statement not yet supported')
-    self.generic_visit(node)
+          'mangled names are not yet supported by AutoGraph')
 
   # These checks could potentially be replaced with inspect.isgeneratorfunction
   # to avoid a getsource/parse/ast-walk round trip.
   def visit_Yield(self, node):
-    raise errors.UnsupportedLanguageElementError('generators are not supported')
+    raise errors.UnsupportedLanguageElementError(
+        'generators are not supported by AutoGraph')
 
   def visit_YieldFrom(self, node):
-    raise errors.UnsupportedLanguageElementError('generators are not supported')
+    raise errors.UnsupportedLanguageElementError(
+        'generators are not supported by AutoGraph')
 
 
 def verify(node):

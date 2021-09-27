@@ -1,4 +1,4 @@
-# Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+# Copyright 2018 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ FROM ubuntu:${UBUNTU_VERSION} as base
 RUN apt-get update && apt-get install -y curl
 
 ARG USE_PYTHON_3_NOT_2
-# TODO(angerson) Completely remove Python 2 support
 ARG _PY_SUFFIX=${USE_PYTHON_3_NOT_2:+3}
 ARG PYTHON=python${_PY_SUFFIX}
 ARG PIP=pip${_PY_SUFFIX}
@@ -39,11 +38,11 @@ RUN apt-get update && apt-get install -y \
     ${PYTHON}-pip
 
 RUN ${PIP} --no-cache-dir install --upgrade \
-    "pip<20.3" \
+    pip \
     setuptools
 
 # Some TF tools expect a "python" binary
-RUN ln -s $(which ${PYTHON}) /usr/local/bin/python
+RUN ln -s $(which ${PYTHON}) /usr/local/bin/python 
 
 # Options:
 #   tensorflow
@@ -54,7 +53,7 @@ RUN ln -s $(which ${PYTHON}) /usr/local/bin/python
 # Installs the latest version by default.
 ARG TF_PACKAGE=tensorflow
 ARG TF_PACKAGE_VERSION=
-RUN ${PIP} install --no-cache-dir ${TF_PACKAGE}${TF_PACKAGE_VERSION:+==${TF_PACKAGE_VERSION}}
+RUN ${PIP} install ${TF_PACKAGE}${TF_PACKAGE_VERSION:+==${TF_PACKAGE_VERSION}}
 
 COPY bashrc /etc/bash.bashrc
 RUN chmod a+rwx /etc/bash.bashrc

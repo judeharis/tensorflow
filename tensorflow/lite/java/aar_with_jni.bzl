@@ -5,8 +5,7 @@ load("@build_bazel_rules_android//android:rules.bzl", "android_binary")
 def aar_with_jni(
         name,
         android_library,
-        headers = None,
-        flatten_headers = False):
+        headers = None):
     """Generates an Android AAR given an Android library target.
 
     Args:
@@ -17,7 +16,6 @@ def aar_with_jni(
       headers: Optional list of headers that will be included in the
           generated .aar file. This is useful for distributing self-contained
           .aars with native libs that can be used directly by native clients.
-      flatten_headers: Whether to flatten the output paths of included headers.
     """
 
     # Generate dummy AndroidManifest.xml for dummy apk usage
@@ -70,15 +68,9 @@ zip -r $$origdir/$(location :{1}.aar) jni/*/*.so
         mkdir headers
         """
         for src in headers:
-            if flatten_headers:
-                cmd += """
-                    cp -RL $$origdir/$(location {0}) headers/$$(basename $(location {0}))
-                """.format(src)
-            else:
-                cmd += """
-                    mkdir -p headers/$$(dirname $(location {0}))
-                    cp -RL $$origdir/$(location {0}) headers/$(location {0})
-                """.format(src)
+            cmd += """
+            cp -rL $$origdir/$(location {0}) headers/$$(basename $(location {0}))
+            """.format(src)
         cmd += "zip -r $$origdir/$(location :{0}.aar) headers".format(name)
 
     native.genrule(

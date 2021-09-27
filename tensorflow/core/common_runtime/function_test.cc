@@ -90,12 +90,11 @@ class FunctionTest : public ::testing::Test {
     const int version = g->versions().producer();
     LocalExecutorParams params;
     params.device = device_.get();
-    params.create_kernel =
-        [this, version](const std::shared_ptr<const NodeProperties>& props,
-                        OpKernel** kernel) {
-          return CreateNonCachedKernel(device_.get(), nullptr, props, version,
-                                       kernel);
-        };
+    params.create_kernel = [this, version](const NodeDef& ndef,
+                                           OpKernel** kernel) {
+      return CreateNonCachedKernel(device_.get(), nullptr, ndef, version,
+                                   kernel);
+    };
     params.delete_kernel = [](OpKernel* kernel) {
       DeleteNonCachedKernel(kernel);
     };
@@ -276,6 +275,7 @@ class FunctionLibraryRuntimeTest : public ::testing::Test {
       opts.runner = nullptr;
     }
     Notification done;
+    std::vector<Tensor> out;
     Status status;
     flr->Run(opts, handle, frame, [&status, &done](const Status& s) {
       status = s;
@@ -1312,7 +1312,7 @@ int GetConstantFoldingCounter() {
       return counter;
     }
   }
-  LOG(FATAL) << "Should have found a node that replaced add";
+  LOG(FATAL) << "Should have found a node that replcaed add";
 }
 
 TEST_F(FunctionLibraryRuntimeTest, OptimizeGraph) {
@@ -2129,7 +2129,7 @@ TEST(OptimizationTest, RemoveListArrayConverter) {
   }
 }
 
-TEST(OptimizationTest, RemoveListArrayConverter_WithControlDeps) {
+TEST(OptimizationTest, RemoveListArrayConverter_WithContolDeps) {
   auto func = FDH::Create(
       // Name
       "Test",

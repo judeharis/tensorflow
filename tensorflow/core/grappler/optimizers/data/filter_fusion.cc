@@ -72,12 +72,11 @@ Status FilterFusion::OptimizeAndCollectStats(Cluster* cluster,
                                              output->library());
 
   auto get_filter_node = [](const NodeDef& node) -> const NodeDef* {
-    // TODO(b/148614315): Support captured inputs.
-    if (node.op() == "FilterDataset" && node.input_size() == 1) return &node;
+    if (node.op() == "FilterDataset") return &node;
     return nullptr;
   };
 
-  auto make_fused_function =
+  auto get_fused_predicate =
       [&](const NodeDef* first_filter_node,
           const NodeDef* second_filter_node) -> FunctionDef* {
     const auto& parent_fun = first_filter_node->attr().at("predicate");
@@ -108,7 +107,7 @@ Status FilterFusion::OptimizeAndCollectStats(Cluster* cluster,
     if (!first_filter_node) continue;
 
     const auto* fused_predicate =
-        make_fused_function(first_filter_node, second_filter_node);
+        get_fused_predicate(first_filter_node, second_filter_node);
     if (!fused_predicate) continue;
     const auto* fused_filter_node = graph.AddNode(MakeFusedFilterNode(
         *first_filter_node, *second_filter_node, *fused_predicate, &graph));
@@ -116,7 +115,12 @@ Status FilterFusion::OptimizeAndCollectStats(Cluster* cluster,
     TF_RETURN_IF_ERROR(graph.UpdateFanouts(second_filter_node->name(),
                                            fused_filter_node->name()));
 
+    // TODO(prazek): we should run some optimizations on the fused filter
+    // functions, or make sure that optimization passes run after filter
+    // fusion.
     TF_RETURN_IF_ERROR(function_library.AddFunctionDef(*fused_predicate));
+    // TODO(b/116285210): we could also remove map functions from library if
+    // they are not used anymore.
     nodes_to_delete.insert(first_filter_node->name());
     nodes_to_delete.insert(second_filter_node->name());
     stats->num_changes++;

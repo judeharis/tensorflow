@@ -156,12 +156,6 @@
 // CHECK-EMPTY:
 // CHECK-NEXT:   }, {
 // CHECK-EMPTY:
-// CHECK-NEXT:   }, {
-// CHECK-NEXT:   data: [ 49, 46, 49, 52, 46, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
-// CHECK-NEXT:   } ],
-// CHECK-NEXT:   metadata: [ {
-// CHECK-NEXT:   name: "min_runtime_version",
-// CHECK-NEXT:   buffer: 11
 // CHECK-NEXT:   } ]
 // CHECK-NEXT: }
 

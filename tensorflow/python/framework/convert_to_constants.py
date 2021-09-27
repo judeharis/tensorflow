@@ -26,7 +26,6 @@ from tensorflow.core.framework import tensor_shape_pb2
 from tensorflow.core.framework import variable_pb2
 from tensorflow.core.protobuf import config_pb2
 from tensorflow.core.protobuf import meta_graph_pb2
-from tensorflow.core.protobuf import rewriter_config_pb2
 from tensorflow.python.eager import wrap_function
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import tensor_util
@@ -70,8 +69,7 @@ def disable_lower_using_switch_merge(graph_def):
   return output_graph_def
 
 
-def _run_inline_graph_optimization(func, lower_control_flow,
-                                   aggressive_inlining):
+def _run_inline_graph_optimization(func, lower_control_flow):
   """Apply function inline optimization to the graph.
 
   Returns the GraphDef after Grappler's function inlining optimization is
@@ -81,9 +79,6 @@ def _run_inline_graph_optimization(func, lower_control_flow,
     func: ConcreteFunction.
     lower_control_flow: Boolean indicating whether or not to lower control flow
       ops such as If and While. (default True)
-    aggressive_inlining: Boolean indicating whether or not to to aggressive
-      function inlining (might be unsafe if function has stateful ops not
-      properly connected to control outputs).
 
   Returns:
     GraphDef
@@ -129,9 +124,6 @@ def _run_inline_graph_optimization(func, lower_control_flow,
   rewrite_options = config.graph_options.rewrite_options
   rewrite_options.min_graph_nodes = -1  # do not skip small graphs
   rewrite_options.optimizers.append("function")
-  if aggressive_inlining:
-    rewrite_options.function_optimization =\
-      rewriter_config_pb2.RewriterConfig.AGGRESSIVE
   return tf_optimizer.OptimizeGraph(config, meta_graph)
 
 
@@ -249,7 +241,7 @@ def _get_control_flow_function_data(node_defs, tensor_data, name_to_node):
 
   def get_source_node_name_through_identities(node_name):
     # Trace the source node along with a chain of Identity nodes.
-    # For example, given Placeholder -> Identity -> Identity -> node_name
+    # For example, given Plaecholder -> Identity -> Identity -> node_name
     # The function will return the name of the Placeholder.
     while name_to_node[node_name].op == "Identity":
       node_name = _get_tensor_name(name_to_node[node_name].input[0])
@@ -412,9 +404,7 @@ def _construct_concrete_function(func, output_graph_def,
   return new_func
 
 
-def _convert_variables_to_constants_v2_impl(func,
-                                            lower_control_flow=True,
-                                            aggressive_inlining=False):
+def _convert_variables_to_constants_v2_impl(func, lower_control_flow=True):
   """Replaces all the variables in a graph with constants of the same values.
 
   TensorFlow 2.0 function for converting all Variable ops into Const ops holding
@@ -434,18 +424,13 @@ def _convert_variables_to_constants_v2_impl(func,
     func: ConcreteFunction.
     lower_control_flow: Boolean indicating whether or not to lower control flow
       ops such as If and While. (default True)
-    aggressive_inlining: Inlining functions with stateful ops might lead to
-      undefined execution if function call doesn't have an outgoing control
-      edge and control outputs (they should be added automatically in TFv2).
-      Aggressive mode disables safety checks in Grappler function optimizer.
 
   Returns:
     GraphDef containing a simplified version of the original and converted
     input indices that were converted to constants.
   """
   # Inline the graph in order to remove functions when possible.
-  graph_def = _run_inline_graph_optimization(func, lower_control_flow,
-                                             aggressive_inlining)
+  graph_def = _run_inline_graph_optimization(func, lower_control_flow)
 
   # Gets list of all node defs include those in the library.
   node_defs = _get_node_defs_list(graph_def)
@@ -514,7 +499,7 @@ def _convert_variables_to_constants_v2_impl(func,
       # Get dtype and data for non-variable Placeholders (ex. values for 1.X
       # Const ops that are loaded as Placeholders in 2.0)
       _save_placeholder(node.name, node.attr["dtype"])
-    elif node.op in ["ReadVariableOp", "ResourceGather", "ResourceGatherNd"]:
+    elif node.op in ["ReadVariableOp", "ResourceGather"]:
       # Get dtype and data for Placeholder ops associated with ReadVariableOp
       # and ResourceGather ops. There can be an Identity in between the
       # resource op and Placeholder. Store the dtype for the Identity ops.
@@ -568,15 +553,6 @@ def _convert_variables_to_constants_v2_impl(func,
       output_node.attr["Tparams"].CopyFrom(input_node.attr["dtype"])
       output_node.attr["Tindices"].CopyFrom(input_node.attr["Tindices"])
       output_node.attr["Taxis"].CopyFrom(axis_dtype)
-      if "_class" in input_node.attr:
-        output_node.attr["_class"].CopyFrom(input_node.attr["_class"])
-    elif input_node.op == "ResourceGatherNd":
-      output_node.op = "GatherNd"
-      output_node.name = input_node.name
-      output_node.input.extend(
-          [input_node.input[0], input_node.input[1]])
-      output_node.attr["Tparams"].CopyFrom(input_node.attr["dtype"])
-      output_node.attr["Tindices"].CopyFrom(input_node.attr["Tindices"])
       if "_class" in input_node.attr:
         output_node.attr["_class"].CopyFrom(input_node.attr["_class"])
     # Update the function names and argument types for the conditional ops.
@@ -650,9 +626,7 @@ def _convert_variables_to_constants_v2_impl(func,
   return (output_graph_def, converted_input_indices)
 
 
-def convert_variables_to_constants_v2(func,
-                                      lower_control_flow=True,
-                                      aggressive_inlining=False):
+def convert_variables_to_constants_v2(func, lower_control_flow=True):
   """Replaces all the variables in a graph with constants of the same values.
 
   TensorFlow 2.0 function for converting all Variable ops into Const ops holding
@@ -668,21 +642,16 @@ def convert_variables_to_constants_v2(func,
     func: ConcreteFunction.
     lower_control_flow: Boolean indicating whether or not to lower control flow
       ops such as If and While. (default True)
-    aggressive_inlining: Boolean indicating whether or not to to aggressive
-      function inlining (might be unsafe if function has stateful ops, not
-      properly connected to control outputs). (default False)
 
   Returns:
     ConcreteFunction containing a simplified version of the original.
   """
   output_graph_def, converted_inputs = _convert_variables_to_constants_v2_impl(
-      func, lower_control_flow, aggressive_inlining)
+      func, lower_control_flow)
   return _construct_concrete_function(func, output_graph_def, converted_inputs)
 
 
-def convert_variables_to_constants_v2_as_graph(func,
-                                               lower_control_flow=True,
-                                               aggressive_inlining=False):
+def convert_variables_to_constants_v2_as_graph(func, lower_control_flow=True):
   """Replaces all the variables in a graph with constants of the same values.
 
   This function works as same as convert_variables_to_constants_v2, but it
@@ -693,9 +662,6 @@ def convert_variables_to_constants_v2_as_graph(func,
     func: ConcreteFunction.
     lower_control_flow: Boolean indicating whether or not to lower control flow
       ops such as If and While. (default True)
-    aggressive_inlining: Boolean indicating whether or not to to aggressive
-      function inlining (might be unsafe if function has stateful ops, not
-      properly connected to control outputs).
 
   Returns:
     ConcreteFunction containing a simplified version of the original, and also
@@ -703,6 +669,6 @@ def convert_variables_to_constants_v2_as_graph(func,
     transformations in the frozen phase.
   """
   graph_def, converted_inputs = _convert_variables_to_constants_v2_impl(
-      func, lower_control_flow, aggressive_inlining)
+      func, lower_control_flow)
   frozen_func = _construct_concrete_function(func, graph_def, converted_inputs)
   return frozen_func, graph_def

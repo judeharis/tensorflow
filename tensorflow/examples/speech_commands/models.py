@@ -187,7 +187,7 @@ def create_single_fc_model(fingerprint_input, model_settings, is_training):
     placeholder.
   """
   if is_training:
-    dropout_rate = tf.compat.v1.placeholder(tf.float32, name='dropout_rate')
+    dropout_prob = tf.compat.v1.placeholder(tf.float32, name='dropout_prob')
   fingerprint_size = model_settings['fingerprint_size']
   label_count = model_settings['label_count']
   weights = tf.compat.v1.get_variable(
@@ -199,7 +199,7 @@ def create_single_fc_model(fingerprint_input, model_settings, is_training):
                                    shape=[label_count])
   logits = tf.matmul(fingerprint_input, weights) + bias
   if is_training:
-    return logits, dropout_rate
+    return logits, dropout_prob
   else:
     return logits
 
@@ -253,7 +253,7 @@ def create_conv_model(fingerprint_input, model_settings, is_training):
     placeholder.
   """
   if is_training:
-    dropout_rate = tf.compat.v1.placeholder(tf.float32, name='dropout_rate')
+    dropout_prob = tf.compat.v1.placeholder(tf.float32, name='dropout_prob')
   input_frequency_size = model_settings['fingerprint_width']
   input_time_size = model_settings['spectrogram_length']
   fingerprint_4d = tf.reshape(fingerprint_input,
@@ -276,7 +276,7 @@ def create_conv_model(fingerprint_input, model_settings, is_training):
                             padding='SAME') + first_bias
   first_relu = tf.nn.relu(first_conv)
   if is_training:
-    first_dropout = tf.nn.dropout(first_relu, rate=dropout_rate)
+    first_dropout = tf.nn.dropout(first_relu, 1 - (dropout_prob))
   else:
     first_dropout = first_relu
   max_pool = tf.nn.max_pool2d(input=first_dropout,
@@ -303,7 +303,7 @@ def create_conv_model(fingerprint_input, model_settings, is_training):
                              padding='SAME') + second_bias
   second_relu = tf.nn.relu(second_conv)
   if is_training:
-    second_dropout = tf.nn.dropout(second_relu, rate=dropout_rate)
+    second_dropout = tf.compat.v1.nn.dropout(second_relu, dropout_prob)
   else:
     second_dropout = second_relu
   second_conv_shape = second_dropout.get_shape()
@@ -325,7 +325,7 @@ def create_conv_model(fingerprint_input, model_settings, is_training):
       shape=[label_count])
   final_fc = tf.matmul(flattened_second_conv, final_fc_weights) + final_fc_bias
   if is_training:
-    return final_fc, dropout_rate
+    return final_fc, dropout_prob
   else:
     return final_fc
 
@@ -377,7 +377,7 @@ def create_low_latency_conv_model(fingerprint_input, model_settings,
     placeholder.
   """
   if is_training:
-    dropout_rate = tf.compat.v1.placeholder(tf.float32, name='dropout_rate')
+    dropout_prob = tf.compat.v1.placeholder(tf.float32, name='dropout_prob')
   input_frequency_size = model_settings['fingerprint_width']
   input_time_size = model_settings['spectrogram_length']
   fingerprint_4d = tf.reshape(fingerprint_input,
@@ -402,7 +402,7 @@ def create_low_latency_conv_model(fingerprint_input, model_settings,
       padding='VALID') + first_bias
   first_relu = tf.nn.relu(first_conv)
   if is_training:
-    first_dropout = tf.nn.dropout(first_relu, rate=dropout_rate)
+    first_dropout = tf.nn.dropout(first_relu, 1 - (dropout_prob))
   else:
     first_dropout = first_relu
   first_conv_output_width = math.floor(
@@ -426,7 +426,7 @@ def create_low_latency_conv_model(fingerprint_input, model_settings,
       shape=[first_fc_output_channels])
   first_fc = tf.matmul(flattened_first_conv, first_fc_weights) + first_fc_bias
   if is_training:
-    second_fc_input = tf.nn.dropout(first_fc, rate=dropout_rate)
+    second_fc_input = tf.nn.dropout(first_fc, 1 - (dropout_prob))
   else:
     second_fc_input = first_fc
   second_fc_output_channels = 128
@@ -440,7 +440,7 @@ def create_low_latency_conv_model(fingerprint_input, model_settings,
       shape=[second_fc_output_channels])
   second_fc = tf.matmul(second_fc_input, second_fc_weights) + second_fc_bias
   if is_training:
-    final_fc_input = tf.nn.dropout(second_fc, rate=dropout_rate)
+    final_fc_input = tf.nn.dropout(second_fc, 1 - (dropout_prob))
   else:
     final_fc_input = second_fc
   label_count = model_settings['label_count']
@@ -454,7 +454,7 @@ def create_low_latency_conv_model(fingerprint_input, model_settings,
       shape=[label_count])
   final_fc = tf.matmul(final_fc_input, final_fc_weights) + final_fc_bias
   if is_training:
-    return final_fc, dropout_rate
+    return final_fc, dropout_prob
   else:
     return final_fc
 
@@ -515,7 +515,7 @@ def create_low_latency_svdf_model(fingerprint_input, model_settings,
       ValueError: If the inputs tensor is incorrectly shaped.
   """
   if is_training:
-    dropout_rate = tf.compat.v1.placeholder(tf.float32, name='dropout_rate')
+    dropout_prob = tf.compat.v1.placeholder(tf.float32, name='dropout_prob')
 
   input_frequency_size = model_settings['fingerprint_width']
   input_time_size = model_settings['spectrogram_length']
@@ -525,12 +525,12 @@ def create_low_latency_svdf_model(fingerprint_input, model_settings,
   if len(input_shape) != 2:
     raise ValueError('Inputs to `SVDF` should have rank == 2.')
   if input_shape[-1].value is None:
-    raise ValueError('The last dimension of the input to `SVDF` '
+    raise ValueError('The last dimension of the inputs to `SVDF` '
                      'should be defined. Found `None`.')
   if input_shape[-1].value % input_frequency_size != 0:
-    raise ValueError('The last dimension of the input to `SVDF` = {0} must be '
-                     'a multiple of the frame size = {1}'.format(
-                         input_shape.shape[-1].value, input_frequency_size))
+    raise ValueError('Inputs feature dimension %d must be a multiple of '
+                     'frame size %d', fingerprint_input.shape[-1].value,
+                     input_frequency_size)
 
   # Set number of units (i.e. nodes) and rank.
   rank = 2
@@ -545,7 +545,9 @@ def create_low_latency_svdf_model(fingerprint_input, model_settings,
       trainable=False,
       name='runtime-memory')
   first_time_flag = tf.compat.v1.get_variable(
-      name='first_time_flag', dtype=tf.int32, initializer=1)
+      name="first_time_flag",
+      dtype=tf.int32,
+      initializer=1)
   # Determine the number of new frames in the input, such that we only operate
   # on those. For training we do not use the memory, and thus use all frames
   # provided in the input.
@@ -622,7 +624,7 @@ def create_low_latency_svdf_model(fingerprint_input, model_settings,
   first_relu = tf.nn.relu(first_bias)
 
   if is_training:
-    first_dropout = tf.nn.dropout(first_relu, rate=dropout_rate)
+    first_dropout = tf.nn.dropout(first_relu, 1 - (dropout_prob))
   else:
     first_dropout = first_relu
 
@@ -637,7 +639,7 @@ def create_low_latency_svdf_model(fingerprint_input, model_settings,
       shape=[first_fc_output_channels])
   first_fc = tf.matmul(first_dropout, first_fc_weights) + first_fc_bias
   if is_training:
-    second_fc_input = tf.nn.dropout(first_fc, rate=dropout_rate)
+    second_fc_input = tf.nn.dropout(first_fc, 1 - (dropout_prob))
   else:
     second_fc_input = first_fc
   second_fc_output_channels = 256
@@ -651,7 +653,7 @@ def create_low_latency_svdf_model(fingerprint_input, model_settings,
       shape=[second_fc_output_channels])
   second_fc = tf.matmul(second_fc_input, second_fc_weights) + second_fc_bias
   if is_training:
-    final_fc_input = tf.nn.dropout(second_fc, rate=dropout_rate)
+    final_fc_input = tf.nn.dropout(second_fc, 1 - (dropout_prob))
   else:
     final_fc_input = second_fc
   label_count = model_settings['label_count']
@@ -665,7 +667,7 @@ def create_low_latency_svdf_model(fingerprint_input, model_settings,
       shape=[label_count])
   final_fc = tf.matmul(final_fc_input, final_fc_weights) + final_fc_bias
   if is_training:
-    return final_fc, dropout_rate
+    return final_fc, dropout_prob
   else:
     return final_fc
 
@@ -710,7 +712,7 @@ def create_tiny_conv_model(fingerprint_input, model_settings, is_training):
     placeholder.
   """
   if is_training:
-    dropout_rate = tf.compat.v1.placeholder(tf.float32, name='dropout_rate')
+    dropout_prob = tf.compat.v1.placeholder(tf.float32, name='dropout_prob')
   input_frequency_size = model_settings['fingerprint_width']
   input_time_size = model_settings['spectrogram_length']
   fingerprint_4d = tf.reshape(fingerprint_input,
@@ -734,7 +736,7 @@ def create_tiny_conv_model(fingerprint_input, model_settings, is_training):
       padding='SAME') + first_bias
   first_relu = tf.nn.relu(first_conv)
   if is_training:
-    first_dropout = tf.nn.dropout(first_relu, rate=dropout_rate)
+    first_dropout = tf.nn.dropout(first_relu, 1 - (dropout_prob))
   else:
     first_dropout = first_relu
   first_dropout_shape = first_dropout.get_shape()
@@ -757,7 +759,7 @@ def create_tiny_conv_model(fingerprint_input, model_settings, is_training):
   final_fc = (
       tf.matmul(flattened_first_dropout, final_fc_weights) + final_fc_bias)
   if is_training:
-    return final_fc, dropout_rate
+    return final_fc, dropout_prob
   else:
     return final_fc
 
@@ -815,7 +817,7 @@ def create_tiny_embedding_conv_model(fingerprint_input, model_settings,
     placeholder.
   """
   if is_training:
-    dropout_rate = tf.compat.v1.placeholder(tf.float32, name='dropout_rate')
+    dropout_prob = tf.compat.v1.placeholder(tf.float32, name='dropout_prob')
   input_frequency_size = model_settings['fingerprint_width']
   input_time_size = model_settings['spectrogram_length']
   fingerprint_4d = tf.reshape(fingerprint_input,
@@ -841,7 +843,7 @@ def create_tiny_embedding_conv_model(fingerprint_input, model_settings,
       padding='SAME') + first_bias
   first_relu = tf.nn.relu(first_conv)
   if is_training:
-    first_dropout = tf.nn.dropout(first_relu, rate=dropout_rate)
+    first_dropout = tf.nn.dropout(first_relu, 1 - (dropout_prob))
 
   else:
     first_dropout = first_relu
@@ -868,7 +870,7 @@ def create_tiny_embedding_conv_model(fingerprint_input, model_settings,
       padding='SAME') + second_bias
   second_relu = tf.nn.relu(second_conv)
   if is_training:
-    second_dropout = tf.nn.dropout(second_relu, rate=dropout_rate)
+    second_dropout = tf.nn.dropout(second_relu, 1 - (dropout_prob))
   else:
     second_dropout = second_relu
 
@@ -892,6 +894,6 @@ def create_tiny_embedding_conv_model(fingerprint_input, model_settings,
   final_fc = (
       tf.matmul(flattened_second_dropout, final_fc_weights) + final_fc_bias)
   if is_training:
-    return final_fc, dropout_rate
+    return final_fc, dropout_prob
   else:
     return final_fc

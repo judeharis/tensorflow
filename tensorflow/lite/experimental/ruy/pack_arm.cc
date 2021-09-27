@@ -14,11 +14,11 @@ limitations under the License.
 ==============================================================================*/
 #include <cstdint>
 
+#include "profiling/instrumentation.h"
 #include "tensorflow/lite/experimental/ruy/common.h"
 #include "tensorflow/lite/experimental/ruy/opt_set.h"
 #include "tensorflow/lite/experimental/ruy/pack.h"
 #include "tensorflow/lite/experimental/ruy/platform.h"
-#include "tensorflow/lite/experimental/ruy/profiler/instrumentation.h"
 
 namespace ruy {
 
@@ -30,7 +30,8 @@ void Pack8bitNeonOutOfOrder(const void* src_ptr0, const void* src_ptr1,
                             int src_inc3, int src_rows, int src_zero_point,
                             std::int8_t* packed_ptr, int start_col, int end_col,
                             std::int32_t* sums_ptr, int input_xor) {
-  profiler::ScopeLabel label("Pack (kNeon, optimized for out-of-order cores)");
+  gemmlowp::ScopedProfilingLabel label(
+      "Pack (kNeon, optimized for out-of-order cores)");
   asm volatile(
       // clang-format off
           "dup v26.16b, %w[input_xor]\n"
@@ -224,7 +225,8 @@ void CheckOffsetsInPackParams8bit(const Params&) {
 // No attempt made at making this code efficient on in-order cores yet.
 void Pack8bitNeonOutOfOrder4Cols(const PackParams8bit& params) {
   CheckOffsetsInPackParams8bit(params);
-  profiler::ScopeLabel label("Pack (kNeon, optimized for out-of-order cores)");
+  gemmlowp::ScopedProfilingLabel label(
+      "Pack (kNeon, optimized for out-of-order cores)");
   const void* src_ptr0 = params.src_ptr0;
   const void* src_ptr1 = params.src_ptr1;
   const void* src_ptr2 = params.src_ptr2;
@@ -258,12 +260,12 @@ void Pack8bitNeonOutOfOrder4Cols(const PackParams8bit& params) {
           /* Load q0 */
           "vld1.8 {d0, d1}, [%[src_ptr0]]\n"
           "add %[src_ptr0], %[src_ptr0], %[src_inc0]\n"
-          RUY_PREFETCH_LOAD("pld [%[src_ptr0]]\n")
+          RUY_PREFETCH("pld [%[src_ptr0]]\n")
 
           /* Load q1 */
           "vld1.8 {d2, d3}, [%[src_ptr1]]\n"
           "add %[src_ptr1], %[src_ptr1], %[src_inc1]\n"
-          RUY_PREFETCH_LOAD("pld [%[src_ptr1]]\n")
+          RUY_PREFETCH("pld [%[src_ptr1]]\n")
 
           "veor.8 q4, q0, q11\n"
           "veor.8 q5, q1, q11\n"
@@ -283,11 +285,11 @@ void Pack8bitNeonOutOfOrder4Cols(const PackParams8bit& params) {
           // Now do the same for src_ptr2 and src_ptr3.
           "vld1.8 {d0, d1}, [%[src_ptr2]]\n"
           "add %[src_ptr2], %[src_ptr2], %[src_inc2]\n"
-          RUY_PREFETCH_LOAD("pld [%[src_ptr2]]\n")
+          RUY_PREFETCH("pld [%[src_ptr2]]\n")
 
           "vld1.8 {d2, d3}, [%[src_ptr3]]\n"
           "add %[src_ptr3], %[src_ptr3], %[src_inc3]\n"
-          RUY_PREFETCH_LOAD("pld [%[src_ptr3]]\n")
+          RUY_PREFETCH("pld [%[src_ptr3]]\n")
 
           "veor.8 q4, q0, q11\n"
           "veor.8 q5, q1, q11\n"
@@ -449,7 +451,8 @@ void Pack8bitNeonOutOfOrder4Cols(const PackParams8bit& params) {
 // at a time.
 void Pack8bitNeonOutOfOrder2Cols(const PackParams8bit& params) {
   CheckOffsetsInPackParams8bit(params);
-  profiler::ScopeLabel label("Pack (kNeon, optimized for out-of-order cores)");
+  gemmlowp::ScopedProfilingLabel label(
+      "Pack (kNeon, optimized for out-of-order cores)");
   const void* src_ptr0 = params.src_ptr0;
   const void* src_ptr1 = params.src_ptr1;
   const int src_inc0 = params.src_inc0;
@@ -606,7 +609,8 @@ void Pack8bitNeonInOrder(const void* src_ptr0, const void* src_ptr1,
                          int src_rows, int src_zero_point,
                          std::int8_t* packed_ptr, int start_col, int end_col,
                          std::int32_t* sums_ptr, int input_xor) {
-  profiler::ScopeLabel label("Pack (kNeon, optimized for in-order cores)");
+  gemmlowp::ScopedProfilingLabel label(
+      "Pack (kNeon, optimized for in-order cores)");
   asm volatile(
           // clang-format off
           "dup v26.16b, %w[input_xor]\n"
@@ -627,18 +631,18 @@ void Pack8bitNeonInOrder(const void* src_ptr0, const void* src_ptr1,
           "ld1 {v2.8b}, [%[src_ptr2]], %[src_inc2]\n"
           "ldr x13, [%[src_ptr3], #8]\n"
           "ld1 {v3.8b}, [%[src_ptr3]], %[src_inc3]\n"
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr0], #64]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr1], #64]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr2], #64]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr3], #64]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr0], #128]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr1], #128]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr2], #128]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr3], #128]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr0], #192]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr1], #192]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr2], #192]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr3], #192]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr0], #64]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr1], #64]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr2], #64]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr3], #64]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr0], #128]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr1], #128]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr2], #128]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr3], #128]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr0], #192]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr1], #192]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr2], #192]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr3], #192]\n")
           "add w1, w1, #16\n"
           "cmp w1, w2\n"
 
@@ -671,15 +675,15 @@ void Pack8bitNeonInOrder(const void* src_ptr0, const void* src_ptr1,
           "saddlp v19.8h, v7.16b\n"
           "str q7, [%[packed_ptr], #48]\n"
           "sadalp v28.4s, v16.8h\n"
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr0], #240]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr0], #240]\n")
           "cmp w1, w2\n"
           "sadalp v29.4s, v17.8h\n"
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr1], #240]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr1], #240]\n")
           "add %[packed_ptr], %[packed_ptr], #64\n"
           "sadalp v30.4s, v18.8h\n"
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr2], #240]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr2], #240]\n")
           "sadalp v31.4s, v19.8h\n"
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr3], #240]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr3], #240]\n")
 
           "bne 1b\n"
 
@@ -796,7 +800,7 @@ void Pack8bitNeonDotprodInOrder(const void* src_ptr0, const void* src_ptr1,
                                 std::int8_t* packed_ptr, int start_col,
                                 int end_col, std::int32_t* sums_ptr,
                                 int input_xor) {
-  profiler::ScopeLabel label(
+  gemmlowp::ScopedProfilingLabel label(
       "Pack (kNeonDotprod, optimized for in-order cores)");
   asm volatile(
           // clang-format off
@@ -820,18 +824,18 @@ void Pack8bitNeonDotprodInOrder(const void* src_ptr0, const void* src_ptr1,
           "ld1 {v2.8b}, [%[src_ptr2]], %[src_inc2]\n"
           "ldr x13, [%[src_ptr3], #8]\n"
           "ld1 {v3.8b}, [%[src_ptr3]], %[src_inc3]\n"
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr0], #64]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr1], #64]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr2], #64]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr3], #64]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr0], #128]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr1], #128]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr2], #128]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr3], #128]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr0], #192]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr1], #192]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr2], #192]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr3], #192]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr0], #64]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr1], #64]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr2], #64]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr3], #64]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr0], #128]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr1], #128]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr2], #128]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr3], #128]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr0], #192]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr1], #192]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr2], #192]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr3], #192]\n")
           "add w1, w1, #16\n"
           "cmp w1, w2\n"
 
@@ -858,13 +862,13 @@ void Pack8bitNeonDotprodInOrder(const void* src_ptr0, const void* src_ptr1,
           "ld1 {v3.8b}, [%[src_ptr3]], %[src_inc3]\n"
 
           "trn1 v16.4s, v4.4s, v5.4s\n"
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr0], #240]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr0], #240]\n")
           "trn2 v17.4s, v4.4s, v5.4s\n"
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr1], #240]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr1], #240]\n")
           "trn1 v18.4s, v6.4s, v7.4s\n"
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr2], #240]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr2], #240]\n")
           "trn2 v19.4s, v6.4s, v7.4s\n"
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr3], #240]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr3], #240]\n")
 
           "trn1 v20.2d, v16.2d, v18.2d\n"
           "trn2 v22.2d, v16.2d, v18.2d\n"
@@ -1012,7 +1016,7 @@ void Pack8bitNeonDotprodOutOfOrder(const void* src_ptr0, const void* src_ptr1,
                                    int src_zero_point, std::int8_t* packed_ptr,
                                    int start_col, int end_col,
                                    std::int32_t* sums_ptr, int input_xor) {
-  profiler::ScopeLabel label(
+  gemmlowp::ScopedProfilingLabel label(
       "Pack (kNeonDotprod, optimized for out-of-order cores)");
   asm volatile(
       // clang-format off
@@ -1469,7 +1473,8 @@ void PackFloatNeonOutOfOrder(const float* src_ptr0, const float* src_ptr1,
                              int src_inc0, int src_inc1, int src_inc2,
                              int src_inc3, int src_rows, int src_zero_point,
                              float* packed_ptr, int start_col, int end_col) {
-  profiler::ScopeLabel label("Pack (kNeon, optimized for out-of-order cores)");
+  gemmlowp::ScopedProfilingLabel label(
+      "Pack (kNeon, optimized for out-of-order cores)");
   asm volatile(
       // clang-format off
           "mov w1, #0\n"
@@ -1604,7 +1609,8 @@ void PackFloatNeonOutOfOrder(const float* src_ptr0, const float* src_ptr1,
                              int src_inc, int src_rows, int src_zero_point,
                              float* packed_ptr, int start_col, int end_col,
                              int output_stride) {
-  profiler::ScopeLabel label("Pack (kNeon, optimized for out-of-order cores)");
+  gemmlowp::ScopedProfilingLabel label(
+      "Pack (kNeon, optimized for out-of-order cores)");
   asm volatile(
       // clang-format off
           "mov r1, #0\n"
@@ -1785,7 +1791,8 @@ void PackFloatNeonInOrder(const float* src_ptr0, const float* src_ptr1,
                           int src_inc0, int src_inc1, int src_inc2,
                           int src_inc3, int src_rows, int src_zero_point,
                           float* packed_ptr, int start_col, int end_col) {
-  profiler::ScopeLabel label("Pack (kNeon, optimized for in-order cores)");
+  gemmlowp::ScopedProfilingLabel label(
+      "Pack (kNeon, optimized for in-order cores)");
 
   asm volatile(
           // clang-format off
@@ -1798,18 +1805,18 @@ void PackFloatNeonInOrder(const float* src_ptr0, const float* src_ptr1,
           "ld1 {v1.4s}, [%[src_ptr1]], %[src_inc1]\n"
           "ld1 {v2.4s}, [%[src_ptr2]], %[src_inc2]\n"
           "ld1 {v3.4s}, [%[src_ptr3]], %[src_inc3]\n"
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr0], #64]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr1], #64]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr2], #64]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr3], #64]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr0], #128]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr1], #128]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr2], #128]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr3], #128]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr0], #192]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr1], #192]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr2], #192]\n")
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr3], #192]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr0], #64]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr1], #64]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr2], #64]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr3], #64]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr0], #128]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr1], #128]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr2], #128]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr3], #128]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr0], #192]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr1], #192]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr2], #192]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr3], #192]\n")
           "add w1, w1, #4\n"
           "cmp w1, w2\n"
 
@@ -1820,16 +1827,16 @@ void PackFloatNeonInOrder(const float* src_ptr0, const float* src_ptr1,
 
           "ldr x10, [%[src_ptr0], #8]\n"
           "trn1 v16.4s, v0.4s, v1.4s\n"
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr0], #240]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr0], #240]\n")
           "ldr x11, [%[src_ptr1], #8]\n"
           "trn2 v17.4s, v0.4s, v1.4s\n"
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr1], #240]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr1], #240]\n")
           "ldr x12, [%[src_ptr2], #8]\n"
           "trn1 v18.4s, v2.4s, v3.4s\n"
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr2], #240]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr2], #240]\n")
           "ldr x13, [%[src_ptr3], #8]\n"
           "trn2 v19.4s, v2.4s, v3.4s\n"
-          RUY_PREFETCH_LOAD("prfm pldl1strm, [%[src_ptr3], #240]\n")
+          RUY_PREFETCH("prfm pldl1strm, [%[src_ptr3], #240]\n")
 
           "ld1 {v0.2s}, [%[src_ptr0]], %[src_inc0]\n"
           "trn1 v20.2d, v16.2d, v18.2d\n"

@@ -19,15 +19,14 @@ limitations under the License.
 #include <utility>
 
 #include "llvm/Support/ToolOutputFile.h"
-#include "mlir/IR/MLIRContext.h"  // TF:llvm-project
-#include "mlir/IR/Module.h"  // TF:llvm-project
-#include "mlir/Pass/Pass.h"  // TF:llvm-project
-#include "mlir/Support/FileUtilities.h"  // TF:llvm-project
-#include "mlir/Transforms/ViewOpGraph.h"  // TF:llvm-project
+#include "mlir/IR/MLIRContext.h"  // TF:local_config_mlir
+#include "mlir/IR/Module.h"  // TF:local_config_mlir
+#include "mlir/Pass/Pass.h"  // TF:local_config_mlir
+#include "mlir/Support/FileUtilities.h"  // TF:local_config_mlir
+#include "mlir/Transforms/ViewOpGraph.h"  // TF:local_config_mlir
 #include "tensorflow/compiler/mlir/lite/common/tfl_pass_config.h"
 #include "tensorflow/compiler/mlir/lite/tf_tfl_passes.h"
 #include "tensorflow/compiler/mlir/lite/tf_to_tfl_flatbuffer.h"
-#include "tensorflow/compiler/mlir/lite/transforms/passes.h"
 #include "tensorflow/compiler/mlir/tensorflow/translate/import_model.h"
 #include "tensorflow/compiler/mlir/tensorflow/translate/mlir_roundtrip_flags.h"
 #include "tensorflow/core/framework/graph.pb.h"
@@ -58,45 +57,8 @@ const char kDetectionPostProcessOp[] =
     "type: 'int'} attr : { name: 'max_detections' type: 'int'} attr : { "
     "name: 'nms_iou_threshold' type: 'float'} attr : { name: "
     "'nms_score_threshold' type: 'float'} attr : { name: 'num_classes' type: "
-    "'int'} attr : { name: 'w_scale' type: 'float'} attr : { name: 'x_scale' "
-    "type: 'float'} attr : { name: 'y_scale' type: 'float'} attr { name: "
-    "'detections_per_class' type: 'int' default_value { i : 100 }} attr { "
-    "name: 'use_regular_nms' type: 'bool' default_value { b : false }}";
-
-const char kUnidirectionalSequenceLstmOp[] =
-    "name: 'UnidirectionalSequenceLstm' input_arg: {name: 'Input' type: "
-    "DT_FLOAT} input_arg: { name: 'InputToInputWeights' type: DT_FLOAT } "
-    "input_arg: { name: 'InputToForgetWeights' type: DT_FLOAT } input_arg: { "
-    "name: 'InputToCellWeights' type: DT_FLOAT} input_arg: { name: "
-    "'InputToOutputWeights' type: DT_FLOAT } input_arg: { name: "
-    "'RecurrentToInputWeights' type: DT_FLOAT} input_arg: { name: "
-    "'RecurrentToForgetWeights' type: DT_FLOAT} input_arg: { name: "
-    "'RecurrentToCellWeights' type: DT_FLOAT } input_arg: { name: "
-    "'RecurrentToOutputWeights' type: DT_FLOAT } input_arg: { name: "
-    "'CellToInputWeights' type: DT_FLOAT} input_arg: { name: "
-    "'CellToForgetWeights' type: DT_FLOAT } input_arg: { name: "
-    "'CellToOutputWeights' type: DT_FLOAT } input_arg: { name: 'InputGateBias' "
-    "type: DT_FLOAT } input_arg: { name: 'ForgetGateBias' type: DT_FLOAT } "
-    "input_arg: { name: 'kCellGateBias' type: DT_FLOAT } input_arg: { name: "
-    "'OutputGateBias' type: DT_FLOAT } input_arg: { name: 'ProjectionWeights' "
-    "type: DT_FLOAT } input_arg: { name: 'ProjectionBias' type: DT_FLOAT } "
-    "input_arg: { name: 'InputActivationState' type: DT_FLOAT} input_arg: { "
-    "name: 'InputCellStateTensor' type: DT_FLOAT } "
-    "output_arg: { name: 'Concat' type: DT_FLOAT} "
-    "output_arg: { name: "
-    "'LastState' type: DT_FLOAT } output_arg: { name: 'Output' type: DT_FLOAT} "
-    "attr : { name: '_tflite_input_indices' type: 'list(int)'}";
-
-const char kUnidirectionalSequenceRnnOp[] =
-    "name: 'UnidirectionalSequenceRnn' input_arg: {name: 'Input' type: "
-    "DT_FLOAT} input_arg: { name: 'Weights' type: DT_FLOAT } "
-    "input_arg: { name: 'RecurrentWeights' type: DT_FLOAT } input_arg: { "
-    "name: 'Bias' type: DT_FLOAT} "
-    "input_arg: { name: 'HiddenState' type: DT_FLOAT} "
-    "output_arg: { name: "
-    "'LastState' type: DT_FLOAT } output_arg: { name: 'Output' type: "
-    "DT_FLOAT} "
-    "attr : { name: '_tflite_input_indices' type: 'list(int)'}";
+    "'int'} attr : { name: 'w_scale' type: 'int'} attr : { name: 'x_scale' "
+    "type: 'int'} attr : { name: 'y_scale' type: 'int'}";
 
 // Converts the toco::IODataType to tensorflow::DataType. Only contains the
 // conversion mapping for constants defined in TFLite Python API.
@@ -143,6 +105,9 @@ void WarningUnusedFlags(const toco::ModelFlags& model_flags,
   if (toco_flags.output_format()) {
     LOG(WARNING) << "Ignored output_format.";
   }
+  if (toco_flags.default_ranges_min() || toco_flags.default_ranges_max()) {
+    LOG(WARNING) << "Ignored default_ranges_stats.";
+  }
   if (toco_flags.drop_control_dependency()) {
     LOG(WARNING) << "Ignored drop_control_dependency.";
   }
@@ -184,9 +149,10 @@ Status RegisterCustomBuiltinOps(const std::vector<string> extra_tf_opdefs) {
       return errors::InvalidArgument("fail to parse extra OpDef");
     }
     // Make sure the op is not already registered. If registered continue.
-    const OpRegistrationData* op_reg =
-        tensorflow::OpRegistry::Global()->LookUp(opdef.name());
-    if (op_reg) continue;
+    const OpRegistrationData* op_reg = nullptr;
+    auto status =
+        tensorflow::OpRegistry::Global()->LookUp(opdef.name(), &op_reg);
+    if (status.ok()) continue;
 
     tensorflow::OpRegistry::Global()->Register(
         [opdef](tensorflow::OpRegistrationData* op_reg_data) -> Status {
@@ -275,13 +241,6 @@ Status ConvertGraphDefToTFLiteFlatBuffer(const toco::ModelFlags& model_flags,
       tensorflow::ParseOutputArrayInfo(output_arrays, &specs.outputs));
 
   // Other flags.
-  if (toco_flags.has_default_ranges_min()) {
-    quant_specs.default_ranges.first = toco_flags.default_ranges_min();
-  }
-  if (toco_flags.has_default_ranges_max()) {
-    quant_specs.default_ranges.second = toco_flags.default_ranges_max();
-  }
-
   bool emit_builtin_tflite_ops = !toco_flags.force_select_tf_ops();
   bool emit_select_tf_ops = toco_flags.enable_select_tf_ops();
   bool emit_custom_ops = toco_flags.allow_custom_ops();
@@ -295,8 +254,6 @@ Status ConvertGraphDefToTFLiteFlatBuffer(const toco::ModelFlags& model_flags,
   std::vector<string> extra_tf_opdefs(toco_flags.custom_opdefs().begin(),
                                       toco_flags.custom_opdefs().end());
   extra_tf_opdefs.push_back(kDetectionPostProcessOp);
-  extra_tf_opdefs.push_back(kUnidirectionalSequenceLstmOp);
-  extra_tf_opdefs.push_back(kUnidirectionalSequenceRnnOp);
   TF_RETURN_IF_ERROR(RegisterCustomBuiltinOps(extra_tf_opdefs));
 
   TF_ASSIGN_OR_RETURN(
@@ -315,15 +272,11 @@ Status ConvertGraphDefToTFLiteFlatBuffer(const toco::ModelFlags& model_flags,
   pass_config.lower_tensor_list_ops = true;
 
   tensorflow::AddTFToTFLConversionPasses(pass_config, &pm);
-  // Convert back to outlined while format for export back to flatbuffer.
-  if (pass_config.legalize_tf_while) {
-    pm.addPass(mlir::TFL::CreateWhileOutlinePass());
-  }
-  pm.addPass(mlir::TFL::CreateRuntimeTypeVerifyPass());
 
   auto status = ConvertTFExecutorToTFLOrFlatbuffer(
       module.get(), /*export_to_mlir=*/false, emit_builtin_tflite_ops,
       emit_select_tf_ops, emit_custom_ops, quant_specs, result, &pm);
+
   if (toco_flags.has_dump_graphviz_dir()) {
     TF_RETURN_IF_ERROR(DumpOpGraphToFile(
         // rename once we enable the new converter feature flag.

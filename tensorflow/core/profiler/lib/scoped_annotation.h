@@ -21,11 +21,8 @@ limitations under the License.
 
 #include "absl/strings/string_view.h"
 #include "tensorflow/core/platform/macros.h"
-#include "tensorflow/core/platform/platform.h"
 #include "tensorflow/core/platform/types.h"
-#if !defined(IS_MOBILE_PLATFORM)
 #include "tensorflow/core/profiler/internal/annotation_stack.h"
-#endif
 
 namespace tensorflow {
 namespace profiler {
@@ -42,39 +39,31 @@ namespace profiler {
 class ScopedAnnotation {
  public:
   explicit ScopedAnnotation(absl::string_view name) {
-#if !defined(IS_MOBILE_PLATFORM)
     if (TF_PREDICT_FALSE(AnnotationStack::IsEnabled())) {
       old_length_ = AnnotationStack::PushAnnotation(name);
     }
-#endif
   }
 
   explicit ScopedAnnotation(const char* name)
       : ScopedAnnotation(absl::string_view(name)) {}
 
   explicit ScopedAnnotation(const string& name) {
-#if !defined(IS_MOBILE_PLATFORM)
     if (TF_PREDICT_FALSE(AnnotationStack::IsEnabled())) {
       old_length_ = AnnotationStack::PushAnnotation(name);
     }
-#endif
   }
 
   explicit ScopedAnnotation(string&& name) {
-#if !defined(IS_MOBILE_PLATFORM)
     if (TF_PREDICT_FALSE(AnnotationStack::IsEnabled())) {
       old_length_ = AnnotationStack::PushAnnotation(std::move(name));
     }
-#endif
   }
 
   template <typename NameGeneratorT>
   explicit ScopedAnnotation(NameGeneratorT name_generator) {
-#if !defined(IS_MOBILE_PLATFORM)
     if (TF_PREDICT_FALSE(AnnotationStack::IsEnabled())) {
       old_length_ = AnnotationStack::PushAnnotation(name_generator());
     }
-#endif
   }
 
   // Pops the name passed in the constructor from the current annotation.
@@ -82,20 +71,12 @@ class ScopedAnnotation {
     // TODO(b/137971921): without this memory fence, two presubmit tests will
     // fail probably due to compiler in that presubmit config.
     std::atomic_thread_fence(std::memory_order_acquire);
-#if !defined(IS_MOBILE_PLATFORM)
     if (TF_PREDICT_FALSE(old_length_ != kInvalidLength)) {
       AnnotationStack::PopAnnotation(old_length_);
     }
-#endif
   }
 
-  static bool IsEnabled() {
-#if !defined(IS_MOBILE_PLATFORM)
-    return AnnotationStack::IsEnabled();
-#else
-    return false;
-#endif
-  }
+  static bool IsEnabled() { return AnnotationStack::IsEnabled(); }
 
  private:
   // signals that annotation is disabled at the constructor.

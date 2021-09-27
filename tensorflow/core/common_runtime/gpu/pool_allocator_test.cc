@@ -13,21 +13,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#if GOOGLE_CUDA || TENSORFLOW_USE_ROCM
+#if GOOGLE_CUDA
 
 #include "tensorflow/core/common_runtime/pool_allocator.h"
 
-#include "gpu_init.h"
 #include "tensorflow/core/common_runtime/gpu/gpu_host_allocator.h"
 #include "tensorflow/core/platform/stream_executor.h"
 #include "tensorflow/core/platform/test.h"
+
 namespace tensorflow {
 namespace {
 
 TEST(PoolAllocatorTest, ZeroSizeBuffers) {
   se::Platform* platform =
-      se::MultiPlatformManager::PlatformWithName(GpuPlatformName())
-          .ValueOrDie();
+      se::MultiPlatformManager::PlatformWithName("cuda").ValueOrDie();
   PoolAllocator pool(
       2 /*pool_size_limit*/, false /*auto_resize*/,
       new GpuHostAllocator(
@@ -46,8 +45,7 @@ TEST(PoolAllocatorTest, ZeroSizeBuffers) {
 
 TEST(PoolAllocatorTest, ZeroSizePool) {
   se::Platform* platform =
-      se::MultiPlatformManager::PlatformWithName(GpuPlatformName())
-          .ValueOrDie();
+      se::MultiPlatformManager::PlatformWithName("cuda").ValueOrDie();
   PoolAllocator pool(
       0 /*pool_size_limit*/, false /*auto_resize*/,
       new GpuHostAllocator(
@@ -81,8 +79,7 @@ TEST(PoolAllocatorTest, ZeroSizePool) {
 
 TEST(PoolAllocatorTest, Alignment) {
   se::Platform* platform =
-      se::MultiPlatformManager::PlatformWithName(GpuPlatformName())
-          .ValueOrDie();
+      se::MultiPlatformManager::PlatformWithName("cuda").ValueOrDie();
   PoolAllocator pool(
       0 /*pool_size_limit*/, false /*auto_resize*/,
       new GpuHostAllocator(
@@ -144,8 +141,7 @@ TEST(PoolAllocatorTest, CudaHostAllocator) {
         free_size += size;
       };
   se::Platform* platform =
-      se::MultiPlatformManager::PlatformWithName(GpuPlatformName())
-          .ValueOrDie();
+      se::MultiPlatformManager::PlatformWithName("cuda").ValueOrDie();
   GpuHostAllocator* sub_allocator = new GpuHostAllocator(
       platform->GetExecutor(se::StreamExecutorConfig(/*ordinal=*/0))
           .ValueOrDie(),
@@ -248,8 +244,7 @@ TEST(PoolAllocatorTest, Pow2Rounder) {
 
 TEST(PoolAllocatorTest, Name) {
   se::Platform* platform =
-      se::MultiPlatformManager::PlatformWithName(GpuPlatformName())
-          .ValueOrDie();
+      se::MultiPlatformManager::PlatformWithName("cuda").ValueOrDie();
   PoolAllocator pool(
       2 /*pool_size_limit*/, false /*auto_resize*/,
       new GpuHostAllocator(
@@ -263,4 +258,4 @@ TEST(PoolAllocatorTest, Name) {
 }  // namespace
 }  // namespace tensorflow
 
-#endif  // GOOGLE_CUDA || TENSORFLOW_USE_ROCM
+#endif  // GOOGLE_CUDA

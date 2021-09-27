@@ -34,12 +34,6 @@ limitations under the License.
 #include "tensorflow/core/platform/subprocess.h"
 #include "tensorflow/core/platform/test.h"
 
-#if defined(PLATFORM_WINDOWS)
-// This is not used on windows, but we define it here to make the test simpler
-// to write below.
-#define SIGKILL -1
-#endif
-
 namespace xla {
 namespace {
 

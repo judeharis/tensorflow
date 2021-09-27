@@ -104,8 +104,9 @@ StatusOr<std::unique_ptr<Executable>> InterpreterCompiler::RunBackend(
 
   VLOG(1) << "Run backend " << hlo_module->name();
 
-  TF_ASSIGN_OR_RETURN(DynamicDimensionInference dynamic_dimension_inference,
-                      DynamicDimensionInference::Run(hlo_module.get()));
+  // Typically you would visit the HLO graph, building up a compiled equivalent
+  // In this case we are using an HloEvaluator at execution time, so we don't
+  // need to compile anything
 
   auto evaluator = absl::make_unique<HloEvaluator>();
   evaluator->set_use_fast_path(
@@ -114,9 +115,8 @@ StatusOr<std::unique_ptr<Executable>> InterpreterCompiler::RunBackend(
 
   // Create executable from only the Hlo module.
   std::unique_ptr<Executable> executable =
-      absl::make_unique<InterpreterExecutable>(
-          std::move(hlo_module), std::move(evaluator),
-          std::move(dynamic_dimension_inference));
+      absl::make_unique<InterpreterExecutable>(std::move(hlo_module),
+                                               std::move(evaluator));
 
   return std::move(executable);
 }

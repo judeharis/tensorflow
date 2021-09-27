@@ -283,15 +283,15 @@ def get_file(fname,
 
 
 def _makedirs_exist_ok(datadir):
-  if six.PY2:
+  if six.PY3:
+    os.makedirs(datadir, exist_ok=True)  # pylint: disable=unexpected-keyword-arg
+  else:
     # Python 2 doesn't have the exist_ok arg, so we try-except here.
     try:
       os.makedirs(datadir)
     except OSError as e:
       if e.errno != errno.EEXIST:
         raise
-  else:
-    os.makedirs(datadir, exist_ok=True)  # pylint: disable=unexpected-keyword-arg
 
 
 def _hash_file(fpath, algorithm='sha256', chunk_size=65535):
@@ -678,7 +678,7 @@ class SequenceEnqueuer(object):
       for data in datas:
           # Use the inputs; training, evaluating, predicting.
           # ... stop sometime.
-      enqueuer.stop()
+      enqueuer.close()
   ```
 
   The `enqueuer.get()` should be an infinite stream of datas.

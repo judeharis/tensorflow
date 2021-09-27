@@ -339,9 +339,7 @@ tf_py_test(
     name = "transform_graph_py_test",
     size = "small",
     srcs = ["python/transform_graph_test.py"],
-    main = "python/transform_graph_test.py",
-    tags = ["v1only"],
-    deps = [
+    additional_deps = [
         ":transform_graph_py",
         "//tensorflow/core:protos_all_py",
         "//tensorflow/python:client_testlib",
@@ -349,4 +347,6 @@ tf_py_test(
         "//tensorflow/python:math_ops",
         "//tensorflow/python:variables",
     ],
+    main = "python/transform_graph_test.py",
+    tags = ["v1only"],
 )

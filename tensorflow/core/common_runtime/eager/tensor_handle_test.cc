@@ -15,7 +15,6 @@ limitations under the License.
 
 #include "tensorflow/core/common_runtime/eager/tensor_handle.h"
 
-#include "tensorflow/core/common_runtime/device_mgr.h"
 #include "tensorflow/core/framework/tensor_shape.h"
 #include "tensorflow/core/platform/test.h"
 
@@ -31,21 +30,12 @@ TEST(TensorHandle_ShapeTest, AsyncShape) {
     }
   }
 
-  StaticDeviceMgr device_mgr(DeviceFactory::NewDevice(
-      "CPU", {}, "/job:localhost/replica:0/task:0/device:CPU:0"));
-  auto ctx = new EagerContext(
-      SessionOptions(),
-      tensorflow::ContextDevicePlacementPolicy::DEVICE_PLACEMENT_SILENT,
-      tensorflow::ContextMirroringPolicy::MIRRORING_NONE, false, false,
-      &device_mgr, false, nullptr, nullptr, nullptr);
   TensorHandle* sync_th;
-  EXPECT_TRUE(TensorHandle::CreateLocalHandle(std::move(t), nullptr, nullptr,
-                                              ctx, &sync_th)
-                  .ok());
+  EXPECT_TRUE(TensorHandle::CreateLocalHandle(t, &sync_th).ok());
   TensorHandle* async_th;
-  EXPECT_TRUE(TensorHandle::CreateEmptyLocalHandle(nullptr, nullptr, nullptr,
-                                                   DataType::DT_UINT16, ctx,
-                                                   &async_th)
+  EXPECT_TRUE(TensorHandle::CreateEmptyLocalHandle(true, nullptr, nullptr,
+                                                   nullptr, DataType::DT_UINT16,
+                                                   nullptr, &async_th)
                   .ok());
 
   EXPECT_TRUE(async_th->CopyInferenceShape(sync_th).ok());
@@ -66,7 +56,6 @@ TEST(TensorHandle_ShapeTest, AsyncShape) {
 
   sync_th->Unref();
   async_th->Unref();
-  ctx->Unref();
 }
 
 }  // namespace

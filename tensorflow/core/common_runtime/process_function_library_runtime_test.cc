@@ -74,7 +74,7 @@ class TestClusterFLR : public DistributedFunctionLibraryRuntime {
 
  private:
   mutex mu_;
-  int next_handle_ TF_GUARDED_BY(mu_) = 0;
+  int next_handle_ GUARDED_BY(mu_) = 0;
   DeviceMgr* device_mgr_;
 };
 
@@ -153,7 +153,7 @@ class ProcessFunctionLibraryRuntimeTest : public ::testing::Test {
     return cpu_tensor;
 #else
     CHECK(false);
-#endif  // GOOGLE_CUDA || TENSORFLOW_USE_ROCM
+#endif  // GOOGLE_CUDA
   }
 
   Tensor CPUToGPU(const Tensor& cpu_tensor) {
@@ -178,7 +178,7 @@ class ProcessFunctionLibraryRuntimeTest : public ::testing::Test {
     return device_tensor;
 #else
     CHECK(false);
-#endif  // GOOGLE_CUDA || TENSORFLOW_USE_ROCM
+#endif  // GOOGLE_CUDA
   }
 
   Status RunWithRuntime(
@@ -479,7 +479,7 @@ TEST_F(ProcessFunctionLibraryRuntimeTest, ClusterFLRParallelTest) {
 }
 
 bool IsCUDATensor(const Tensor& t) {
-#if GOOGLE_CUDA
+#ifdef GOOGLE_CUDA
   cudaPointerAttributes attributes;
   cudaError_t err =
       cudaPointerGetAttributes(&attributes, t.tensor_data().data());

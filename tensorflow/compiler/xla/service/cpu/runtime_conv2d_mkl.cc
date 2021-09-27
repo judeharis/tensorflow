@@ -144,9 +144,7 @@ void MKLConvImpl(const EigenDevice& device, ScalarType* out, ScalarType* lhs,
   if (need_output_conversion) {
     net.push_back(reorder(conv1_dst_memory, user_dst_memory));
   }
-#ifndef ENABLE_MKLDNN_V1
-  stream(stream::kind::eager_nostore).submit(net).wait();
-#endif
+  stream(stream::kind::eager).submit(net).wait();
 }
 }  // namespace
 #endif  // INTEL_MKL

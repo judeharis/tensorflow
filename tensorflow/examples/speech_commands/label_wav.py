@@ -77,12 +77,13 @@ def run_graph(wav_data, labels, input_layer_name, output_layer_name,
 def label_wav(wav, labels, graph, input_name, output_name, how_many_labels):
   """Loads the model and labels, and runs the inference to print predictions."""
   if not wav or not tf.io.gfile.exists(wav):
-    raise ValueError('Audio file does not exist at {0}'.format(wav))
+    tf.compat.v1.logging.fatal('Audio file does not exist %s', wav)
+
   if not labels or not tf.io.gfile.exists(labels):
-    raise ValueError('Labels file does not exist at {0}'.format(labels))
+    tf.compat.v1.logging.fatal('Labels file does not exist %s', labels)
 
   if not graph or not tf.io.gfile.exists(graph):
-    raise ValueError('Graph file does not exist at {0}'.format(graph))
+    tf.compat.v1.logging.fatal('Graph file does not exist %s', graph)
 
   labels_list = load_labels(labels)
 

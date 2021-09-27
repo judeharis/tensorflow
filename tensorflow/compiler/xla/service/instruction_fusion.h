@@ -17,9 +17,6 @@ limitations under the License.
 #ifndef TENSORFLOW_COMPILER_XLA_SERVICE_INSTRUCTION_FUSION_H_
 #define TENSORFLOW_COMPILER_XLA_SERVICE_INSTRUCTION_FUSION_H_
 
-#include <functional>
-#include <utility>
-
 #include "tensorflow/compiler/xla/service/fusion_queue.h"
 #include "tensorflow/compiler/xla/service/hlo_computation.h"
 #include "tensorflow/compiler/xla/service/hlo_instruction.h"
@@ -90,13 +87,7 @@ class InstructionFusion : public HloModulePass {
   virtual HloInstruction::FusionKind ChooseKind(const HloInstruction* producer,
                                                 const HloInstruction* consumer);
 
-  // Fuses 'producer' into 'fusion_instruction'. 'fusion_instruction' needs to
-  // be a fusion instruction. Returns the newly created clone of 'producer'
-  // which is part of the fusion computation.
-  virtual HloInstruction* FuseInstruction(HloInstruction* fusion_instruction,
-                                          HloInstruction* producer);
-
-  // Fuses producer into consumer. Returns the fusion instruction.
+  // Fuses producer into consumer.
   virtual HloInstruction* Fuse(HloInstruction* producer,
                                HloInstruction* consumer);
 

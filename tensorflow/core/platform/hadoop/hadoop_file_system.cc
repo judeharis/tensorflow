@@ -135,25 +135,6 @@ const LibHDFS* libhdfs() {
   return libhdfs;
 }
 
-Status SplitArchiveNameAndPath(StringPiece& path, string& nn) {
-  size_t index_end_archive_name = path.find(".har");
-  if (index_end_archive_name == path.npos) {
-    return errors::InvalidArgument(
-        "Hadoop archive path does not contain a .har extension");
-  }
-  // Case of hadoop archive. Namenode is the path to the archive.
-  std::ostringstream namenodestream;
-  namenodestream << "har://" << nn
-                 << path.substr(0, index_end_archive_name + 4);
-  nn = namenodestream.str();
-  path.remove_prefix(index_end_archive_name + 4);
-  if (path.empty()) {
-    // Root of the archive
-    path = "/";
-  }
-  return Status::OK();
-}
-
 // We rely on HDFS connection caching here. The HDFS client calls
 // org.apache.hadoop.fs.FileSystem.get(), which caches the connection
 // internally.
@@ -162,7 +143,7 @@ Status HadoopFileSystem::Connect(StringPiece fname, hdfsFS* fs) {
 
   StringPiece scheme, namenode, path;
   io::ParseURI(fname, &scheme, &namenode, &path);
-  string nn(namenode);
+  const string nn(namenode);
 
   hdfsBuilder* builder = libhdfs()->hdfsNewBuilder();
   if (scheme == "file") {
@@ -182,9 +163,6 @@ Status HadoopFileSystem::Connect(StringPiece fname, hdfsFS* fs) {
     // configuration files). See:
     // https://github.com/tensorflow/tensorflow/blob/v1.0.0/third_party/hadoop/hdfs.h#L259
     libhdfs()->hdfsBuilderSetNameNode(builder, "default");
-  } else if (scheme == "har") {
-    TF_RETURN_IF_ERROR(SplitArchiveNameAndPath(path, nn));
-    libhdfs()->hdfsBuilderSetNameNode(builder, nn.c_str());
   } else {
     libhdfs()->hdfsBuilderSetNameNode(builder,
                                       nn.empty() ? "default" : nn.c_str());
@@ -276,7 +254,7 @@ class HDFSRandomAccessFile : public RandomAccessFile {
   hdfsFS fs_;
 
   mutable mutex mu_;
-  mutable hdfsFile file_ TF_GUARDED_BY(mu_);
+  mutable hdfsFile file_ GUARDED_BY(mu_);
 };
 
 Status HadoopFileSystem::NewRandomAccessFile(
@@ -473,7 +451,7 @@ Status HadoopFileSystem::DeleteDir(const string& dir) {
     libhdfs()->hdfsFreeFileInfo(info, entries);
   }
   // Due to HDFS bug HDFS-8407, we can't distinguish between an error and empty
-  // folder, especially for Kerberos enable setup, EAGAIN is quite common when
+  // folder, expscially for Kerberos enable setup, EAGAIN is quite common when
   // the call is actually successful. Check again by Stat.
   if (info == nullptr && errno != 0) {
     FileStatistics stat;
@@ -539,6 +517,5 @@ Status HadoopFileSystem::Stat(const string& fname, FileStatistics* stats) {
 
 REGISTER_FILE_SYSTEM("hdfs", HadoopFileSystem);
 REGISTER_FILE_SYSTEM("viewfs", HadoopFileSystem);
-REGISTER_FILE_SYSTEM("har", HadoopFileSystem);
 
 }  // namespace tensorflow

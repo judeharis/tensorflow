@@ -18,7 +18,6 @@ limitations under the License.
 #include <algorithm>
 
 #include "tensorflow/lite/arena_planner.h"
-#include "tensorflow/lite/builtin_ops.h"
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/context_util.h"
 #include "tensorflow/lite/core/api/tensor_utils.h"
@@ -27,6 +26,8 @@ limitations under the License.
 #include "tensorflow/lite/minimal_logging.h"
 #include "tensorflow/lite/schema/schema_generated.h"
 #include "tensorflow/lite/util.h"
+
+#include <iostream>
 
 namespace tflite {
 
@@ -40,15 +41,6 @@ struct TfLiteQuantizationDeleter {
 
 using ScopedTfLiteQuantization =
     std::unique_ptr<TfLiteQuantization, TfLiteQuantizationDeleter>;
-
-struct TfLiteSparsityDeleter {
-  void operator()(TfLiteSparsity* s) {
-    if (s) TfLiteSparsityFree(s);
-  }
-};
-
-using ScopedTfLiteSparsity =
-    std::unique_ptr<TfLiteSparsity, TfLiteSparsityDeleter>;
 
 TfLiteStatus ReportOpError(TfLiteContext* context, const TfLiteNode& node,
                            const TfLiteRegistration& registration,
@@ -125,51 +117,6 @@ TfLiteQuantizationParams GetLegacyQuantization(
   legacy_quantization.zero_point = affine_quantization->zero_point->data[0];
   return legacy_quantization;
 }
-
-static constexpr const char kUnknownCustomOpName[] = "UnknownCustomOp";
-const char* GetTFLiteOpName(const TfLiteRegistration& op_reg) {
-  if (op_reg.builtin_code == tflite::BuiltinOperator_CUSTOM) {
-    const char* const custom_name = op_reg.custom_name;
-    return custom_name ? custom_name : kUnknownCustomOpName;
-  }
-  if (op_reg.builtin_code == tflite::BuiltinOperator_DELEGATE &&
-      op_reg.custom_name) {
-    return op_reg.custom_name;
-  }
-  return tflite::EnumNamesBuiltinOperator()[op_reg.builtin_code];
-}
-
-// An utility test to detect if the subgraph is abused:
-// 1. Detects if recursion exists in the graph (recursion is not currently
-//    supported.
-// 2. Detects if the interpreter / subgraph is used in multiple subgraphs.
-//    Note: It's clearly documented that the interpreter / subgraph are not
-//    thread-safe. This serves as a check with possible false negatives
-//    unless we switch to atomic boolean flags.
-class SubgraphGuard {
- public:
-  SubgraphGuard(TfLiteContext* context, bool* is_subgraph_in_use)
-      : is_subgraph_in_use_(is_subgraph_in_use) {
-    if (*is_subgraph_in_use_) {
-      context->ReportError(context, "Subgraph is already in use.");
-      status_ = kTfLiteError;
-    } else {
-      *is_subgraph_in_use_ = true;
-    }
-  }
-  ~SubgraphGuard() {
-    // If tht original status was OK, recover the boolean flag.
-    if (status_ == kTfLiteOk) {
-      *is_subgraph_in_use_ = false;
-    }
-  }
-
-  TfLiteStatus status() const { return status_; }
-
- private:
-  TfLiteStatus status_ = kTfLiteOk;
-  bool* is_subgraph_in_use_;
-};
 
 }  // namespace
 
@@ -349,26 +296,6 @@ TfLiteDelegateParams* CreateDelegateParams(TfLiteDelegate* delegate,
   return params;
 }
 
-// Assumes that params is not nullptr.
-void PopulatePreviewDelegateParams(const NodeSubset& node_subset,
-                                   TfLiteDelegateParams* params) {
-  // Since these params are used for previewing partitioning, params->delegate
-  // is not required.
-  params->delegate = nullptr;
-
-  params->nodes_to_replace = TfLiteIntArrayCreate(node_subset.nodes.size());
-  CopyVectorToTfLiteIntArray(node_subset.nodes, params->nodes_to_replace);
-
-  params->input_tensors =
-      TfLiteIntArrayCreate(node_subset.input_tensors.size());
-  CopyVectorToTfLiteIntArray(node_subset.input_tensors, params->input_tensors);
-
-  params->output_tensors =
-      TfLiteIntArrayCreate(node_subset.output_tensors.size());
-  CopyVectorToTfLiteIntArray(node_subset.output_tensors,
-                             params->output_tensors);
-}
-
 }  // namespace
 
 TfLiteStatus Subgraph::ReplaceNodeSubsetsWithDelegateKernels(
@@ -486,57 +413,6 @@ TfLiteStatus Subgraph::GetExecutionPlan(struct TfLiteContext* context,
       ->GetExecutionPlan(execution_plan);
 }
 
-void Subgraph::FreeDelegatePartitioningData() {
-  for (auto& params : partitioning_preview_cache_) {
-    TfLiteIntArrayFree(params.nodes_to_replace);
-    TfLiteIntArrayFree(params.input_tensors);
-    TfLiteIntArrayFree(params.output_tensors);
-  }
-  partitioning_preview_cache_.clear();
-}
-
-TfLiteStatus Subgraph::PreviewDelegatePartitioning(
-    const TfLiteIntArray* nodes_to_replace,
-    TfLiteDelegateParams** partition_params_array, int* num_partitions) {
-  // Ensure partitioning cache is empty.
-  FreeDelegatePartitioningData();
-  // Defaults.
-  if (!partition_params_array || !num_partitions) return kTfLiteError;
-  *partition_params_array = nullptr;
-  *num_partitions = 0;
-  if (!nodes_to_replace->size) {
-    return kTfLiteOk;
-  }
-
-  // Partition the execution plan into node subsets.
-  InterpreterInfo info(this);
-  std::vector<NodeSubset> node_subsets;
-  PartitionGraphIntoIndependentNodeSubsets(&info, nodes_to_replace,
-                                           &node_subsets);
-
-  // Create one TfLiteDelegateParams per node-subset which would be delegated.
-  for (auto& node_subset : node_subsets) {
-    if (node_subset.type != NodeSubset::kTfPartition) {
-      continue;
-    }
-    partitioning_preview_cache_.emplace_back();
-    PopulatePreviewDelegateParams(node_subset,
-                                  &partitioning_preview_cache_.back());
-    ++*num_partitions;
-  }
-
-  *partition_params_array = partitioning_preview_cache_.data();
-  return kTfLiteOk;
-}
-
-TfLiteStatus Subgraph::PreviewDelegatePartitioning(
-    struct TfLiteContext* context, const TfLiteIntArray* nodes_to_replace,
-    TfLiteDelegateParams** partition_params_array, int* num_partitions) {
-  return static_cast<Subgraph*>(context->impl_)
-      ->PreviewDelegatePartitioning(nodes_to_replace, partition_params_array,
-                                    num_partitions);
-}
-
 TfLiteStatus Subgraph::SetInputs(std::vector<int> inputs) {
   TF_LITE_ENSURE_OK(&context_,
                     CheckTensorIndices("inputs", inputs.data(), inputs.size()));
@@ -593,76 +469,21 @@ TfLiteStatus Subgraph::CheckTensorIndices(const char* label, const int* indices,
   return kTfLiteOk;
 }
 
-// We have two arrays and we need to check that elements from one array don't
-// show up in the other. We could sort both arrays and then iterate with two
-// pointers from start to finish always increasing the smaller one but since
-// these arrays are usually short (<25 elements for inputs, usually <3 for
-// outputs), this might be slower than the naive approach (if arrays have size n
-// and m, with n >> m ~ O(1), first approach is O(nlogn) whereas the other is
-// O(n)). Plus, sorting the input and output arrays might not be something we
-// want as it destroys ordering of elements.
-//
-// If it turns out that this is an issue, we can switch to the other algorithm.
-TfLiteStatus Subgraph::CheckInputAndOutputForOverlap(const int* input_indices,
-                                                     int num_inputs,
-                                                     const int* output_indices,
-                                                     int num_outputs) {
-  for (int i = 0; i < num_inputs; i++) {
-    for (int j = 0; j < num_outputs; j++) {
-      if (input_indices[i] == output_indices[j]) {
-        ReportError("Tensor %d is both input %d and output %d\n",
-                    input_indices[i], i, j);
-        consistent_ = false;
-        return kTfLiteError;
-      }
-    }
-  }
-  return kTfLiteOk;
-}
-
-namespace {
-// Multiply two sizes and return true if overflow occurred;
-// This is based off tensorflow/overflow.h but is simpler as we already
-// have unsigned numbers. It is also generalized to work where sizeof(size_t)
-// is not 8.
-TfLiteStatus MultiplyAndCheckOverflow(size_t a, size_t b, size_t* product) {
-  // Multiplying a * b where a and b are size_t cannot result in overflow in a
-  // size_t accumulator if both numbers have no non-zero bits in their upper
-  // half.
-  constexpr size_t size_t_bits = 8 * sizeof(size_t);
-  constexpr size_t overflow_upper_half_bit_position = size_t_bits / 2;
-  *product = a * b;
-  // If neither integers have non-zero bits past 32 bits can't overflow.
-  // Otherwise check using slow devision.
-  if (TFLITE_EXPECT_FALSE((a | b) >> overflow_upper_half_bit_position != 0)) {
-    if (a != 0 && *product / a != b) return kTfLiteError;
-  }
-  return kTfLiteOk;
-}
-}  // namespace
-
 TfLiteStatus Subgraph::BytesRequired(TfLiteType type, const int* dims,
                                      size_t dims_size, size_t* bytes) {
+  // TODO(aselle): Check for overflow here using overflow.h in TensorFlow
+  // MultiplyWithoutOverflow.
   TF_LITE_ENSURE(&context_, bytes != nullptr);
   size_t count = 1;
-  for (int k = 0; k < dims_size; k++) {
-    size_t old_count = count;
-    TF_LITE_ENSURE_MSG(
-        &context_,
-        MultiplyAndCheckOverflow(old_count, dims[k], &count) == kTfLiteOk,
-        "BytesRequired number of elements overflowed.\n");
-  }
+  for (int k = 0; k < dims_size; k++) count *= dims[k];
   size_t type_size = 0;
   TF_LITE_ENSURE_OK(&context_, GetSizeOfType(&context_, type, &type_size));
-  TF_LITE_ENSURE_MSG(
-      &context_, MultiplyAndCheckOverflow(type_size, count, bytes) == kTfLiteOk,
-      "BytesRequired number of bytes overflowed.\n");
+  *bytes = type_size * count;
   return kTfLiteOk;
 }
 
 TfLiteStatus Subgraph::AllocateTensors() {
   TFLITE_SCOPED_TAGGED_DEFAULT_PROFILE(profiler_.get(), "AllocateTensors");
-
   if (!consistent_) {
     ReportError("AllocateTensors() called on inconsistent model.");
     return kTfLiteError;
@@ -685,12 +506,6 @@ TfLiteStatus Subgraph::AllocateTensors() {
     }
     return kTfLiteOk;
   }
-
-  // Note `AllocateTensors` sometimes calls itself recursively above
-  // for delegates. Therefore only the logic below need to be guarded
-  // by `SubgraphGuard`.
-  SubgraphGuard guard(&context_, &is_subgraph_in_use_);
-  TF_LITE_ENSURE_OK(&context_, guard.status());
 
   next_execution_plan_index_to_prepare_ = 0;
   next_execution_plan_index_to_plan_allocation_ = 0;
@@ -747,16 +562,6 @@ TfLiteStatus Subgraph::AddNodeWithParameters(
   TF_LITE_ENSURE_OK(
       &context_,
       CheckTensorIndices("node outputs", outputs.data(), outputs.size()));
-
-  // For builtin ops, inputs and outputs must not overlap. Custom ops must do
-  // this check by themselves if they don't support overlapping tensors. This
-  // distinction is to allow custom ops to just forward a tensor, reusing it as
-  // both input and output.
-  if (builtin_data != nullptr) {
-    TF_LITE_ENSURE_OK(&context_, CheckInputAndOutputForOverlap(
-                                     inputs.data(), inputs.size(),
-                                     outputs.data(), outputs.size()));
-  }
 
   int new_node_index = nodes_and_registration_.size();
   if (node_index) *node_index = new_node_index;
@@ -919,9 +724,6 @@ TfLiteStatus Subgraph::PrepareOpsAndTensors() {
 }
 
 TfLiteStatus Subgraph::Invoke() {
-  SubgraphGuard guard(&context_, &is_subgraph_in_use_);
-  TF_LITE_ENSURE_OK(&context_, guard.status());
-
   if (!consistent_) {
     ReportError("Invoke called on model that is not consistent.");
     return kTfLiteError;
@@ -960,7 +762,14 @@ TfLiteStatus Subgraph::Invoke() {
         nodes_and_registration_[node_index].second;
 
     const char* op_name = nullptr;
-    if (profiler_) op_name = GetTFLiteOpName(registration);
+    if (profiler_) {
+      if (registration.builtin_code == tflite::BuiltinOperator_CUSTOM) {
+        const char* const custom_name = registration.custom_name;
+        op_name = custom_name ? custom_name : "UnknownCustomOp";
+      } else {
+        op_name = tflite::EnumNamesBuiltinOperator()[registration.builtin_code];
+      }
+    }
     TFLITE_SCOPED_TAGGED_OPERATOR_PROFILE(profiler_.get(), op_name, node_index);
 
     // TODO(ycling): This is an extra loop through inputs to check if the data
@@ -976,26 +785,6 @@ TfLiteStatus Subgraph::Invoke() {
       if (tensor->delegate && tensor->delegate != node.delegate &&
           tensor->data_is_stale) {
         TF_LITE_ENSURE_STATUS(EnsureTensorDataIsReadable(tensor_index));
-      }
-      if (tensor->data.raw == nullptr && tensor->bytes > 0) {
-        if (registration.builtin_code == kTfLiteBuiltinReshape && i == 1 &&
-            tensor->dims->size != 1) {
-          // In general, having a tensor here with no buffer will be an error.
-          // However, for the reshape operator, the second input tensor is
-          // sometimes only used for the shape, not for the data. Thus, null
-          // buffer is ok in this situation.
-          // The situation where null buffer is not ok for reshape operator is
-          // only when there are 2 inputs given to the node and the one
-          // corresponding to the shape (i == 1) is a vector that contains all
-          // dimensions. See `GetOutputShape()` function in
-          // `tensorflow/lite/kernels/reshape.cc`
-          continue;
-        } else {
-          // In all other cases, we need to return an error as otherwise we will
-          // trigger a null pointer dereference (likely).
-          ReportError("Input tensor %d lacks data", tensor_index);
-          return kTfLiteError;
-        }
       }
     }
 
@@ -1021,18 +810,136 @@ TfLiteStatus Subgraph::Invoke() {
       // This happens when an intermediate dynamic tensor is resized.
       // We don't have to prepare all the ops, but we need to recompute
       // the allocation plan.
+      //
+      // This is a workaround for b/127354079. It relies on the property that
+      // ArenaPlanner's behavior is deterministic. A better solution is being
+      // able to "Rewind" to a specific index in ArenaPlanner.
+      // TODO(b/127354079): Improve ArenaPlanner and remove this mechanism.
       if (next_execution_plan_index_to_plan_allocation_ >
           next_execution_plan_index_to_prepare_) {
-        next_execution_plan_index_to_plan_allocation_ =
-            next_execution_plan_index_to_prepare_;
+        next_execution_plan_index_to_plan_allocation_ = 0;
         if (memory_planner_) {
-          TF_LITE_ENSURE_STATUS(memory_planner_->ResetAllocationsAfter(
-              next_execution_plan_index_to_plan_allocation_ - 1));
+          TF_LITE_ENSURE_STATUS(memory_planner_->ResetAllocations());
         }
       }
     }
   }
 
+  return status;
+}
+
+//SECDA: Added
+TfLiteStatus Subgraph::Invoke2(gemm_driver &gd) {
+  if (!consistent_) {
+    ReportError("Invoke called on model that is not consistent.");
+    return kTfLiteError;
+  }
+
+  TfLiteStatus status = kTfLiteOk;
+  if (state_ == kStateUninvokable) {
+    ReportError("Invoke called on model that is not ready.");
+    return kTfLiteError;
+  } else if (memory_planner_ && !memory_planner_->HasNonPersistentMemory()) {
+    ReportError("Non-persistent memory is not available.");
+    return kTfLiteError;
+  }
+
+  // This is only needed for UseNNAPI(true);
+  if (should_apply_nnapi_delegate_ && !applied_nnapi_delegate_) {
+    TF_LITE_ENSURE_OK(&context_, ModifyGraphWithDelegate(NnApiDelegate()));
+    // only need to modify the graph once upon the first invocation.
+    applied_nnapi_delegate_ = true;
+  }
+
+  // Invocations are always done in node order.
+  // Note that calling Invoke repeatedly will cause the original memory plan to
+  // be reused, unless either ResizeInputTensor() or AllocateTensors() has been
+  // called.
+  for (int execution_plan_index = 0;
+       execution_plan_index < execution_plan_.size(); execution_plan_index++) {
+    if (execution_plan_index == next_execution_plan_index_to_prepare_) {
+      TF_LITE_ENSURE_STATUS(PrepareOpsAndTensors());
+      TF_LITE_ENSURE(&context_, next_execution_plan_index_to_prepare_ >=
+                                    execution_plan_index);
+    }
+    int node_index = execution_plan_[execution_plan_index];
+    TfLiteNode& node = nodes_and_registration_[node_index].first;
+    const TfLiteRegistration& registration =
+        nodes_and_registration_[node_index].second;
+
+    const char* op_name = nullptr;
+    if (profiler_) {
+      if (registration.builtin_code == tflite::BuiltinOperator_CUSTOM) {
+        const char* const custom_name = registration.custom_name;
+        op_name = custom_name ? custom_name : "UnknownCustomOp";
+      } else {
+        op_name = tflite::EnumNamesBuiltinOperator()[registration.builtin_code];
+      }
+    }
+    TFLITE_SCOPED_TAGGED_OPERATOR_PROFILE(profiler_.get(), op_name, node_index);
+
+    // TODO(ycling): This is an extra loop through inputs to check if the data
+    // need to be copied from Delegate buffer to raw memory, which is often not
+    // needed. We may want to cache this in prepare to know if this needs to be
+    // done for a node or not.
+    for (int i = 0; i < node.inputs->size; ++i) {
+      int tensor_index = node.inputs->data[i];
+      if (tensor_index == kTfLiteOptionalTensor) {
+        continue;
+      }
+      TfLiteTensor* tensor = &tensors_[tensor_index];
+      if (tensor->delegate && tensor->delegate != node.delegate &&
+          tensor->data_is_stale) {
+        TF_LITE_ENSURE_STATUS(EnsureTensorDataIsReadable(tensor_index));
+      }
+    }
+
+    if (check_cancelled_func_ != nullptr &&
+        check_cancelled_func_(cancellation_data_)) {
+      ReportError("Client requested cancel during Invoke()");
+      return kTfLiteError;
+    }
+
+    EnsureTensorsVectorCapacity();
+    tensor_resized_since_op_invoke_ = false;
+
+    //SECDA:  Added
+    //Only CONV2D
+    if(registration.builtin_code==3 && gd.on){
+      if(gd.t.profile)std::cout << std::endl << "--------------------Layer :" << gd.t.layer << " --------------------" << std::endl;
+      prf_start(1);
+      if (OpInvoke2(gd,registration, &node) == kTfLiteError) return ReportOpError(&context_, node, registration, node_index,"failed to invoke");
+      prf_end(1,gd.t.convtime);
+      gd.t.layer++;
+    }else{
+      if(gd.t.profile)if(registration.builtin_code==3)std::cout << std::endl << "--------------------Skipped CONV Layer :" << gd.t.layer << " --------------------" << std::endl;
+      if (OpInvoke(registration, &node) == kTfLiteError) return ReportOpError(&context_, node, registration, node_index,"failed to invoke");
+      if(registration.builtin_code==3)gd.t.layer++;
+    }
+
+    // Force execution prep for downstream ops if the latest op triggered the
+    // resize of a dynamic tensor.
+    if (tensor_resized_since_op_invoke_ &&
+        HasDynamicTensor(context_, node.outputs)) {
+      next_execution_plan_index_to_prepare_ = execution_plan_index + 1;
+
+      // This happens when an intermediate dynamic tensor is resized.
+      // We don't have to prepare all the ops, but we need to recompute
+      // the allocation plan.
+      //
+      // This is a workaround for b/127354079. It relies on the property that
+      // ArenaPlanner's behavior is deterministic. A better solution is being
+      // able to "Rewind" to a specific index in ArenaPlanner.
+      // TODO(b/127354079): Improve ArenaPlanner and remove this mechanism.
+      if (next_execution_plan_index_to_plan_allocation_ >
+          next_execution_plan_index_to_prepare_) {
+        next_execution_plan_index_to_plan_allocation_ = 0;
+        if (memory_planner_) {
+          TF_LITE_ENSURE_STATUS(memory_planner_->ResetAllocations());
+        }
+      }
+    }
+  }
   return status;
 }
 
@@ -1118,10 +1025,9 @@ TfLiteStatus Subgraph::GetNodeAndRegistration(
 TfLiteStatus Subgraph::SetTensorParametersReadOnly(
     int tensor_index, TfLiteType type, const char* name, const size_t rank,
     const int* dims, TfLiteQuantization quantization, const char* buffer,
-    size_t bytes, const Allocation* allocation, TfLiteSparsity* sparsity) {
+    size_t bytes, const Allocation* allocation) {
   // Ensure quantization cleanup on failure.
   ScopedTfLiteQuantization scoped_quantization(&quantization);
-  ScopedTfLiteSparsity scoped_sparsity(sparsity);
   if (state_ == kStateInvokableAndImmutable) {
     ReportError(
         "SetTensorParametersReadOnly is disallowed when graph is immutable.");
@@ -1130,12 +1036,10 @@ TfLiteStatus Subgraph::SetTensorParametersReadOnly(
 
   TF_LITE_ENSURE(&context_,
                  tensor_index < context_.tensors_size && tensor_index >= 0);
-
   // For most tensors we know exactly how much memory is necessary so we can
   // ensure the buffer is large enough. However, we need to skip string tensors
-  // and sparse tensors because their sizes change with the contents.
-  // TODO(b/145615516): Extend BytesRequired to check sparse tensors.
-  if (type != kTfLiteString && sparsity == nullptr) {
+  // because their sizes change with the contents of the individual strings.
+  if (type != kTfLiteString) {
     size_t required_bytes;
     TF_LITE_ENSURE_OK(&context_,
                       BytesRequired(type, dims, rank, &required_bytes));
@@ -1152,7 +1056,6 @@ TfLiteStatus Subgraph::SetTensorParametersReadOnly(
     if (!tensor.dims) tensor.dims = ConvertArrayToTfLiteIntArray(rank, dims);
     tensor.params = GetLegacyQuantization(quantization);
     tensor.quantization = *scoped_quantization.release();
-    tensor.sparsity = scoped_sparsity.release();
     tensor.allocation_type = kTfLiteMmapRo;
     tensor.allocation = allocation;
   } else {
@@ -1164,7 +1067,6 @@ TfLiteStatus Subgraph::SetTensorParametersReadOnly(
     // TODO(suharshs): Update TfLiteTensorReset to include the new quantization
     // if there are other required callers.
     tensor.quantization = *scoped_quantization.release();
-    tensor.sparsity = scoped_sparsity.release();
   }
   return kTfLiteOk;
 }
@@ -1175,8 +1077,7 @@ TfLiteStatus Subgraph::SetTensorParametersReadOnly(
 // to Interpreter.
 TfLiteStatus Subgraph::SetTensorParametersReadWrite(
     int tensor_index, TfLiteType type, const char* name, const size_t rank,
-    const int* dims, TfLiteQuantization quantization, bool is_variable,
-    const size_t rank_dims_signature, const int* dims_signature) {
+    const int* dims, TfLiteQuantization quantization, bool is_variable) {
   // Ensure quantization cleanup on failure.
   ScopedTfLiteQuantization scoped_quantization(&quantization);
   if (state_ == kStateInvokableAndImmutable) {
@@ -1216,8 +1117,6 @@ TfLiteStatus Subgraph::SetTensorParametersReadWrite(
   // TODO(suharshs): Update TfLiteTensorReset to include the new quantization
   // if there are other required callers.
   tensor.quantization = *scoped_quantization.release();
-  tensor.dims_signature =
-      ConvertArrayToTfLiteIntArray(rank_dims_signature, dims_signature);
   return kTfLiteOk;
 }
 
@@ -1282,7 +1181,6 @@ void Subgraph::SwitchToDelegateContext() {
   context_.ReplaceNodeSubsetsWithDelegateKernels =
       ReplaceNodeSubsetsWithDelegateKernels;
   context_.GetExecutionPlan = GetExecutionPlan;
-  context_.PreviewDelegatePartitioning = PreviewDelegatePartitioning;
 }
 
 void Subgraph::SwitchToKernelContext() {
@@ -1300,13 +1198,6 @@ void Subgraph::SwitchToKernelContext() {
                                  TfLiteIntArray**) {
     return ForbiddenContextFunction(context);
   };
-  context_.PreviewDelegatePartitioning =
-      [](struct TfLiteContext* context, const TfLiteIntArray* nodes_to_replace,
-         TfLiteDelegateParams** partition_params_array,
-         int* num_partitions) { return ForbiddenContextFunction(context); };
-  // Free any memory that might have been allocated by
-  // PreviewDelegatePartitioning.
-  FreeDelegatePartitioningData();
 }
 
 TfLiteStatus Subgraph::UndoAllDelegates() {
@@ -1368,9 +1259,6 @@ TfLiteStatus Subgraph::EnsureMemoryAllocations() {
 }
 
 TfLiteStatus Subgraph::ModifyGraphWithDelegate(TfLiteDelegate* delegate) {
-  TFLITE_SCOPED_TAGGED_DEFAULT_PROFILE(profiler_.get(),
-                                       "ModifyGraphWithDelegate");
-
   // Restore delegation state if applicable.
   TF_LITE_ENSURE_STATUS(RedoAllDelegates());
 

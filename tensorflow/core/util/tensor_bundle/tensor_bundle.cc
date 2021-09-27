@@ -39,9 +39,7 @@ limitations under the License.
 #include "tensorflow/core/lib/io/path.h"
 #include "tensorflow/core/lib/io/table_builder.h"
 #include "tensorflow/core/lib/random/random.h"
-#include "tensorflow/core/lib/strings/str_util.h"
 #include "tensorflow/core/lib/strings/stringprintf.h"
-#include "tensorflow/core/util/env_var.h"
 #include "tensorflow/core/util/saved_tensor_slice_util.h"
 #include "tensorflow/core/util/tensor_bundle/byte_swap.h"
 #include "tensorflow/core/util/tensor_slice_util.h"
@@ -402,31 +400,24 @@ BundleWriter::BundleWriter(Env* env, StringPiece prefix, const Options& options)
     : env_(env),
       options_(options),
       prefix_(prefix),
+      tmp_metadata_path_(strings::StrCat(MetaFilename(prefix_), ".tempstate",
+                                         random::New64())),
+      tmp_data_path_(strings::StrCat(DataFilename(prefix_, 0, 1), ".tempstate",
+                                     random::New64())),
       out_(nullptr),
       size_(0) {
-  status_ = env_->HasAtomicMove(prefix_, &use_temp_file_);
-  if (!status_.ok()) return;
-
-  data_path_ = DataFilename(prefix_, 0, 1);
-  metadata_path_ = MetaFilename(prefix_);
-  if (use_temp_file_) {
-    data_path_ = strings::StrCat(data_path_, ".tempstate", random::New64());
-    metadata_path_ =
-        strings::StrCat(metadata_path_, ".tempstate", random::New64());
-  }
-
   status_ = env_->CreateDir(string(io::Dirname(prefix_)));
   if (!status_.ok() && !errors::IsAlreadyExists(status_)) {
     return;
   }
-
+  const string filename = DataFilename(prefix_, 0, 1);
   std::unique_ptr<WritableFile> wrapper;
-  status_ = env_->NewWritableFile(data_path_, &wrapper);
+  status_ = env_->NewWritableFile(tmp_data_path_, &wrapper);
   if (!status_.ok()) return;
   out_ = std::unique_ptr<FileOutputBuffer>(
       new FileOutputBuffer(wrapper.release(), 8 << 20 /* 8MB write buffer */));
 
-  VLOG(1) << "Writing to file " << data_path_;
+  VLOG(1) << "Writing to file " << tmp_data_path_;
 }
 
 Status BundleWriter::Add(StringPiece key, const Tensor& val) {
@@ -514,18 +505,16 @@ Status BundleWriter::Finish() {
     status_.Update(out_->Close());
     out_ = nullptr;
     if (status_.ok()) {
-      if (use_temp_file_) {
-        status_ =
-            Env::Default()->RenameFile(data_path_, DataFilename(prefix_, 0, 1));
-      }
+      status_ = Env::Default()->RenameFile(tmp_data_path_,
+                                           DataFilename(prefix_, 0, 1));
     } else {
-      Env::Default()->DeleteFile(data_path_).IgnoreError();
+      Env::Default()->DeleteFile(tmp_data_path_).IgnoreError();
     }
   }
   if (!status_.ok()) return status_;
   // Build key -> BundleEntryProto table.
   std::unique_ptr<WritableFile> file;
-  status_ = env_->NewWritableFile(metadata_path_, &file);
+  status_ = env_->NewWritableFile(tmp_metadata_path_, &file);
   if (!status_.ok()) return status_;
   {
     // N.B.: the default use of Snappy compression may not be supported on all
@@ -552,10 +541,11 @@ Status BundleWriter::Finish() {
   }
   status_.Update(file->Close());
   if (!status_.ok()) {
-    Env::Default()->DeleteFile(metadata_path_).IgnoreError();
+    Env::Default()->DeleteFile(tmp_metadata_path_).IgnoreError();
     return status_;
-  } else if (use_temp_file_) {
-    status_ = Env::Default()->RenameFile(metadata_path_, MetaFilename(prefix_));
+  } else {
+    status_ =
+        Env::Default()->RenameFile(tmp_metadata_path_, MetaFilename(prefix_));
     if (!status_.ok()) return status_;
   }
   status_ = errors::Internal("BundleWriter is closed");
@@ -726,7 +716,7 @@ Status MergeBundles(Env* env, gtl::ArraySlice<tstring> prefixes,
   VLOG(1) << "Merged bundles to:" << merged_prefix;
 
   // Cleanup: best effort based and ignores errors.
-  for (const tstring& prefix : prefixes) {
+  for (const string& prefix : prefixes) {
     env->DeleteFile(MetaFilename(prefix)).IgnoreError();
   }
   return status;
@@ -739,7 +729,6 @@ BundleReader::BundleReader(Env* env, StringPiece prefix)
       prefix_(prefix),
       metadata_(nullptr),
       table_(nullptr),
-      index_cache_(nullptr),
       iter_(nullptr),
       need_to_swap_bytes_(false) {
   const string filename = MetaFilename(prefix_);
@@ -752,17 +741,7 @@ BundleReader::BundleReader(Env* env, StringPiece prefix)
   status_ = env_->NewRandomAccessFile(filename, &wrapper);
   if (!status_.ok()) return;
   metadata_ = wrapper.release();
-
-  table::Options o;
-  int64 cache_size;
-  Status s =
-      ReadInt64FromEnvVar("TF_TABLE_INDEX_CACHE_SIZE_IN_MB", 0, &cache_size);
-  if (s.ok() && cache_size > 0) {
-    index_cache_ = table::NewLRUCache(cache_size << 20);
-    o.block_cache = index_cache_;
-  }
-
-  status_ = table::Table::Open(o, metadata_, file_size, &table_);
+  status_ = table::Table::Open(table::Options(), metadata_, file_size, &table_);
   if (!status_.ok()) return;
   iter_ = table_->NewIterator();
 
@@ -793,9 +772,6 @@ BundleReader::~BundleReader() {
   delete metadata_;
   delete iter_;
   delete table_;
-  if (index_cache_) {
-    delete index_cache_;
-  }
   // InputBuffer does not own the underlying RandomAccessFile.
   for (auto pair : data_) {
     if (pair.second != nullptr && pair.second->file() != nullptr) {

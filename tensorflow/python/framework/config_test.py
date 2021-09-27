@@ -33,7 +33,6 @@ from tensorflow.python.framework import errors
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import test_ops
 from tensorflow.python.framework import test_util
-from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.platform import test
 from tensorflow.python.util import compat
@@ -381,10 +380,10 @@ class DeviceTest(test.TestCase):
     with ops.device('/device:CPU:1'):
       b = constant_op.constant(1.0)
       self.evaluate(b)
-    with ops.device('/device:CPU:2'):
-      c = constant_op.constant(1.0)
-      self.evaluate(c)
-    self.assertIn('CPU:0', c.device)
+    with self.assertRaisesRegexp(RuntimeError, 'unknown device'):
+      with ops.device('/device:CPU:2'):
+        c = constant_op.constant(1.0)
+        self.evaluate(c)
 
     # Ensure we can place ops on each of the device names
     for vcpu in vcpus:
@@ -409,7 +408,6 @@ class DeviceTest(test.TestCase):
   @test_util.run_gpu_only
   @reset_eager
   def testGpuNone(self):
-    config.set_soft_device_placement(False)
     gpus = config.list_physical_devices('GPU')
     self.assertGreater(len(gpus), 0)
 
@@ -418,27 +416,13 @@ class DeviceTest(test.TestCase):
 
     self.assertEqual(len(config.get_visible_devices('CPU')), 1)
     self.assertGreater(len(config.get_visible_devices('GPU')), 0)
-
-    # get_visible_devices filters out XLA_* devices.  list_logical_devices does
-    # not, but we can't call it here because it initializes the devices and
-    # calling set_visible_devices after that is disallowed.
-    self.assertEqual(len(config.get_visible_devices('XLA_GPU')), 0)
-
     config.set_visible_devices(cpus[0])
     self.assertEqual(len(config.get_visible_devices('CPU')), 1)
     self.assertEqual(len(config.get_visible_devices('GPU')), 0)
-    self.assertEqual(len(config.list_logical_devices('XLA_GPU')), 0)
 
-    with self.assertRaisesRegexp(errors.InvalidArgumentError,
-                                 'Could not satisfy'):
+    with self.assertRaisesRegexp(RuntimeError, 'unknown device'):
       with ops.device('/device:GPU:0'):
-        a = array_ops.identity(1.0)
-        self.evaluate(a)
-
-    with self.assertRaisesRegexp(errors.InvalidArgumentError,
-                                 'Could not satisfy'):
-      with ops.device('/device:XLA_GPU:0'):
-        a = array_ops.identity(1.0)
+        a = constant_op.constant(1.0)
         self.evaluate(a)
 
     # Modifying the visible devices is not supported
@@ -469,7 +453,6 @@ class DeviceTest(test.TestCase):
   @test_util.run_gpu_only
   @reset_eager
   def testVirtualGpu(self):
-    config.set_soft_device_placement(False)
     gpus = config.list_physical_devices('GPU')
     self.assertNotEqual(len(gpus), 0)
 
@@ -484,13 +467,12 @@ class DeviceTest(test.TestCase):
     self.assertTrue(len(logical_gpus), len(gpus) + 1)
     for i in range(0, len(logical_gpus)):
       with ops.device('/device:GPU:' + str(i)):
-        a = array_ops.identity(1.0)
+        a = constant_op.constant(1.0)
         self.evaluate(a)
 
-    with self.assertRaisesRegexp(errors.InvalidArgumentError,
-                                 'Could not satisfy'):
+    with self.assertRaisesRegexp(RuntimeError, 'unknown device'):
       with ops.device('/device:GPU:' + str(len(logical_gpus))):
-        a = array_ops.identity(1.0)
+        a = constant_op.constant(1.0)
         self.evaluate(a)
 
     # Modifying the GPU configuration is not supported
@@ -620,7 +602,7 @@ class DeviceTest(test.TestCase):
       self.assertIsNotNone(gpu.name)
 
   @reset_eager
-  def testV1CompatibilityDummyInvisibleDeviceList(self):
+  def testV1CompatibilityDummyInivisibleDeviceList(self):
     gpus = config.list_physical_devices('GPU')
     if gpus:
       self.skipTest('Test requires no GPUs')

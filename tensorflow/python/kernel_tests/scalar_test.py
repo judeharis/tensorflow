@@ -31,16 +31,15 @@ import tensorflow.python.ops.nn_grad  # pylint: disable=unused-import
 from tensorflow.python.platform import test
 
 
-# TODO(rmlarsen) : Remove this test completely after we stop supporting GraphDef
-# version 5 and remove support of legacy scalars from Concat, Fill, Range,
-# and Reshape.
 class ScalarTest(test.TestCase):
 
-  def check(self, op, args, error, correct=None, lenient=None, strict=[5, 6]):
-    if lenient is None:
-      lenient = []
+  def check(self, op, args, error, correct=None):
+    # Within Google, the switch to scalar strict occurred at version 6.
+    lenient = []
+    strict = [5, 6]
+
     # Use placeholders to bypass shape inference, since only the C++
-    # G raphDef level is ever scalar lenient.
+    # GraphDef level is ever scalar lenient.
     def placeholders(args, feed):
       if isinstance(args, tuple):
         return [placeholders(x, feed) for x in args]
@@ -67,21 +66,18 @@ class ScalarTest(test.TestCase):
               self.assertAllEqual(r, correct)
 
   def testConcat(self):
-    for data in (2, [3], 7), ([2], 3, 7), ([2], [3], 7):
+    self.check(array_ops.concat, (([2], [3], [7]), [0]),
+               'axis tensor should be a scalar integer', [2, 3, 7])
+    for data in (2, 3, 7), (2, [3], 7), (2, 3, [7]):
+      self.check(array_ops.concat, (data, 0),
+                 r'Expected \w+ dimensions in the range \[0, 0\)', [2, 3, 7])
+    for data in ([2], 3, 7), ([2], [3], 7):
       self.check(array_ops.concat, (data, 0),
                  r'Ranks of all input tensors should match', [2, 3, 7])
 
   def testFill(self):
-    self.check(
-        array_ops.fill, (2, 3),
-        'dims must be a vector', [3, 3],
-        lenient=[5, 6],
-        strict=[])
-    self.check(
-        array_ops.fill, ([2], [3]),
-        'value must be a scalar', [3, 3],
-        lenient=[5, 6],
-        strict=[])
+    self.check(array_ops.fill, (2, 3), 'dims must be a vector', [3, 3])
+    self.check(array_ops.fill, ([2], [3]), 'value must be a scalar', [3, 3])
 
   def testPad(self):
     self.check(array_ops.pad, (7, [[1, 2]]),
@@ -92,11 +88,7 @@ class ScalarTest(test.TestCase):
     self.check(random_ops.random_uniform, (3,), 'shape must be a vector')
 
   def testReshape(self):
-    self.check(
-        array_ops.reshape, (7, 1),
-        'sizes input must be 1-D', [7],
-        lenient=[5, 6],
-        strict=[])
+    self.check(array_ops.reshape, (7, 1), 'sizes input must be 1-D', [7])
 
   def testShardedFilename(self):
     self.check(gen_io_ops.sharded_filename, ('foo', 4, [100]),
@@ -111,21 +103,9 @@ class ScalarTest(test.TestCase):
                'num_segments should be a scalar', [0, 7, 0, 0])
 
   def testRange(self):
-    self.check(
-        math_ops.range, ([0], 3, 2),
-        'start must be a scalar', [0, 2],
-        lenient=[5, 6],
-        strict=[])
-    self.check(
-        math_ops.range, (0, [3], 2),
-        'limit must be a scalar', [0, 2],
-        lenient=[5, 6],
-        strict=[])
-    self.check(
-        math_ops.range, (0, 3, [2]),
-        'delta must be a scalar', [0, 2],
-        lenient=[5, 6],
-        strict=[])
+    self.check(math_ops.range, ([0], 3, 2), 'start must be a scalar', [0, 2])
+    self.check(math_ops.range, (0, [3], 2), 'limit must be a scalar', [0, 2])
+    self.check(math_ops.range, (0, 3, [2]), 'delta must be a scalar', [0, 2])
 
   def testSlice(self):
     data = np.arange(10)

@@ -47,8 +47,6 @@ class LSTMLayerTest(keras_parameterized.TestCase):
 
   @tf_test_util.run_v2_only
   def test_float64_LSTM(self):
-    if test.is_built_with_rocm():
-      self.skipTest('Double type is yet not supported in ROCm')
     num_samples = 2
     timesteps = 3
     embedding_dim = 4
@@ -87,7 +85,8 @@ class LSTMLayerTest(keras_parameterized.TestCase):
     model.compile(
         'rmsprop',
         'mse',
-        run_eagerly=testing_utils.should_run_eagerly())
+        run_eagerly=testing_utils.should_run_eagerly(),
+        experimental_run_tf_function=testing_utils.should_run_tf_function())
 
     x = np.random.random((num_samples, timesteps, embedding_dim))
     y = np.random.random((num_samples, units))
@@ -143,9 +142,6 @@ class LSTMLayerTest(keras_parameterized.TestCase):
 
   @parameterized.parameters([True, False])
   def test_with_masking_layer_LSTM(self, unroll):
-    if test.is_built_with_rocm():
-      self.skipTest(
-          'Skipping the test as ROCm MIOpen does not support padded input.')
     layer_class = keras.layers.LSTM
     inputs = np.random.random((2, 3, 4))
     targets = np.abs(np.random.random((2, 3, 5)))
@@ -156,7 +152,8 @@ class LSTMLayerTest(keras_parameterized.TestCase):
     model.compile(
         loss='categorical_crossentropy',
         optimizer='rmsprop',
-        run_eagerly=testing_utils.should_run_eagerly())
+        run_eagerly=testing_utils.should_run_eagerly(),
+        experimental_run_tf_function=testing_utils.should_run_tf_function())
     model.fit(inputs, targets, epochs=1, batch_size=2, verbose=1)
 
   @parameterized.parameters([True, False])
@@ -172,7 +169,8 @@ class LSTMLayerTest(keras_parameterized.TestCase):
     model.compile(
         loss='categorical_crossentropy',
         optimizer='rmsprop',
-        run_eagerly=testing_utils.should_run_eagerly())
+        run_eagerly=testing_utils.should_run_eagerly(),
+        experimental_run_tf_function=testing_utils.should_run_tf_function())
     model.fit(inputs, targets, epochs=1, batch_size=2, verbose=1)
 
   def test_from_config_LSTM(self):
@@ -205,7 +203,8 @@ class LSTMLayerTest(keras_parameterized.TestCase):
     model.compile(
         loss='categorical_crossentropy',
         optimizer=adam.AdamOptimizer(),
-        run_eagerly=testing_utils.should_run_eagerly())
+        run_eagerly=testing_utils.should_run_eagerly(),
+        experimental_run_tf_function=testing_utils.should_run_tf_function())
 
     inputs = np.random.random((num_samples, timesteps, embedding_dim))
     initial_state = [np.random.random((num_samples, units))
@@ -232,7 +231,8 @@ class LSTMLayerTest(keras_parameterized.TestCase):
     model.compile(
         loss='categorical_crossentropy',
         optimizer=adam.AdamOptimizer(),
-        run_eagerly=testing_utils.should_run_eagerly())
+        run_eagerly=testing_utils.should_run_eagerly(),
+        experimental_run_tf_function=testing_utils.should_run_tf_function())
 
     inputs = np.random.random((num_samples, timesteps, embedding_dim))
     targets = np.random.random((num_samples, units))
@@ -284,7 +284,8 @@ class LSTMLayerTest(keras_parameterized.TestCase):
     model.compile(
         loss='categorical_crossentropy',
         optimizer='rmsprop',
-        run_eagerly=testing_utils.should_run_eagerly())
+        run_eagerly=testing_utils.should_run_eagerly(),
+        experimental_run_tf_function=testing_utils.should_run_tf_function())
 
     inputs = np.random.random((num_samples, timesteps, embedding_dim))
     initial_state = [np.random.random((num_samples, units))
@@ -349,7 +350,8 @@ class LSTMLayerTest(keras_parameterized.TestCase):
     model.compile(
         loss='categorical_crossentropy',
         optimizer=adam.AdamOptimizer(),
-        run_eagerly=testing_utils.should_run_eagerly())
+        run_eagerly=testing_utils.should_run_eagerly(),
+        experimental_run_tf_function=testing_utils.should_run_tf_function())
 
     main_inputs = np.random.random((num_samples, timesteps, embedding_dim))
     initial_state = [np.random.random((num_samples, units))
@@ -379,9 +381,6 @@ class LSTMLayerTest(keras_parameterized.TestCase):
       self.assertEqual(len(layer.get_losses_for(x)), 1)
 
   def test_statefulness_LSTM(self):
-    if test.is_built_with_rocm():
-      self.skipTest(
-          'Skipping the test as ROCm MIOpen does not support padded input.')
     num_samples = 2
     timesteps = 3
     embedding_dim = 4
@@ -401,7 +400,8 @@ class LSTMLayerTest(keras_parameterized.TestCase):
     model.compile(
         optimizer=gradient_descent.GradientDescentOptimizer(0.01),
         loss='mse',
-        run_eagerly=testing_utils.should_run_eagerly())
+        run_eagerly=testing_utils.should_run_eagerly(),
+        experimental_run_tf_function=testing_utils.should_run_tf_function())
     out1 = model.predict(np.ones((num_samples, timesteps)))
     self.assertEqual(out1.shape, (num_samples, units))
 

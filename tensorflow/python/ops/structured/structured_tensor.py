@@ -19,7 +19,6 @@ from __future__ import division
 from __future__ import print_function
 
 import re
-
 import numpy as np
 
 from tensorflow.python.framework import composite_tensor
@@ -108,8 +107,7 @@ class StructuredTensor(composite_tensor.CompositeTensor):
       A `StructuredTensor`.
     """
     shape = tensor_shape.as_shape(shape)
-    rank = shape.ndims
-    if rank is None:
+    if shape.rank is None:
       raise ValueError("StructuredTensor's shape must have known rank.")
     if not isinstance(fields, dict):
       raise TypeError('fields must be a dictionary, got %s' %
@@ -134,6 +132,10 @@ class StructuredTensor(composite_tensor.CompositeTensor):
         self._fields[key] = value
 
     # Check the static TensorShape for this StructuredTensor.
+    shape = tensor_shape.as_shape(shape)
+    rank = shape.ndims
+    if rank is None:
+      raise ValueError("StructuredTensor's shape must have known rank.")
     self._static_shape = shape
     if rank > 0:
       for value in self._fields.values():
@@ -399,8 +401,10 @@ class StructuredTensor(composite_tensor.CompositeTensor):
       return self._fields[key[rank]].__getitem__(key[:rank] + key[rank + 1:])
 
   def __repr__(self):
-    return '<StructuredTensor(shape=%s, fields=%r)>' % (self._static_shape,
-                                                        self._fields)
+    if self._is_eager() and False:
+      return '<StructuredTensor %s>' % self.to_pyval()
+    else:
+      return 'StructuredTensor(%s, %r)' % (self._static_shape, self._fields)
 
   #=============================================================================
   # Conversion
@@ -450,7 +454,7 @@ class StructuredTensor(composite_tensor.CompositeTensor):
         value = value.to_list()
       elif isinstance(value, StructuredTensor):
         value = value.to_pyval()
-      # TODO(edloper): Throw an exception if value is an unexpected type.
+      # TODO(edloper): Throw an excpetion if value is an unexpected type.
       result[key] = value
 
     # If rank>0, then re-group each value from dict-of-list to list-of-dict.

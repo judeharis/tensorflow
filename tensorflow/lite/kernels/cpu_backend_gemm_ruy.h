@@ -21,6 +21,8 @@ limitations under the License.
 #include "tensorflow/lite/kernels/cpu_backend_context.h"
 #include "tensorflow/lite/kernels/cpu_backend_gemm_params.h"
 
+#include "tensorflow/lite/examples/label_image_secda/gemm_driver.h"
+
 namespace tflite {
 namespace cpu_backend_gemm {
 namespace detail {
@@ -41,7 +43,6 @@ void MakeRuyMatrix(const MatrixParams<Scalar>& params, DataPointer data_ptr,
   // It does care whether we assign to it a Scalar* or a const Scalar*.
   dst->data = data_ptr;
   dst->zero_point = params.zero_point;
-  dst->cacheable = params.cacheable;
 }
 
 template <typename GemmParamsType, typename RuySpecType>
@@ -95,6 +96,13 @@ struct GemmImplUsingRuy {
     ruy::Mul<kRuyPath>(ruy_lhs, ruy_rhs, ruy_spec, context->ruy_context(),
                        &ruy_dst);
   }
+
+   static void Run2(gemm_driver gd,
+      const MatrixParams<LhsScalar>& lhs_params, const LhsScalar* lhs_data,
+      const MatrixParams<RhsScalar>& rhs_params, const RhsScalar* rhs_data,
+      const MatrixParams<DstScalar>& dst_params, DstScalar* dst_data,
+      const GemmParams<AccumScalar, DstScalar, quantization_flavor>& params,
+      CpuBackendContext* context) {}
 };
 
 }  // namespace detail

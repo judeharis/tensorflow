@@ -131,10 +131,15 @@ TfLiteStatus Prepare8BitSubOp(TfLiteContext* context,
   tflite::QuantizeMultiplierSmallerThanOneExp(real_output_multiplier,
                                               &op_params->output_multiplier,
                                               &op_params->output_shift);
-
-  TF_LITE_ENSURE_STATUS(CalculateActivationRangeQuantized(
-      context, params->activation, output, &op_params->output_activation_min,
-      &op_params->output_activation_max));
+  if (output->type == kTfLiteUInt8) {
+    CalculateActivationRangeUint8(params->activation, output,
+                                  &op_params->output_activation_min,
+                                  &op_params->output_activation_max);
+  } else {
+    CalculateActivationRangeInt8(params->activation, output,
+                                 &op_params->output_activation_min,
+                                 &op_params->output_activation_max);
+  }
   return kTfLiteOk;
 }
 
@@ -178,9 +183,9 @@ TfLiteStatus PrepareInt16SubOp(TfLiteContext* context,
   TF_LITE_ENSURE(context, data->input1_shift <= 0);
   TF_LITE_ENSURE(context, data->input2_shift <= 0);
 
-  TF_LITE_ENSURE_STATUS(CalculateActivationRangeQuantized(
-      context, params->activation, output, &data->output_activation_min,
-      &data->output_activation_max));
+  CalculateActivationRangeQuantized(context, params->activation, output,
+                                    &data->output_activation_min,
+                                    &data->output_activation_max);
   return kTfLiteOk;
 }
 

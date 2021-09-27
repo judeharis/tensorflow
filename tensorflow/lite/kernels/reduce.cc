@@ -623,7 +623,7 @@ TfLiteStatus EvalGeneric(TfLiteContext* context, TfLiteNode* node) {
 
 TfLiteStatus EvalSum(TfLiteContext* context, TfLiteNode* node) {
   OpContext op_context(context, node);
-  ruy::profiler::ScopeLabel label("Sum");
+  gemmlowp::ScopedProfilingLabel label("Sum");
   const auto& input = op_context.input;
   const auto& output = op_context.output;
   const bool same_scale =

@@ -17,7 +17,12 @@ set -e
 set -x
 
 source tensorflow/tools/ci_build/release/common.sh
-install_bazelisk
+
+# Install latest bazel
+update_bazel_macos
+which bazel
+
+set_bazel_outdir
 
 # Pick a version of xcode
 export DEVELOPER_DIR=/Applications/Xcode_10.3.app/Contents/Developer

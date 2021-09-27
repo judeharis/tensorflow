@@ -19,7 +19,6 @@ limitations under the License.
 
 #include "tensorflow/core/platform/logging.h"
 #include "tensorflow/core/platform/net.h"
-#include "tensorflow/core/platform/path.h"
 #include "tensorflow/core/platform/strcat.h"
 #include "tensorflow/core/platform/types.h"
 
@@ -62,13 +61,15 @@ string TensorFlowSrcRoot() {
   const char* workspace = getenv("TEST_WORKSPACE");
   if (env && env[0] != '\0') {
     if (workspace && workspace[0] != '\0') {
-      return io::JoinPath(env, workspace, "tensorflow");
+      return strings::StrCat(env, "/", workspace, "/tensorflow");
+    } else {
+      return strings::StrCat(env, "/tensorflow");
     }
-    return io::JoinPath(env, "tensorflow");
+  } else {
+    LOG(WARNING) << "TEST_SRCDIR environment variable not set: "
+                 << "using $PWD/tensorflow as TensorFlowSrcRoot() for tests.";
+    return "tensorflow";
   }
-  LOG(WARNING) << "TEST_SRCDIR environment variable not set: "
-               << "using $PWD/tensorflow as TensorFlowSrcRoot() for tests.";
-  return "tensorflow";
 }
 
 }  // namespace testing

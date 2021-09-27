@@ -84,10 +84,9 @@ Benchmark::Benchmark(const string& device, Graph* g,
   LocalExecutorParams params;
   params.device = device_.get();
   params.function_library = nullptr;
-  params.create_kernel = [this, graph_def_version](
-                             const std::shared_ptr<const NodeProperties>& props,
-                             OpKernel** kernel) {
-    return CreateNonCachedKernel(device_.get(), nullptr, props,
+  params.create_kernel = [this, graph_def_version](const NodeDef& ndef,
+                                                   OpKernel** kernel) {
+    return CreateNonCachedKernel(device_.get(), nullptr, ndef,
                                  graph_def_version, kernel);
   };
   params.delete_kernel = [](OpKernel* kernel) {

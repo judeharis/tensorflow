@@ -35,25 +35,13 @@ namespace tensorflow {
 namespace example {
 
 // FastParseExampleConfig defines how to parse features in Example.
-// Each sub-config is responsible for one feature identified with feature_name.
+// Each sub-config is responsible for one feature identified with feautre_name.
 // FastParseExampleConfig can't have two sub-configs with the same feature_name.
 // dtype identifies the type of output vector and the kind of Feature expected
 // in Example.
 struct FastParseExampleConfig {
   struct Dense {
-    Dense(StringPiece feature_name, DataType dtype, PartialTensorShape shape,
-          Tensor default_value, bool variable_length,
-          std::size_t elements_per_stride)
-        : feature_name(feature_name),  // TODO(mrry): Switch to preallocated
-                                       // tstring when this is available.
-          dtype(dtype),
-          shape(std::move(shape)),
-          default_value(std::move(default_value)),
-          variable_length(variable_length),
-          elements_per_stride(elements_per_stride) {}
-    Dense() = default;
-
-    tstring feature_name;
+    string feature_name;
     DataType dtype;
     // These 2 fields correspond exactly to dense_shapes and dense_defaults in
     // ParseExample op.
@@ -65,25 +53,12 @@ struct FastParseExampleConfig {
   };
 
   struct Sparse {
-    Sparse(StringPiece feature_name, DataType dtype)
-        : feature_name(feature_name),  // TODO(mrry): Switch to preallocated
-                                       // tstring when this is available.
-          dtype(dtype) {}
-    Sparse() = default;
-
-    tstring feature_name;
+    string feature_name;
     DataType dtype;
   };
 
   struct Ragged {
-    Ragged(StringPiece feature_name, DataType dtype, DataType splits_dtype)
-        : feature_name(feature_name),  // TODO(mrry): Switch to preallocated
-                                       // tstring when this is available.
-          dtype(dtype),
-          splits_dtype(splits_dtype) {}
-    Ragged() = default;
-
-    tstring feature_name;
+    string feature_name;
     DataType dtype;
     DataType splits_dtype;
   };
@@ -142,7 +117,7 @@ Status FastParseExample(const FastParseExampleConfig& config,
 typedef FastParseExampleConfig FastParseSingleExampleConfig;
 
 Status FastParseSingleExample(const FastParseSingleExampleConfig& config,
-                              StringPiece serialized, Result* result);
+                              absl::string_view serialized, Result* result);
 
 // Parses a batch of serialized SequenceExample protos and converts them into
 // result according to given config.

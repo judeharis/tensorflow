@@ -86,15 +86,6 @@ BM_UNARY(cpu, Rint, float, DT_FLOAT);
 BM_UNARY(gpu, Rint, float, DT_FLOAT);
 #endif  // GOOGLE_CUDA || TENSORFLOW_USE_ROCM
 
-BM_UNARY(cpu, Round, double, DT_DOUBLE);
-#if GOOGLE_CUDA || TENSORFLOW_USE_ROCM
-BM_UNARY(gpu, Round, double, DT_DOUBLE);
-#endif  // GOOGLE_CUDA || TENSORFLOW_USE_ROCM
-BM_UNARY(cpu, Round, float, DT_FLOAT);
-#if GOOGLE_CUDA || TENSORFLOW_USE_ROCM
-BM_UNARY(gpu, Round, float, DT_FLOAT);
-#endif  // GOOGLE_CUDA || TENSORFLOW_USE_ROCM
-
 // data func scalar.
 Graph* BinaryScalar(int num, const string& func) {
   Graph* g = new Graph(OpRegistry::Global());
@@ -147,9 +138,9 @@ BM_BINARY_SCALAR(sycl, Add);
 #endif  // TENSORFLOW_USE_SYCL
 
 BM_BINARY_SCALAR(cpu, DivNoNan);
-#if GOOGLE_CUDA || TENSORFLOW_USE_ROCM
+#if GOOGLE_CUDA
 BM_BINARY_SCALAR(gpu, DivNoNan);
-#endif  // GOOGLE_CUDA || TENSORFLOW_USE_ROCM
+#endif  // GOOGLE_CUDA
 #ifdef TENSORFLOW_USE_SYCL
 BM_BINARY_SCALAR(sycl, DivNoNan);
 #endif  // TENSORFLOW_USE_SYCL
@@ -204,11 +195,11 @@ Graph* CubeWithMulSquare(int num) {
 BM_CUBE(cpu, CubeWithPow3);
 BM_CUBE(cpu, CubeWithTwoMuls);
 BM_CUBE(cpu, CubeWithMulSquare);
-#if GOOGLE_CUDA || TENSORFLOW_USE_ROCM
+#if GOOGLE_CUDA
 BM_CUBE(gpu, CubeWithPow3);
 BM_CUBE(gpu, CubeWithTwoMuls);
 BM_CUBE(gpu, CubeWithMulSquare);
-#endif  // GOOGLE_CUDA || TENSORFLOW_USE_ROCM
+#endif  // GOOGLE_CUDA
 #ifdef TENSORFLOW_USE_SYCL
 BM_CUBE(sycl, CubeWithPow3);
 BM_CUBE(sycl, CubeWithTwoMuls);

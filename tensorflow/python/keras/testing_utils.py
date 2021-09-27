@@ -71,7 +71,7 @@ def get_test_data(train_samples,
           (x[train_samples:], y[train_samples:]))
 
 
-@test_util.disable_cudnn_autotune
+@test_util.use_deterministic_cudnn
 def layer_test(layer_cls, kwargs=None, input_shape=None, input_dtype=None,
                input_data=None, expected_output=None,
                expected_output_dtype=None, expected_output_shape=None,
@@ -228,7 +228,6 @@ def layer_test(layer_cls, kwargs=None, input_shape=None, input_dtype=None,
     layer.adapt(adapt_data)
 
   model = keras.models.Sequential()
-  model.add(keras.layers.Input(shape=input_shape[1:], dtype=input_dtype))
   model.add(layer)
   actual_output = model.predict(input_data)
   actual_output_shape = actual_output.shape
@@ -606,15 +605,6 @@ def get_model_from_layers(layers,
   raise ValueError('Unknown model type {}'.format(model_type))
 
 
-class Bias(keras.layers.Layer):
-
-  def build(self, input_shape):
-    self.bias = self.add_variable('bias', (1,), initializer='zeros')
-
-  def call(self, inputs):
-    return inputs + self.bias
-
-
 class _MultiIOSubclassModel(keras.Model):
   """Multi IO Keras subclass model."""
 
@@ -632,9 +622,6 @@ class _MultiIOSubclassModel(keras.Model):
         inputs = layer(inputs)
       a = inputs
       b = inputs
-    elif isinstance(inputs, dict):
-      a = inputs['input_1']
-      b = inputs['input_2']
     else:
       a, b = inputs
 

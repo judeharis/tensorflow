@@ -16,6 +16,7 @@ limitations under the License.
 #include "tensorflow/core/lib/io/inputbuffer.h"
 
 #include <vector>
+#include "tensorflow/core/platform/env.h"
 
 #include "tensorflow/core/lib/core/coding.h"
 #include "tensorflow/core/lib/core/errors.h"
@@ -23,7 +24,6 @@ limitations under the License.
 #include "tensorflow/core/lib/core/status_test_util.h"
 #include "tensorflow/core/lib/strings/str_util.h"
 #include "tensorflow/core/lib/strings/strcat.h"
-#include "tensorflow/core/platform/env.h"
 #include "tensorflow/core/platform/logging.h"
 #include "tensorflow/core/platform/test.h"
 
@@ -37,8 +37,7 @@ static std::vector<int> BufferSizes() {
 
 TEST(InputBuffer, ReadLine_Empty) {
   Env* env = Env::Default();
-  string fname;
-  ASSERT_TRUE(env->LocalTempFilename(&fname));
+  string fname = testing::TmpDir() + "/inputbuffer_test";
   TF_ASSERT_OK(WriteStringToFile(env, fname, ""));
 
   for (auto buf_size : BufferSizes()) {
@@ -52,8 +51,7 @@ TEST(InputBuffer, ReadLine_Empty) {
 
 TEST(InputBuffer, ReadLine1) {
   Env* env = Env::Default();
-  string fname;
-  ASSERT_TRUE(env->LocalTempFilename(&fname));
+  string fname = testing::TmpDir() + "/inputbuffer_test";
   TF_CHECK_OK(
       WriteStringToFile(env, fname, "line one\nline two\nline three\n"));
 
@@ -76,8 +74,7 @@ TEST(InputBuffer, ReadLine1) {
 
 TEST(InputBuffer, ReadLine_NoTrailingNewLine) {
   Env* env = Env::Default();
-  string fname;
-  ASSERT_TRUE(env->LocalTempFilename(&fname));
+  string fname = testing::TmpDir() + "/inputbuffer_test";
   TF_ASSERT_OK(WriteStringToFile(env, fname, "line one\nline two\nline three"));
 
   for (auto buf_size : BufferSizes()) {
@@ -99,8 +96,7 @@ TEST(InputBuffer, ReadLine_NoTrailingNewLine) {
 
 TEST(InputBuffer, ReadLine_EmptyLines) {
   Env* env = Env::Default();
-  string fname;
-  ASSERT_TRUE(env->LocalTempFilename(&fname));
+  string fname = testing::TmpDir() + "/inputbuffer_test";
   TF_CHECK_OK(
       WriteStringToFile(env, fname, "line one\n\n\nline two\nline three"));
 
@@ -127,8 +123,7 @@ TEST(InputBuffer, ReadLine_EmptyLines) {
 
 TEST(InputBuffer, ReadLine_CRLF) {
   Env* env = Env::Default();
-  string fname;
-  ASSERT_TRUE(env->LocalTempFilename(&fname));
+  string fname = testing::TmpDir() + "/inputbuffer_test";
   TF_ASSERT_OK(WriteStringToFile(env, fname,
                                  "line one\r\n\r\n\r\nline two\r\nline three"));
 
@@ -155,8 +150,7 @@ TEST(InputBuffer, ReadLine_CRLF) {
 
 TEST(InputBuffer, ReadNBytes) {
   Env* env = Env::Default();
-  string fname;
-  ASSERT_TRUE(env->LocalTempFilename(&fname));
+  string fname = testing::TmpDir() + "/inputbuffer_test";
   TF_ASSERT_OK(WriteStringToFile(env, fname, "0123456789"));
 
   // ReadNBytes(int64, string*).
@@ -229,8 +223,7 @@ TEST(InputBuffer, ReadNBytes) {
 
 TEST(InputBuffer, SkipNBytes) {
   Env* env = Env::Default();
-  string fname;
-  ASSERT_TRUE(env->LocalTempFilename(&fname));
+  string fname = testing::TmpDir() + "/inputbuffer_test";
   TF_ASSERT_OK(WriteStringToFile(env, fname, "0123456789"));
 
   for (auto buf_size : BufferSizes()) {
@@ -265,8 +258,7 @@ TEST(InputBuffer, SkipNBytes) {
 
 TEST(InputBuffer, Seek) {
   Env* env = Env::Default();
-  string fname;
-  ASSERT_TRUE(env->LocalTempFilename(&fname));
+  string fname = testing::TmpDir() + "/inputbuffer_test";
   TF_ASSERT_OK(WriteStringToFile(env, fname, "0123456789"));
 
   for (auto buf_size : BufferSizes()) {
@@ -301,8 +293,7 @@ TEST(InputBuffer, Seek) {
 
 TEST(InputBuffer, ReadVarint32) {
   Env* env = Env::Default();
-  string fname;
-  ASSERT_TRUE(env->LocalTempFilename(&fname));
+  string fname = testing::TmpDir() + "/inputbuffer_test";
 
   // Generates data.
   std::vector<uint32> data;
@@ -340,8 +331,7 @@ TEST(InputBuffer, ReadVarint32) {
 
 TEST(InputBuffer, ReadVarint64) {
   Env* env = Env::Default();
-  string fname;
-  ASSERT_TRUE(env->LocalTempFilename(&fname));
+  string fname = testing::TmpDir() + "/inputbuffer_test";
 
   // Generates data.
   std::vector<uint64> data;

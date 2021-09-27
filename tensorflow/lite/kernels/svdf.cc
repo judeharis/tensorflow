@@ -39,6 +39,7 @@ namespace {
 struct OpData {
   int scratch_tensor_index;
   bool float_weights_time_initialized;
+  int activation_state_tensor_index;
   int32 effective_scale_1_a;
   int effective_scale_1_b;
   int32 effective_scale_2_a;
@@ -79,6 +80,8 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   // Check we have all the inputs and outputs we need.
   TF_LITE_ENSURE_EQ(context, node->outputs->size, 1);
   TF_LITE_ENSURE_EQ(context, node->inputs->size, 5);
+  op_data->activation_state_tensor_index =
+      node->inputs->data[kInputActivationStateTensor];
 
   const TfLiteTensor* input = GetInput(context, node, kInputTensor);
   const TfLiteTensor* weights_feature =
@@ -94,7 +97,6 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   const int rank = params->rank;
   const int batch_size = input->dims->data[0];
   const int num_filters = weights_feature->dims->data[0];
-  TF_LITE_ENSURE(context, rank != 0);
   TF_LITE_ENSURE_EQ(context, num_filters % rank, 0);
   const int num_units = num_filters / rank;
   const int memory_size = weights_time->dims->data[1];
@@ -107,8 +109,8 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
     TF_LITE_ENSURE_EQ(context, bias->dims->data[0], num_units);
   }
 
-  const TfLiteTensor* activation_state =
-      GetInput(context, node, kInputActivationStateTensor);
+  TfLiteTensor* activation_state =
+      &context->tensors[op_data->activation_state_tensor_index];
   TfLiteTensor* output = GetOutput(context, node, kOutputTensor);
 
   // Check the shape of input state tensors.
@@ -248,7 +250,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   TfLiteTensor* scratch = GetTemporary(context, node, /*index=*/0);
 
   TfLiteTensor* activation_state =
-      GetVariableInput(context, node, kInputActivationStateTensor);
+      &context->tensors[op_data->activation_state_tensor_index];
   TfLiteTensor* output = GetOutput(context, node, kOutputTensor);
 
   switch (weights_feature->type) {

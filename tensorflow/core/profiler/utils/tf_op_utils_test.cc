@@ -22,7 +22,7 @@ namespace profiler {
 namespace {
 
 TEST(TfOpUtilsTest, TfOpTest) {
-  const absl::string_view kName = "OpName:OpType";
+  constexpr absl::string_view kName = "OpName:OpType";
   TfOp tf_op = ParseTfOpFullname(kName);
   EXPECT_EQ(tf_op.name, "OpName");
   EXPECT_EQ(tf_op.type, "OpType");
@@ -30,7 +30,7 @@ TEST(TfOpUtilsTest, TfOpTest) {
 }
 
 TEST(TfOpUtilsTest, InternalTfOpTest) {
-  const absl::string_view kName = "OpName:_InternalOpType";
+  constexpr absl::string_view kName = "OpName:_InternalOpType";
   TfOp tf_op = ParseTfOpFullname(kName);
   EXPECT_EQ(tf_op.name, "OpName");
   EXPECT_EQ(tf_op.type, "_InternalOpType");
@@ -38,7 +38,7 @@ TEST(TfOpUtilsTest, InternalTfOpTest) {
 }
 
 TEST(TfOpUtilsTest, TfOpWithPathTest) {
-  const absl::string_view kName = "path/to/name:OpType";
+  constexpr absl::string_view kName = "path/to/name:OpType";
   TfOp tf_op = ParseTfOpFullname(kName);
   EXPECT_EQ(tf_op.name, "path/to/name");
   EXPECT_EQ(tf_op.type, "OpType");
@@ -46,7 +46,7 @@ TEST(TfOpUtilsTest, TfOpWithPathTest) {
 }
 
 TEST(TfOpUtilsTest, ShortDatasetOpTest) {
-  const absl::string_view kName = "Iterator::Batch";
+  constexpr absl::string_view kName = "Iterator::Batch";
   TfOp tf_op = ParseTfOpFullname(kName);
   EXPECT_EQ(tf_op.name, kName);
   EXPECT_TRUE(IsDatasetOp(tf_op.type));
@@ -54,7 +54,7 @@ TEST(TfOpUtilsTest, ShortDatasetOpTest) {
 }
 
 TEST(TfOpUtilsTest, LongDatasetOpTest) {
-  const absl::string_view kName = "Iterator::Batch::Map::TfRecord";
+  constexpr absl::string_view kName = "Iterator::Batch::Map::TfRecord";
   TfOp tf_op = ParseTfOpFullname(kName);
   EXPECT_EQ(tf_op.name, kName);
   EXPECT_TRUE(IsDatasetOp(tf_op.type));
@@ -62,7 +62,7 @@ TEST(TfOpUtilsTest, LongDatasetOpTest) {
 }
 
 TEST(TfOpUtilsTest, TraceMeTest) {
-  const absl::string_view kName = "MyTraceMe";
+  constexpr absl::string_view kName = "MyTraceMe";
   TfOp tf_op = ParseTfOpFullname(kName);
   EXPECT_EQ(tf_op.name, kName);
   EXPECT_TRUE(IsUnknownOp(tf_op.type));
@@ -71,7 +71,7 @@ TEST(TfOpUtilsTest, TraceMeTest) {
 
 TEST(TfOpUtilsTest, TraceMeWithColonTest) {
   // "12345" is not a valid op type.
-  const absl::string_view kName = "RunStep/Server:54635";
+  constexpr absl::string_view kName = "RunStep/Server:54635";
   TfOp tf_op = ParseTfOpFullname(kName);
   EXPECT_EQ(tf_op.name, kName);
   EXPECT_TRUE(IsUnknownOp(tf_op.type));
@@ -79,7 +79,7 @@ TEST(TfOpUtilsTest, TraceMeWithColonTest) {
 }
 
 TEST(TfOpUtilsTest, TraceMeWithDoubleColonTest) {
-  const absl::string_view kName = "XLA::StartProgram";
+  constexpr absl::string_view kName = "XLA::StartProgram";
   TfOp tf_op = ParseTfOpFullname(kName);
   EXPECT_EQ(tf_op.name, kName);
   EXPECT_TRUE(IsUnknownOp(tf_op.type));
@@ -87,8 +87,8 @@ TEST(TfOpUtilsTest, TraceMeWithDoubleColonTest) {
 }
 
 TEST(TfOpUtilsTest, TraceMeWithTrailingWhitespaceTest) {
-  const absl::string_view kName = "SessionRun ";
-  const absl::string_view kNameTrimmed = "SessionRun";
+  constexpr absl::string_view kName = "SessionRun ";
+  constexpr absl::string_view kNameTrimmed = "SessionRun";
   TfOp tf_op = ParseTfOpFullname(kName);
   EXPECT_EQ(tf_op.name, kName);
   EXPECT_TRUE(IsUnknownOp(tf_op.type));

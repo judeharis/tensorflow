@@ -17,7 +17,12 @@ set -e
 set -x
 
 source tensorflow/tools/ci_build/release/common.sh
-install_bazelisk
+
+# Install latest bazel
+update_bazel_macos
+which bazel
+bazel version
+set_bazel_outdir
 
 # Install pip dependencies
 install_macos_pip_deps sudo pip3.6

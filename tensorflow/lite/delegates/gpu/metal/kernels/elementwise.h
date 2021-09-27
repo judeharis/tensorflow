@@ -27,7 +27,7 @@ namespace metal {
 
 std::vector<ComputeTaskDescriptorPtr> ElementwiseWithTwoInputs(
     int id, std::vector<ValueId> input_ids, ValueId output_id,
-    OperationType op_type, const ElementwiseAttributes* attr);
+    OperationType op_type);
 
 std::vector<ComputeTaskDescriptorPtr> ElementwiseWithOneInput(
     int id, ValueId input_id, ValueId output_id, OperationType op_type);

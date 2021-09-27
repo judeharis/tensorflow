@@ -139,7 +139,8 @@ class TestGeneratorMethods(keras_parameterized.TestCase):
         loss='mse',
         optimizer=rmsprop.RMSprop(1e-3),
         metrics=['mae', metrics_module.CategoricalAccuracy()],
-        run_eagerly=testing_utils.should_run_eagerly())
+        run_eagerly=testing_utils.should_run_eagerly(),
+        experimental_run_tf_function=testing_utils.should_run_tf_function())
 
     model.evaluate_generator(custom_generator_threads(),
                              steps=5,
@@ -164,6 +165,7 @@ class TestGeneratorMethods(keras_parameterized.TestCase):
     model = testing_utils.get_small_mlp(
         num_hidden=3, num_classes=4, input_dim=2)
     model.run_eagerly = testing_utils.should_run_eagerly()
+    model._experimental_run_tf_function = testing_utils.should_run_tf_function()
 
     model.predict_generator(custom_generator_threads(),
                             steps=5,
@@ -202,7 +204,8 @@ class TestGeneratorMethods(keras_parameterized.TestCase):
         loss='mse',
         optimizer=rmsprop.RMSprop(1e-3),
         metrics=['mae', metrics_module.CategoricalAccuracy()],
-        run_eagerly=testing_utils.should_run_eagerly())
+        run_eagerly=testing_utils.should_run_eagerly(),
+        experimental_run_tf_function=testing_utils.should_run_tf_function())
 
     model.fit_generator(custom_generator(mode=3),
                         steps_per_epoch=5,
@@ -239,16 +242,18 @@ class TestGeneratorMethods(keras_parameterized.TestCase):
     model.compile(
         loss='mse',
         optimizer=rmsprop.RMSprop(1e-3),
-        run_eagerly=testing_utils.should_run_eagerly())
+        run_eagerly=testing_utils.should_run_eagerly(),
+        experimental_run_tf_function=testing_utils.should_run_tf_function())
 
-    with self.assertRaises(ValueError):
+    err_msg = 'Output of generator should be a tuple of 1 or 2 or 3 elements'
+    with self.assertRaisesRegex(ValueError, err_msg):
       model.fit_generator(invalid_generator(),
                           steps_per_epoch=5,
                           epochs=1,
                           verbose=1,
                           max_queue_size=10,
                           use_multiprocessing=False)
-    with self.assertRaises(ValueError):
+    with self.assertRaisesRegex(ValueError, err_msg):
       model.fit_generator(custom_generator(),
                           steps_per_epoch=5,
                           epochs=1,
@@ -257,12 +262,12 @@ class TestGeneratorMethods(keras_parameterized.TestCase):
                           use_multiprocessing=False,
                           validation_data=invalid_generator(),
                           validation_steps=10)
-    with self.assertRaises(ValueError):
+    with self.assertRaisesRegex(ValueError, err_msg):
       model.predict_generator(invalid_generator(),
                               steps=5,
                               max_queue_size=10,
                               use_multiprocessing=False)
-    with self.assertRaises(ValueError):
+    with self.assertRaisesRegex(ValueError, err_msg):
       model.evaluate_generator(invalid_generator(),
                                steps=5,
                                max_queue_size=10,
@@ -283,7 +288,8 @@ class TestGeneratorMethods(keras_parameterized.TestCase):
     model.compile(
         rmsprop.RMSprop(0.001),
         'binary_crossentropy',
-        run_eagerly=testing_utils.should_run_eagerly())
+        run_eagerly=testing_utils.should_run_eagerly(),
+        experimental_run_tf_function=testing_utils.should_run_tf_function())
     model.fit(
         ones_generator(),
         steps_per_epoch=2,
@@ -298,7 +304,8 @@ class TestGeneratorMethods(keras_parameterized.TestCase):
     model.compile(
         loss='mse',
         optimizer=rmsprop.RMSprop(1e-3),
-        metrics=['mae', metrics_module.CategoricalAccuracy()])
+        metrics=['mae', metrics_module.CategoricalAccuracy()],
+        experimental_run_tf_function=testing_utils.should_run_tf_function())
     model.fit_generator(custom_generator_changing_batch_size(),
                         steps_per_epoch=5,
                         epochs=1,
@@ -325,9 +332,36 @@ class TestGeneratorMethods(keras_parameterized.TestCase):
 
   @keras_parameterized.run_with_all_model_types
   @keras_parameterized.run_all_keras_modes
+  def test_invalid_batch_size_argument(self):
+
+    def ones_generator():
+      while True:
+        yield np.ones([10, 10], np.float32), np.ones([10, 1], np.float32)
+
+    model = testing_utils.get_small_mlp(
+        num_hidden=10, num_classes=1, input_dim=10)
+
+    model.compile(
+        'adam',
+        'binary_crossentropy',
+        run_eagerly=testing_utils.should_run_eagerly(),
+        experimental_run_tf_function=testing_utils.should_run_tf_function())
+
+    with self.assertRaisesRegexp(
+        ValueError, 'The `batch_size` argument must not be specified'):
+      model.fit(ones_generator(), batch_size=2, epochs=2)
+    with self.assertRaisesRegexp(
+        ValueError, 'The `batch_size` argument must not be specified'):
+      model.evaluate(ones_generator(), batch_size=2)
+
+    with self.assertRaisesRegexp(
+        ValueError, 'The `batch_size` argument must not be specified'):
+      model.predict(ones_generator(), batch_size=2)
+
+  @keras_parameterized.run_with_all_model_types
+  @keras_parameterized.run_all_keras_modes
   @data_utils.dont_use_multiprocessing_pool
   def test_generator_dynamic_shapes(self):
-
     x = [
         'I think juice is great',
         'unknown is the best language since slicedbread',
@@ -453,31 +487,6 @@ class TestGeneratorMethodsWithSequences(keras_parameterized.TestCase):
               validation_data=val_data, epochs=2)
     model.evaluate(CustomSequenceChangingBatchSize())
     model.predict(CustomSequenceChangingBatchSize())
-
-  @keras_parameterized.run_all_keras_modes(always_skip_v1=True)
-  def test_sequence_on_epoch_end(self):
-
-    class MySequence(data_utils.Sequence):
-
-      def __init__(self):
-        self.epochs = 0
-
-      def __getitem__(self, idx):
-        return np.ones([10, 10], np.float32), np.ones([10, 1], np.float32)
-
-      def __len__(self):
-        return 2
-
-      def on_epoch_end(self):
-        self.epochs += 1
-
-    inputs = keras.Input(10)
-    outputs = keras.layers.Dense(1)(inputs)
-    model = keras.Model(inputs, outputs)
-    model.compile('sgd', 'mse')
-    my_seq = MySequence()
-    model.fit(my_seq, epochs=2)
-    self.assertEqual(my_seq.epochs, 2)
 
 
 @tf_test_util.run_all_in_graph_and_eager_modes

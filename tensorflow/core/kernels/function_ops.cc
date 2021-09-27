@@ -315,17 +315,28 @@ void RemoteCallOp::ComputeAsync(OpKernelContext* ctx, DoneCallback done) {
   const string& source_device = lib->device()->name();
   const Tensor* target;
   OP_REQUIRES_OK_ASYNC(ctx, ctx->input("target", &target), done);
-
-  FunctionTarget function_target;
+  string target_device;
   OP_REQUIRES_OK_ASYNC(
       ctx,
-      DeviceNameUtils::CanonicalizeDeviceName(
-          target->scalar<tstring>()(), source_device, &function_target.first),
+      DeviceNameUtils::CanonicalizeDeviceName(target->scalar<tstring>()(),
+                                              source_device, &target_device),
       done);
-  function_target.second = lib;
 
-  const string& target_device = function_target.first;
-  const string& func_name = func_.name();
+  std::string func_name = func_.name();
+  AttrValueMap attr_values = func_.attr();
+
+  FunctionLibraryRuntime::InstantiateOptions instantiate_opts;
+
+  const auto* config = (ctx->function_library())
+                           ? ctx->function_library()->config_proto()
+                           : nullptr;
+  if (config) {
+    instantiate_opts.config_proto = *config;
+  }
+
+  instantiate_opts.target = target_device;
+
+  FunctionTarget function_target = {target_device, lib};
 
   FunctionLibraryRuntime::Handle handle;
   {
@@ -341,16 +352,8 @@ void RemoteCallOp::ComputeAsync(OpKernelContext* ctx, DoneCallback done) {
                                    " on ", target_device);
           },
           profiler::TraceMeLevel::kInfo);
-      FunctionLibraryRuntime::InstantiateOptions instantiate_opts;
-      const auto* config = (ctx->function_library())
-                               ? ctx->function_library()->config_proto()
-                               : nullptr;
-      if (config) {
-        instantiate_opts.config_proto = *config;
-      }
-      instantiate_opts.target = target_device;
       OP_REQUIRES_OK_ASYNC(ctx,
-                           lib->Instantiate(func_name, AttrSlice(&func_.attr()),
+                           lib->Instantiate(func_name, AttrSlice(&attr_values),
                                             instantiate_opts, &handle),
                            done);
       auto insert_result = handle_cache_.insert({function_target, handle});
@@ -370,17 +373,23 @@ void RemoteCallOp::ComputeAsync(OpKernelContext* ctx, DoneCallback done) {
     opts.remote_execution = true;
   }
   opts.create_rendezvous = true;
-  std::vector<Tensor> args(arguments.begin(), arguments.end());
-  opts.args_alloc_attrs.reserve(input_dtypes_.size());
+  std::vector<Tensor> args;
+  args.reserve(arguments.size());
+  for (const Tensor& argument : arguments) {
+    args.push_back(argument);
+  }
   for (const auto& dtype : input_dtypes_) {
     AllocatorAttributes arg_alloc_attrs;
-    arg_alloc_attrs.set_on_host(DataTypeAlwaysOnHost(dtype));
+    if (DataTypeAlwaysOnHost(dtype)) {
+      arg_alloc_attrs.set_on_host(true);
+    }
     opts.args_alloc_attrs.push_back(arg_alloc_attrs);
   }
-  opts.rets_alloc_attrs.reserve(output_dtypes_.size());
   for (const auto& dtype : output_dtypes_) {
     AllocatorAttributes ret_alloc_attrs;
-    ret_alloc_attrs.set_on_host(DataTypeAlwaysOnHost(dtype));
+    if (DataTypeAlwaysOnHost(dtype)) {
+      ret_alloc_attrs.set_on_host(true);
+    }
     opts.rets_alloc_attrs.push_back(ret_alloc_attrs);
   }
   auto* rets = new std::vector<Tensor>;
@@ -396,14 +405,12 @@ void RemoteCallOp::ComputeAsync(OpKernelContext* ctx, DoneCallback done) {
       profiler::TraceMeLevel::kInfo);
   lib->Run(
       opts, handle, args, rets,
-      [rets, done = std::move(done), func_name, ctx,
-       function_step_id = opts.step_id,
-       target_device = std::move(function_target.first)](const Status& status) {
+      [rets, done, func_name, ctx, opts, target_device](const Status& status) {
         profiler::TraceMe activity(
             [&] {
               return absl::StrCat("RemoteCallOpDone#func_name=", func_name,
                                   ",parent_step_id=", ctx->step_id(),
-                                  ",function_step_id=", function_step_id,
+                                  ",function_step_id=", opts.step_id,
                                   ",device=", target_device, "#");
             },
             profiler::TraceMeLevel::kInfo);
@@ -417,15 +424,6 @@ void RemoteCallOp::ComputeAsync(OpKernelContext* ctx, DoneCallback done) {
         delete rets;
         done();
       });
-}
-
-string RemoteCallOp::TraceString(OpKernelContext* ctx, bool verbose) {
-  string trace_string =
-      strings::StrCat(name_view(), "__", func_.name(), ":", type_string_view());
-  if (!verbose) return trace_string;
-  string trace_args = GetTraceArgument(ctx);
-  if (trace_args.empty()) return trace_string;
-  return strings::StrCat(trace_string, "#", trace_args, "#");
 }
 
 REGISTER_KERNEL_BUILDER(

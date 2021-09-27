@@ -34,7 +34,6 @@ import datetime
 import os
 import re
 import zipfile
-
 import tensorflow as tf
 
 # TODO(aselle): Disable GPU for now

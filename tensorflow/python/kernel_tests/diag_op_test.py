@@ -21,6 +21,7 @@ import itertools
 
 import numpy as np
 
+from tensorflow.python.compat import compat
 from tensorflow.python.framework import constant_op
 from tensorflow.python.framework import dtypes as dtypes_lib
 from tensorflow.python.framework import ops
@@ -30,6 +31,15 @@ from tensorflow.python.ops import gradient_checker
 from tensorflow.python.ops import gradients_impl
 from tensorflow.python.platform import test
 from tensorflow.python.platform import tf_logging
+
+
+# LINT.IfChange
+matrix_diag_v3_forward_compat_date = (2019, 12, 6)
+# LINT.ThenChange(
+#   //tensorflow/compiler/tests/matrix_diag_ops_test.py,
+#   //tensorflow/python/ops/array_ops.py,
+#   //tensorflow/python/ops/parallel_for/array_test.py
+# )
 
 
 default_v2_alignment = "LEFT_LEFT"
@@ -381,20 +391,21 @@ class MatrixDiagTest(test.TestCase):
       self.assertEqual((3, 3), v_diag.get_shape())
       self.assertAllEqual(v_diag.eval(), mat)
 
-      # {Sub,Super}diagonals.
-      for offset in [1, -2, 5]:
-        mat = np.diag(v, offset)
-        v_diag = array_ops.matrix_diag(v, k=offset)
-        self.assertEqual(mat.shape, v_diag.get_shape())
-        self.assertAllEqual(v_diag.eval(), mat)
+      if compat.forward_compatible(*matrix_diag_v3_forward_compat_date):
+        # {Sub,Super}diagonals.
+        for offset in [1, -2, 5]:
+          mat = np.diag(v, offset)
+          v_diag = array_ops.matrix_diag(v, k=offset)
+          self.assertEqual(mat.shape, v_diag.get_shape())
+          self.assertAllEqual(v_diag.eval(), mat)
 
-      # Diagonal bands.
-      for align in alignment_list:
-        for _, tests in [self._moreCases(align), square_cases(align)]:
-          for diags, (vecs, solution) in tests.items():
-            v_diags = array_ops.matrix_diag(vecs[0], k=diags, align=align)
-            self.assertEqual(v_diags.get_shape(), solution[0].shape)
-            self.assertAllEqual(v_diags.eval(), solution[0])
+        # Diagonal bands.
+        for align in alignment_list:
+          for _, tests in [self._moreCases(align), square_cases(align)]:
+            for diags, (vecs, solution) in tests.items():
+              v_diags = array_ops.matrix_diag(vecs[0], k=diags, align=align)
+              self.assertEqual(v_diags.get_shape(), solution[0].shape)
+              self.assertAllEqual(v_diags.eval(), solution[0])
 
   def _testVectorBatch(self, dtype):
     with self.cached_session(use_gpu=True):
@@ -406,30 +417,31 @@ class MatrixDiagTest(test.TestCase):
       self.assertEqual((2, 3, 3), v_batch_diag.get_shape())
       self.assertAllEqual(v_batch_diag.eval(), mat_batch)
 
-      # {Sub,Super}diagonals.
-      for offset in [1, -2, 5]:
-        v_batch_diag = array_ops.matrix_diag(v_batch, k=offset)
-        mats = [
-            np.diag(v_batch[i], offset) for i in range(0, v_batch.shape[0])
-        ]
-        mat_batch = np.stack(mats, axis=0)
-        self.assertEqual(mat_batch.shape, v_batch_diag.get_shape())
-        self.assertAllEqual(v_batch_diag.eval(), mat_batch)
+      if compat.forward_compatible(*matrix_diag_v3_forward_compat_date):
+        # {Sub,Super}diagonals.
+        for offset in [1, -2, 5]:
+          v_batch_diag = array_ops.matrix_diag(v_batch, k=offset)
+          mats = [
+              np.diag(v_batch[i], offset) for i in range(0, v_batch.shape[0])
+          ]
+          mat_batch = np.stack(mats, axis=0)
+          self.assertEqual(mat_batch.shape, v_batch_diag.get_shape())
+          self.assertAllEqual(v_batch_diag.eval(), mat_batch)
 
-      # Diagonal bands with padding_value.
-      for padding_value, align in zip_to_first_list_length([0, 555, -11],
-                                                           alignment_list):
-        for _, tests in [self._moreCases(align), square_cases(align)]:
-          for diags, (vecs, solution) in tests.items():
-            v_diags = array_ops.matrix_diag(
-                vecs.astype(dtype),
-                k=diags,
-                padding_value=padding_value,
-                align=align)
-            mask = solution == 0
-            solution = (solution + padding_value * mask).astype(dtype)
-            self.assertEqual(v_diags.get_shape(), solution.shape)
-            self.assertAllEqual(v_diags.eval(), solution)
+        # Diagonal bands with padding_value.
+        for padding_value, align in zip_to_first_list_length([0, 555, -11],
+                                                             alignment_list):
+          for _, tests in [self._moreCases(align), square_cases(align)]:
+            for diags, (vecs, solution) in tests.items():
+              v_diags = array_ops.matrix_diag(
+                  vecs.astype(dtype),
+                  k=diags,
+                  padding_value=padding_value,
+                  align=align)
+              mask = solution == 0
+              solution = (solution + padding_value * mask).astype(dtype)
+              self.assertEqual(v_diags.get_shape(), solution.shape)
+              self.assertAllEqual(v_diags.eval(), solution)
 
   @test_util.run_deprecated_v1
   def testVectorBatch(self):
@@ -441,99 +453,100 @@ class MatrixDiagTest(test.TestCase):
 
   @test_util.run_deprecated_v1
   def testRectangularBatch(self):
-    with self.cached_session(use_gpu=True):
-      # Stores expected num_rows and num_cols (when the other is given).
-      # expected[d_lower, d_upper] = (expected_num_rows, expected_num_cols)
-      test_list = list()
+    if compat.forward_compatible(*matrix_diag_v3_forward_compat_date):
+      with self.cached_session(use_gpu=True):
+        # Stores expected num_rows and num_cols (when the other is given).
+        # expected[d_lower, d_upper] = (expected_num_rows, expected_num_cols)
+        test_list = list()
 
-      # Square cases:
-      expected = {
-          (-1, -1): (5, 4),
-          (-4, -3): (5, 2),
-          (-2, 1): (5, 5),
-          (2, 4): (3, 5),
-      }
-      # Do not change alignment yet. Re-alignment needs to happen after the
-      # solution shape is updated.
-      test_list.append((expected, square_cases()))
+        # Square cases:
+        expected = {
+            (-1, -1): (5, 4),
+            (-4, -3): (5, 2),
+            (-2, 1): (5, 5),
+            (2, 4): (3, 5),
+        }
+        # Do not change alignment yet. Re-alignment needs to happen after the
+        # solution shape is updated.
+        test_list.append((expected, square_cases()))
 
-      # More cases:
-      expected = {(-3, -1): (5, 4), (-1, 1): (4, 4), (2, 4): (4, 6)}
-      test_list.append((expected, self._moreCases()))
+        # More cases:
+        expected = {(-3, -1): (5, 4), (-1, 1): (4, 4), (2, 4): (4, 6)}
+        test_list.append((expected, self._moreCases()))
 
-      # Tall cases
-      expected = {
-          (0, 0): (3, 3),
-          (-4, -3): (5, 2),
-          (-2, -1): (4, 3),
-          (-2, 1): (3, 3),
-          (1, 2): (2, 3)
-      }
-      test_list.append((expected, tall_cases()))
+        # Tall cases
+        expected = {
+            (0, 0): (3, 3),
+            (-4, -3): (5, 2),
+            (-2, -1): (4, 3),
+            (-2, 1): (3, 3),
+            (1, 2): (2, 3)
+        }
+        test_list.append((expected, tall_cases()))
 
-      # Fat cases
-      expected = {
-          (2, 2): (2, 4),
-          (-2, 0): (3, 3),
-          (-1, 1): (3, 3),
-          (0, 3): (3, 3)
-      }
-      test_list.append((expected, fat_cases()))
+        # Fat cases
+        expected = {
+            (2, 2): (2, 4),
+            (-2, 0): (3, 3),
+            (-1, 1): (3, 3),
+            (0, 3): (3, 3)
+        }
+        test_list.append((expected, fat_cases()))
 
-      for padding_value, align in zip_to_first_list_length([0, 555, -11],
-                                                           alignment_list):
-        # Giving both num_rows and num_cols
-        for _, tests in [tall_cases(align), fat_cases(align)]:
-          for diags, (vecs, solution) in tests.items():
-            v_diags = array_ops.matrix_diag(
-                vecs,
-                k=diags,
-                num_rows=solution.shape[-2],
-                num_cols=solution.shape[-1],
-                padding_value=padding_value,
-                align=align)
-            mask = solution == 0
-            solution = solution + padding_value * mask
-            self.assertEqual(v_diags.get_shape(), solution.shape)
-            self.assertAllEqual(v_diags.eval(), solution)
+        for padding_value, align in zip_to_first_list_length([0, 555, -11],
+                                                             alignment_list):
+          # Giving both num_rows and num_cols
+          for _, tests in [tall_cases(align), fat_cases(align)]:
+            for diags, (vecs, solution) in tests.items():
+              v_diags = array_ops.matrix_diag(
+                  vecs,
+                  k=diags,
+                  num_rows=solution.shape[-2],
+                  num_cols=solution.shape[-1],
+                  padding_value=padding_value,
+                  align=align)
+              mask = solution == 0
+              solution = solution + padding_value * mask
+              self.assertEqual(v_diags.get_shape(), solution.shape)
+              self.assertAllEqual(v_diags.eval(), solution)
 
-        # Giving just num_rows.
-        for expected, (_, tests) in test_list:
-          for diags, (_, new_num_cols) in expected.items():
-            vecs, solution = tests[diags]
-            solution = solution.take(indices=range(new_num_cols), axis=-1)
-            # Repacks the diagonal input according to the new solution shape.
-            vecs = repack_diagonals(
-                vecs, diags, solution.shape[-2], new_num_cols, align=align)
-            v_diags = array_ops.matrix_diag(
-                vecs,
-                k=diags,
-                num_rows=solution.shape[-2],
-                padding_value=padding_value,
-                align=align)
-            mask = solution == 0
-            solution = solution + padding_value * mask
-            self.assertEqual(v_diags.get_shape(), solution.shape)
-            self.assertAllEqual(v_diags.eval(), solution)
+          # Giving just num_rows.
+          for expected, (_, tests) in test_list:
+            for diags, (_, new_num_cols) in expected.items():
+              vecs, solution = tests[diags]
+              solution = solution.take(indices=range(new_num_cols), axis=-1)
+              # Repacks the diagonal input according to the new solution shape.
+              vecs = repack_diagonals(
+                  vecs, diags, solution.shape[-2], new_num_cols, align=align)
+              v_diags = array_ops.matrix_diag(
+                  vecs,
+                  k=diags,
+                  num_rows=solution.shape[-2],
+                  padding_value=padding_value,
+                  align=align)
+              mask = solution == 0
+              solution = solution + padding_value * mask
+              self.assertEqual(v_diags.get_shape(), solution.shape)
+              self.assertAllEqual(v_diags.eval(), solution)
 
-        # Giving just num_cols.
-        for expected, (_, tests) in test_list:
-          for diags, (new_num_rows, _) in expected.items():
-            vecs, solution = tests[diags]
-            solution = solution.take(indices=range(new_num_rows), axis=-2)
-            # Repacks the diagonal input according to the new solution shape.
-            vecs = repack_diagonals(
-                vecs, diags, new_num_rows, solution.shape[-1], align=align)
-            v_diags = array_ops.matrix_diag(
-                vecs,
-                k=diags,
-                num_cols=solution.shape[-1],
-                padding_value=padding_value,
-                align=align)
-            mask = solution == 0
-            solution = solution + padding_value * mask
-            self.assertEqual(v_diags.get_shape(), solution.shape)
-            self.assertAllEqual(v_diags.eval(), solution)
+          # Giving just num_cols.
+          for expected, (_, tests) in test_list:
+            for diags, (new_num_rows, _) in expected.items():
+              vecs, solution = tests[diags]
+              solution = solution.take(indices=range(new_num_rows), axis=-2)
+              # Repacks the diagonal input according to the new solution shape.
+              vecs = repack_diagonals(
+                  vecs, diags, new_num_rows, solution.shape[-1], align=align)
+              v_diags = array_ops.matrix_diag(
+                  vecs,
+                  k=diags,
+                  num_cols=solution.shape[-1],
+                  padding_value=padding_value,
+                  align=align)
+              mask = solution == 0
+              solution = solution + padding_value * mask
+              self.assertEqual(v_diags.get_shape(), solution.shape)
+              self.assertAllEqual(v_diags.eval(), solution)
 
   @test_util.run_deprecated_v1
   def testInvalidShape(self):
@@ -561,20 +574,21 @@ class MatrixDiagTest(test.TestCase):
                                                         y.get_shape().as_list())
         self.assertLess(error, 1e-4)
 
-    # {Sub,super}diagonals/band.
-    tests = dict()  # tests[shape] = (d_lower, d_upper)
-    tests[(3,)] = (-1, -1)
-    tests[(7, 3, 4)] = (-1, 1)
-    with self.session(use_gpu=True):
-      for shape, diags in tests.items():
-        x = constant_op.constant(np.random.rand(*shape), np.float32)
-        for align in alignment_list:
-          y = array_ops.matrix_diag(x, k=diags, align=align)
-          error = gradient_checker.compute_gradient_error(
-              x,
-              x.get_shape().as_list(), y,
-              y.get_shape().as_list())
-          self.assertLess(error, 1e-4)
+    if compat.forward_compatible(*matrix_diag_v3_forward_compat_date):
+      # {Sub,super}diagonals/band.
+      tests = dict()  # tests[shape] = (d_lower, d_upper)
+      tests[(3,)] = (-1, -1)
+      tests[(7, 3, 4)] = (-1, 1)
+      with self.session(use_gpu=True):
+        for shape, diags in tests.items():
+          x = constant_op.constant(np.random.rand(*shape), np.float32)
+          for align in alignment_list:
+            y = array_ops.matrix_diag(x, k=diags, align=align)
+            error = gradient_checker.compute_gradient_error(
+                x,
+                x.get_shape().as_list(), y,
+                y.get_shape().as_list())
+            self.assertLess(error, 1e-4)
 
 
 class MatrixSetDiagTest(test.TestCase):
@@ -590,17 +604,18 @@ class MatrixSetDiagTest(test.TestCase):
       self.assertEqual((3, 3), output.get_shape())
       self.assertAllEqual(mat_set_diag, self.evaluate(output))
 
-      # Diagonal bands.
-      for align in alignment_list:
-        _, tests = square_cases(align)
-        for diags, (vecs, banded_mat) in tests.items():
-          mask = banded_mat[0] == 0
-          input_mat = np.random.randint(10, size=mask.shape)
-          solution = input_mat * mask + banded_mat[0]
-          output = array_ops.matrix_set_diag(
-              input_mat, vecs[0], k=diags, align=align)
-          self.assertEqual(output.get_shape(), solution.shape)
-          self.assertAllEqual(output.eval(), solution)
+      if compat.forward_compatible(*matrix_diag_v3_forward_compat_date):
+        # Diagonal bands.
+        for align in alignment_list:
+          _, tests = square_cases(align)
+          for diags, (vecs, banded_mat) in tests.items():
+            mask = banded_mat[0] == 0
+            input_mat = np.random.randint(10, size=mask.shape)
+            solution = input_mat * mask + banded_mat[0]
+            output = array_ops.matrix_set_diag(
+                input_mat, vecs[0], k=diags, align=align)
+            self.assertEqual(output.get_shape(), solution.shape)
+            self.assertAllEqual(output.eval(), solution)
 
   @test_util.run_deprecated_v1
   def testRectangular(self):
@@ -619,17 +634,18 @@ class MatrixSetDiagTest(test.TestCase):
       self.assertEqual((3, 2), output.get_shape())
       self.assertAllEqual(expected, self.evaluate(output))
 
-      # Diagonal bands.
-      for align in alignment_list:
-        for _, tests in [tall_cases(align), fat_cases(align)]:
-          for diags, (vecs, banded_mat) in tests.items():
-            mask = banded_mat[0] == 0
-            input_mat = np.random.randint(10, size=mask.shape)
-            solution = input_mat * mask + banded_mat[0]
-            output = array_ops.matrix_set_diag(
-                input_mat, vecs[0], k=diags, align=align)
-            self.assertEqual(output.get_shape(), solution.shape)
-            self.assertAllEqual(output.eval(), solution)
+      if compat.forward_compatible(*matrix_diag_v3_forward_compat_date):
+        # Diagonal bands.
+        for align in alignment_list:
+          for _, tests in [tall_cases(align), fat_cases(align)]:
+            for diags, (vecs, banded_mat) in tests.items():
+              mask = banded_mat[0] == 0
+              input_mat = np.random.randint(10, size=mask.shape)
+              solution = input_mat * mask + banded_mat[0]
+              output = array_ops.matrix_set_diag(
+                  input_mat, vecs[0], k=diags, align=align)
+              self.assertEqual(output.get_shape(), solution.shape)
+              self.assertAllEqual(output.eval(), solution)
 
   def _testSquareBatch(self, dtype):
     with self.cached_session(use_gpu=True):
@@ -647,17 +663,18 @@ class MatrixSetDiagTest(test.TestCase):
       self.assertEqual((2, 3, 3), output.get_shape())
       self.assertAllEqual(mat_set_diag_batch, self.evaluate(output))
 
-      # Diagonal bands.
-      for align in alignment_list:
-        _, tests = square_cases(align)
-        for diags, (vecs, banded_mat) in tests.items():
-          mask = banded_mat == 0
-          input_mat = np.random.randint(10, size=mask.shape).astype(dtype)
-          solution = (input_mat * mask + banded_mat).astype(dtype)
-          output = array_ops.matrix_set_diag(
-              input_mat, vecs.astype(dtype), k=diags, align=align)
-          self.assertEqual(output.get_shape(), solution.shape)
-          self.assertAllEqual(output.eval(), solution)
+      if compat.forward_compatible(*matrix_diag_v3_forward_compat_date):
+        # Diagonal bands.
+        for align in alignment_list:
+          _, tests = square_cases(align)
+          for diags, (vecs, banded_mat) in tests.items():
+            mask = banded_mat == 0
+            input_mat = np.random.randint(10, size=mask.shape).astype(dtype)
+            solution = (input_mat * mask + banded_mat).astype(dtype)
+            output = array_ops.matrix_set_diag(
+                input_mat, vecs.astype(dtype), k=diags, align=align)
+            self.assertEqual(output.get_shape(), solution.shape)
+            self.assertAllEqual(output.eval(), solution)
 
   @test_util.run_deprecated_v1
   def testSquareBatch(self):
@@ -680,18 +697,19 @@ class MatrixSetDiagTest(test.TestCase):
       self.assertEqual((2, 2, 3), output.get_shape())
       self.assertAllEqual(mat_set_diag_batch, self.evaluate(output))
 
-      # Diagonal bands.
-      for align in alignment_list:
-        for _, tests in [tall_cases(align), fat_cases(align)]:
-          for diags, pair in tests.items():
-            vecs, banded_mat = pair
-            mask = banded_mat == 0
-            input_mat = np.random.randint(10, size=mask.shape)
-            solution = input_mat * mask + banded_mat
-            output = array_ops.matrix_set_diag(
-                input_mat, vecs, k=diags, align=align)
-            self.assertEqual(output.get_shape(), solution.shape)
-            self.assertAllEqual(output.eval(), solution)
+      if compat.forward_compatible(*matrix_diag_v3_forward_compat_date):
+        # Diagonal bands.
+        for align in alignment_list:
+          for _, tests in [tall_cases(align), fat_cases(align)]:
+            for diags, pair in tests.items():
+              vecs, banded_mat = pair
+              mask = banded_mat == 0
+              input_mat = np.random.randint(10, size=mask.shape)
+              solution = input_mat * mask + banded_mat
+              output = array_ops.matrix_set_diag(
+                  input_mat, vecs, k=diags, align=align)
+              self.assertEqual(output.get_shape(), solution.shape)
+              self.assertAllEqual(output.eval(), solution)
 
   @test_util.run_deprecated_v1
   def testInvalidShape(self):
@@ -709,13 +727,14 @@ class MatrixSetDiagTest(test.TestCase):
       with self.assertRaisesOpError("diagonal must be at least 1-dim"):
         array_ops.matrix_set_diag([[v]], v).eval(feed_dict={v: 0.0})
 
-      d = array_ops.placeholder(dtype=dtypes_lib.float32)
-      with self.assertRaisesOpError(
-          "first dimensions of diagonal don't match"):
-        array_ops.matrix_set_diag(v, d).eval(feed_dict={
-            v: np.zeros((2, 3, 3)),
-            d: np.ones((2, 4))
-        })
+      if compat.forward_compatible(*matrix_diag_v3_forward_compat_date):
+        d = array_ops.placeholder(dtype=dtypes_lib.float32)
+        with self.assertRaisesOpError(
+            "first dimensions of diagonal don't match"):
+          array_ops.matrix_set_diag(v, d).eval(feed_dict={
+              v: np.zeros((2, 3, 3)),
+              d: np.ones((2, 4))
+          })
 
   def _testGrad(self, input_shape, diag_shape, diags, align):
     with self.session(use_gpu=True):
@@ -724,7 +743,10 @@ class MatrixSetDiagTest(test.TestCase):
       x_diag = constant_op.constant(
           np.random.rand(*diag_shape), dtype=dtypes_lib.float32)
 
-      y = array_ops.matrix_set_diag(x, x_diag, k=diags, align=align)
+      if compat.forward_compatible(*matrix_diag_v3_forward_compat_date):
+        y = array_ops.matrix_set_diag(x, x_diag, k=diags, align=align)
+      else:
+        y = array_ops.matrix_set_diag(x, x_diag)
       error_x = gradient_checker.compute_gradient_error(x,
                                                         x.get_shape().as_list(),
                                                         y,
@@ -741,7 +763,8 @@ class MatrixSetDiagTest(test.TestCase):
     input_shapes = [(3, 4, 4), (3, 3, 4), (3, 4, 3), (7, 4, 8, 8)]
     diag_bands = [(0, 0)]
 
-    diag_bands.append((-1, 1))
+    if compat.forward_compatible(*matrix_diag_v3_forward_compat_date):
+      diag_bands.append((-1, 1))
     for input_shape, diags, align in itertools.product(input_shapes, diag_bands,
                                                        alignment_list):
       lower_diag_index, upper_diag_index = diags
@@ -782,20 +805,21 @@ class MatrixDiagPartTest(test.TestCase):
       self.assertEqual((3,), mat_diag.get_shape())
       self.assertAllEqual(mat_diag.eval(), v)
 
-      for offset in [-2, 3]:
-        mat = np.diag(v, offset)
-        mat_diag = array_ops.matrix_diag_part(mat, k=offset)
-        self.assertEqual((3,), mat_diag.get_shape())
-        self.assertAllEqual(mat_diag.eval(), v)
+      if compat.forward_compatible(*matrix_diag_v3_forward_compat_date):
+        for offset in [-2, 3]:
+          mat = np.diag(v, offset)
+          mat_diag = array_ops.matrix_diag_part(mat, k=offset)
+          self.assertEqual((3,), mat_diag.get_shape())
+          self.assertAllEqual(mat_diag.eval(), v)
 
-      # Diagonal bands.
-      for align in alignment_list:
-        mat, tests = square_cases(align)
-        for diags, pair in tests.items():
-          solution, _ = pair
-          mat_diag = array_ops.matrix_diag_part(mat[0], k=diags, align=align)
-          self.assertEqual(mat_diag.get_shape(), solution[0].shape)
-          self.assertAllEqual(mat_diag.eval(), solution[0])
+        # Diagonal bands.
+        for align in alignment_list:
+          mat, tests = square_cases(align)
+          for diags, pair in tests.items():
+            solution, _ = pair
+            mat_diag = array_ops.matrix_diag_part(mat[0], k=diags, align=align)
+            self.assertEqual(mat_diag.get_shape(), solution[0].shape)
+            self.assertAllEqual(mat_diag.eval(), solution[0])
 
   @test_util.run_deprecated_v1
   def testRectangular(self):
@@ -807,15 +831,16 @@ class MatrixDiagPartTest(test.TestCase):
       mat_diag = array_ops.matrix_diag_part(mat)
       self.assertAllEqual(mat_diag.eval(), np.array([1.0, 4.0]))
 
-      # Diagonal bands.
-      for align in alignment_list:
-        for mat, tests in [tall_cases(align), fat_cases(align)]:
-          for diags, pair in tests.items():
-            solution, _ = pair
-            mat_diag = array_ops.matrix_diag_part(
-                mat[0], k=diags, align=align)
-            self.assertEqual(mat_diag.get_shape(), solution[0].shape)
-            self.assertAllEqual(mat_diag.eval(), solution[0])
+      if compat.forward_compatible(*matrix_diag_v3_forward_compat_date):
+        # Diagonal bands.
+        for align in alignment_list:
+          for mat, tests in [tall_cases(align), fat_cases(align)]:
+            for diags, pair in tests.items():
+              solution, _ = pair
+              mat_diag = array_ops.matrix_diag_part(
+                  mat[0], k=diags, align=align)
+              self.assertEqual(mat_diag.get_shape(), solution[0].shape)
+              self.assertAllEqual(mat_diag.eval(), solution[0])
 
   def _testSquareBatch(self, dtype):
     with self.cached_session(use_gpu=True):
@@ -828,21 +853,22 @@ class MatrixDiagPartTest(test.TestCase):
       self.assertEqual((2, 3), mat_batch_diag.get_shape())
       self.assertAllEqual(mat_batch_diag.eval(), v_batch)
 
-      # Diagonal bands with padding_value.
-      for padding_value, align in zip_to_first_list_length([0, 555, -11],
-                                                           alignment_list):
-        mat, tests = square_cases(align)
-        for diags, pair in tests.items():
-          solution, _ = pair
-          mat_batch_diag = array_ops.matrix_diag_part(
-              mat.astype(dtype),
-              k=diags,
-              padding_value=padding_value,
-              align=align)
-          mask = solution == 0
-          solution = (solution + padding_value * mask).astype(dtype)
-          self.assertEqual(mat_batch_diag.get_shape(), solution.shape)
-          self.assertAllEqual(mat_batch_diag.eval(), solution)
+      if compat.forward_compatible(*matrix_diag_v3_forward_compat_date):
+        # Diagonal bands with padding_value.
+        for padding_value, align in zip_to_first_list_length([0, 555, -11],
+                                                             alignment_list):
+          mat, tests = square_cases(align)
+          for diags, pair in tests.items():
+            solution, _ = pair
+            mat_batch_diag = array_ops.matrix_diag_part(
+                mat.astype(dtype),
+                k=diags,
+                padding_value=padding_value,
+                align=align)
+            mask = solution == 0
+            solution = (solution + padding_value * mask).astype(dtype)
+            self.assertEqual(mat_batch_diag.get_shape(), solution.shape)
+            self.assertAllEqual(mat_batch_diag.eval(), solution)
 
   @test_util.run_deprecated_v1
   def testSquareBatch(self):
@@ -863,27 +889,29 @@ class MatrixDiagPartTest(test.TestCase):
       self.assertEqual((2, 2), mat_batch_diag.get_shape())
       self.assertAllEqual(mat_batch_diag.eval(), v_batch)
 
-      # Diagonal bands with padding_value and align.
-      for padding_value, align in zip_to_first_list_length([0, 555, -11],
-                                                           alignment_list):
-        for mat, tests in [tall_cases(align), fat_cases(align)]:
-          for diags, pair in tests.items():
-            solution, _ = pair
-            mat_batch_diag = array_ops.matrix_diag_part(
-                mat, k=diags, padding_value=padding_value, align=align)
-            mask = solution == 0
-            solution = solution + padding_value * mask
-            self.assertEqual(mat_batch_diag.get_shape(), solution.shape)
-            self.assertAllEqual(mat_batch_diag.eval(), solution)
+      if compat.forward_compatible(*matrix_diag_v3_forward_compat_date):
+        # Diagonal bands with padding_value and align.
+        for padding_value, align in zip_to_first_list_length([0, 555, -11],
+                                                             alignment_list):
+          for mat, tests in [tall_cases(align), fat_cases(align)]:
+            for diags, pair in tests.items():
+              solution, _ = pair
+              mat_batch_diag = array_ops.matrix_diag_part(
+                  mat, k=diags, padding_value=padding_value, align=align)
+              mask = solution == 0
+              solution = solution + padding_value * mask
+              self.assertEqual(mat_batch_diag.get_shape(), solution.shape)
+              self.assertAllEqual(mat_batch_diag.eval(), solution)
 
   @test_util.run_deprecated_v1
   def testUnknownShape(self):
-    matrix = array_ops.placeholder(dtypes_lib.int32, shape=[None, None])
-    result = array_ops.matrix_diag_part(matrix, k=-1)
-    input_matrix = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
-    with self.session(use_gpu=True):
-      result_eval = result.eval(feed_dict={matrix: input_matrix})
-    self.assertAllEqual([4, 8], result_eval)
+    if compat.forward_compatible(*matrix_diag_v3_forward_compat_date):
+      matrix = array_ops.placeholder(dtypes_lib.int32, shape=[None, None])
+      result = array_ops.matrix_diag_part(matrix, k=-1)
+      input_matrix = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+      with self.session(use_gpu=True):
+        result_eval = result.eval(feed_dict={matrix: input_matrix})
+      self.assertAllEqual([4, 8], result_eval)
 
   @test_util.run_deprecated_v1
   def testInvalidShape(self):
@@ -911,20 +939,21 @@ class MatrixDiagPartTest(test.TestCase):
                                                         y.get_shape().as_list())
         self.assertLess(error, 1e-4)
 
-    # {Sub,super}diagonals/band.
-    tests = dict()  # tests[shape] = (d_lower, d_upper)
-    tests[(3, 3)] = (-1, -1)
-    tests[(7, 3, 4)] = (-1, 1)
-    with self.session(use_gpu=True):
-      for align in alignment_list:
-        for shape, diags in tests.items():
-          x = constant_op.constant(np.random.rand(*shape), np.float32)
-          y = array_ops.matrix_diag_part(input=x, k=diags, align=align)
-          error = gradient_checker.compute_gradient_error(
-              x,
-              x.get_shape().as_list(), y,
-              y.get_shape().as_list())
-          self.assertLess(error, 1e-4)
+    if compat.forward_compatible(*matrix_diag_v3_forward_compat_date):
+      # {Sub,super}diagonals/band.
+      tests = dict()  # tests[shape] = (d_lower, d_upper)
+      tests[(3, 3)] = (-1, -1)
+      tests[(7, 3, 4)] = (-1, 1)
+      with self.session(use_gpu=True):
+        for align in alignment_list:
+          for shape, diags in tests.items():
+            x = constant_op.constant(np.random.rand(*shape), np.float32)
+            y = array_ops.matrix_diag_part(input=x, k=diags, align=align)
+            error = gradient_checker.compute_gradient_error(
+                x,
+                x.get_shape().as_list(), y,
+                y.get_shape().as_list())
+            self.assertLess(error, 1e-4)
 
 
 class DiagTest(test.TestCase):

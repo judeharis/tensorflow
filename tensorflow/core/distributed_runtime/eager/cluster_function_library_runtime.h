@@ -70,20 +70,16 @@ class EagerClusterFunctionLibraryRuntime
 
   struct FunctionData {
     const string target;
-    core::RefCountPtr<EagerClient> eager_client;
+    EagerClient* eager_client = nullptr;
     std::unique_ptr<EagerOperation> op;
 
     FunctionData(const string& target, EagerClient* eager_client,
                  std::unique_ptr<EagerOperation> op)
-        : target(target),
-          eager_client(core::RefCountPtr<EagerClient>(eager_client)),
-          op(std::move(op)) {
-      eager_client->Ref();
-    }
+        : target(target), eager_client(eager_client), op(std::move(op)) {}
   };
 
   mutable mutex mu_;
-  std::vector<FunctionData> function_data_ TF_GUARDED_BY(mu_);
+  std::vector<FunctionData> function_data_ GUARDED_BY(mu_);
 };
 
 DistributedFunctionLibraryRuntime* CreateClusterFLR(

@@ -9,7 +9,10 @@ ifeq ($(TARGET),bbb)
       -mfpu=neon \
       -funsafe-math-optimizations \
       -ftree-vectorize \
-      -fPIC
+      -fPIC \
+      -DACC_PROFILE \
+      -DACC_NEON \
+      -DVM_ACC
 
     CFLAGS += \
       -march=armv7-a \
@@ -19,10 +22,7 @@ ifeq ($(TARGET),bbb)
       -fPIC
 
     LDFLAGS := \
-      -Wl,--no-export-dynamic \
-      -Wl,--exclude-libs,ALL \
-      -Wl,--gc-sections \
-      -Wl,--as-needed
+
   endif
 
   LIBS := \

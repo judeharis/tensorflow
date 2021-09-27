@@ -31,7 +31,7 @@ limitations under the License.
 
 namespace tensorflow {
 
-using QuantizedBatchNormOpTest = OpsTestBase;
+class QuantizedBatchNormOpTest : public OpsTestBase {};
 
 TEST_F(QuantizedBatchNormOpTest, Simple) {
   TF_EXPECT_OK(NodeDefBuilder("quantized_batch_norm_op",

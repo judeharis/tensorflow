@@ -1,5 +1,4 @@
 load("//tensorflow/lite:build_def.bzl", "tflite_copts")
-load("//tensorflow/lite/micro:build_def.bzl", "cc_library", "micro_copts")
 load("//tensorflow/lite:special_rules.bzl", "tflite_portable_test_suite_combined")
 load("//tensorflow:tensorflow.bzl", "tf_opts_nortti_if_android")
 
@@ -178,11 +177,8 @@ cc_library(
         "//tensorflow/lite/delegates/nnapi:nnapi_delegate",
         "//tensorflow/lite/kernels/internal:tensor_utils",
         "//tensorflow/lite/nnapi:nnapi_implementation",
-        "//tensorflow/lite/schema:schema_fbs",
         "//tensorflow/lite/testing:util",
         "//tensorflow/lite/tools/optimize:quantization_utils",
-        "//tensorflow/lite/tools/optimize/sparsity:format_converter",
-        "//tensorflow/lite/tools/versioning",
         "@com_google_googletest//:gtest",
     ],
 )
@@ -312,6 +308,20 @@ cc_test(
 )
 
 cc_library(
+    name = "cpu_backend_gemm_lib",
+    hdrs = [
+        "cpu_backend_gemm.h",
+        "cpu_backend_gemm_params.h",
+    ],
+    copts = tflite_copts(),
+    deps = [
+        #"//tensorflow/lite/kernels/internal:common",
+        "//tensorflow/lite/kernels/internal:compatibility",
+        #"//tensorflow/lite/kernels/internal:types",
+    ],
+)
+
+cc_library(
     name = "cpu_backend_gemm",
     srcs = [
         "cpu_backend_gemm_custom_gemv.h",
@@ -320,10 +330,10 @@ cc_library(
         "cpu_backend_gemm_gemmlowp.h",
         "cpu_backend_gemm_ruy.h",
     ],
-    hdrs = [
-        "cpu_backend_gemm.h",
-        "cpu_backend_gemm_params.h",
-    ],
+    # hdrs = [
+    #     "cpu_backend_gemm.h",
+    #     "cpu_backend_gemm_params.h",
+    # ],
     copts = tflite_copts(),
     deps = [
         ":tflite_with_ruy",
@@ -332,16 +342,18 @@ cc_library(
         "//tensorflow/lite/kernels/internal:types",
         ":cpu_backend_context",
         ":cpu_backend_threadpool",
+        # Isolated so it can be used by systemc
+        "//tensorflow/lite/kernels:cpu_backend_gemm_lib",
         # Depend on ruy regardless of `tflite_with_ruy`. See the comment in
         # cpu_backend_gemm.h about why ruy is the generic path.
         "//tensorflow/lite/experimental/ruy",
         "//tensorflow/lite/experimental/ruy:path",
-        "//tensorflow/lite/experimental/ruy/profiler:instrumentation",
         # We only need to depend on gemmlowp and Eigen when tflite_with_ruy
         # is false, but putting these dependencies in a select() seems to
         # defeat copybara's rewriting rules.
         "@gemmlowp",
         "//third_party/eigen3",
+        "//tensorflow/lite/kernels/modeling:util"
     ],
 )
 
@@ -364,7 +376,6 @@ cc_library(
     hdrs = [
         "op_macros.h",
     ],
-    build_for_embedded = True,
     copts = tflite_copts(),
 )
 
@@ -376,7 +387,7 @@ cc_library(
     hdrs = [
         "kernel_util.h",
     ],
-    copts = tflite_copts() + micro_copts(),
+    copts = tflite_copts(),
     deps = [
         "//tensorflow/lite/c:common",
         "//tensorflow/lite/kernels/internal:quantization_util",
@@ -434,7 +445,6 @@ cc_library(
         "comparisons.cc",
         "concatenation.cc",
         "conv.cc",
-        "densify.cc",
         "depth_to_space.cc",
         "depthwise_conv.cc",
         "dequantize.cc",
@@ -468,7 +478,6 @@ cc_library(
         "mul.cc",
         "neg.cc",
         "non_max_suppression.cc",
-        "numeric_verify.cc",
         "one_hot.cc",
         "pack.cc",
         "pad.cc",
@@ -485,7 +494,6 @@ cc_library(
         "reverse_sequence.cc",
         "round.cc",
         "scatter_nd.cc",
-        "segment_sum.cc",
         "select.cc",
         "shape.cc",
         "skip_gram.cc",
@@ -513,23 +521,20 @@ cc_library(
         "zeros_like.cc",
     ],
     hdrs = [
-        "dequantize.h",
     ],
     copts = tflite_copts() + tf_opts_nortti_if_android() + EXTRA_EIGEN_COPTS,
     visibility = ["//visibility:private"],
     deps = [
         ":cpu_backend_context",
-        ":cpu_backend_threadpool",
         ":eigen_support",
         ":kernel_util",
         ":lstm_eval",
-        ":lstm_shared",
         ":op_macros",
         ":padding",
         "//tensorflow/lite:framework",
-        "//tensorflow/lite:minimal_logging",
         "//tensorflow/lite:string_util",
         "//tensorflow/lite/c:common",
+        "//tensorflow/lite/experimental/resource",
         "//tensorflow/lite/kernels/internal:audio_utils",
         "//tensorflow/lite/kernels/internal:common",
         "//tensorflow/lite/kernels/internal:compatibility",
@@ -545,7 +550,6 @@ cc_library(
         "//tensorflow/lite/kernels/internal:types",
         "//third_party/eigen3",
         "@com_google_absl//absl/memory",
-        "@com_google_absl//absl/strings",
         "@farmhash_archive//:farmhash",
         "@flatbuffers",
     ],
@@ -595,12 +599,11 @@ cc_library(
         ":op_macros",
         "//tensorflow/lite:context",
         "//tensorflow/lite/c:common",
-        "//tensorflow/lite/experimental/kernels:hashtable_op_kernels",
-        "//tensorflow/lite/experimental/ruy/profiler:instrumentation",
         "//tensorflow/lite/kernels/internal:kernel_utils",
         "//tensorflow/lite/kernels/internal:tensor",
         "//third_party/fft2d:fft2d_headers",
         "@fft2d",
+        "@gemmlowp//:profiler",
     ],
 )
 
@@ -613,20 +616,12 @@ cc_library(
         ":cpu_backend_context",
         ":op_macros",
         "//tensorflow/lite/c:common",
-        "//tensorflow/lite/experimental/ruy/profiler:instrumentation",
-        "//tensorflow/lite/kernels/internal:common",
         "//tensorflow/lite/kernels/internal:compatibility",
         "//tensorflow/lite/kernels/internal:kernel_utils",
-        "//tensorflow/lite/kernels/internal:quantization_util",
         "//tensorflow/lite/kernels/internal:tensor",
         "//tensorflow/lite/kernels/internal:tensor_utils",
+        "@gemmlowp",
     ],
-)
-
-cc_library(
-    name = "lstm_shared",
-    hdrs = ["lstm_shared.h"],
-    copts = tflite_copts(),
 )
 
 cc_library(
@@ -874,41 +869,6 @@ cc_test(
 )
 
 cc_test(
-    name = "densify_test",
-    size = "small",
-    srcs = ["densify_test.cc"],
-    tags = ["tflite_nnapi"],
-    deps = [
-        ":builtin_ops",
-        ":test_main",
-        ":test_util",
-        "//tensorflow/lite:framework",
-        "//tensorflow/lite/c:common",
-        "//tensorflow/lite/kernels/internal:types",
-        "//tensorflow/lite/schema:schema_fbs",
-        "//tensorflow/lite/tools/optimize/sparsity:format_converter",
-        "//third_party/eigen3",
-        "@com_google_absl//absl/memory",
-        "@com_google_googletest//:gtest",
-    ],
-)
-
-cc_test(
-    name = "depthwise_conv_hybrid_test",
-    size = "small",
-    srcs = ["depthwise_conv_hybrid_test.cc"],
-    deps = [
-        ":builtin_ops",
-        ":test_main",
-        ":test_util",
-        "//tensorflow/lite:framework",
-        "//tensorflow/lite/kernels/internal:test_util",
-        "@com_google_absl//absl/memory",
-        "@com_google_googletest//:gtest",
-    ],
-)
-
-cc_test(
     name = "depthwise_conv_test",
     size = "small",
     srcs = ["depthwise_conv_test.cc"],
@@ -928,23 +888,6 @@ cc_test(
     name = "dequantize_test",
     size = "small",
     srcs = ["dequantize_test.cc"],
-    tags = ["tflite_nnapi"],
-    deps = [
-        ":builtin_ops",
-        ":test_main",
-        ":test_util",
-        "//tensorflow/lite:framework",
-        "//tensorflow/lite/kernels/internal:types",
-        "//third_party/eigen3",
-        "@com_google_absl//absl/memory",
-        "@com_google_googletest//:gtest",
-    ],
-)
-
-cc_test(
-    name = "numeric_verify_test",
-    size = "small",
-    srcs = ["numeric_verify_test.cc"],
     tags = ["tflite_nnapi"],
     deps = [
         ":builtin_ops",
@@ -1092,8 +1035,7 @@ cc_test(
     name = "l2norm_test",
     size = "small",
     srcs = ["l2norm_test.cc"],
-    # TODO(b/143912164): Enable NNAPI test when fix nnapi.
-    # tags = ["tflite_nnapi"],
+    tags = ["tflite_nnapi"],
     deps = [
         ":builtin_ops",
         ":test_main",
@@ -2080,18 +2022,6 @@ cc_test(
     deps = [
         ":builtin_ops",
         ":kernel_util",
-        ":test_main",
-        ":test_util",
-        "//tensorflow/lite:framework",
-        "@com_google_googletest//:gtest",
-    ],
-)
-
-cc_test(
-    name = "segment_sum_test",
-    srcs = ["segment_sum_test.cc"],
-    deps = [
-        ":builtin_ops",
         ":test_main",
         ":test_util",
         "//tensorflow/lite:framework",

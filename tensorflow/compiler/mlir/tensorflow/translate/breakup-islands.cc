@@ -19,17 +19,14 @@ limitations under the License.
 #include "llvm/ADT/DenseSet.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"  // TF:llvm-project
-#include "mlir/IR/Attributes.h"  // TF:llvm-project
-#include "mlir/IR/Builders.h"  // TF:llvm-project
-#include "mlir/IR/Operation.h"  // TF:llvm-project
-#include "mlir/IR/Value.h"  // TF:llvm-project
-#include "mlir/Pass/Pass.h"  // TF:llvm-project
-#include "mlir/Pass/PassRegistry.h"  // TF:llvm-project
-#include "mlir/Support/STLExtras.h"  // TF:llvm-project
+#include "mlir/Dialect/StandardOps/Ops.h"  // TF:local_config_mlir
+#include "mlir/IR/Builders.h"  // TF:local_config_mlir
+#include "mlir/IR/Operation.h"  // TF:local_config_mlir
+#include "mlir/Pass/Pass.h"  // TF:local_config_mlir
+#include "mlir/Pass/PassRegistry.h"  // TF:local_config_mlir
+#include "mlir/Support/STLExtras.h"  // TF:local_config_mlir
 #include "tensorflow/compiler/mlir/tensorflow/analysis/side_effect_analysis.h"
 #include "tensorflow/compiler/mlir/tensorflow/ir/tf_executor.h"
-#include "tensorflow/compiler/mlir/tensorflow/ir/tf_ops.h"
 
 // This pass is used in preparation for Graph export.
 // The GraphDef exporter expects each op to be in its own island.
@@ -42,17 +39,17 @@ namespace mlir {
 
 namespace {
 
-struct BreakUpIslands : FunctionPass<BreakUpIslands> {
-  void runOnFunction() final;
+struct BreakUpIslands : OperationPass<BreakUpIslands, FuncOp> {
+  void runOnOperation() final;
 
-  void BreakUpIsland(tf_executor::IslandOp island_op,
+  void BreakUpIsland(tf_executor::IslandOp op,
                      const TF::SideEffectAnalysis& side_effect_analysis,
-                     llvm::DenseMap<Operation*, llvm::SmallVector<Value, 4>>*
-                         new_control_inputs);
+                     llvm::DenseMap<Operation*, llvm::SmallVector<Value*, 4>>*
+                         new_control_edges);
 };
 
-void BreakUpIslands::runOnFunction() {
-  auto graph_op_range = getFunction().getBody().front().without_terminator();
+void BreakUpIslands::runOnOperation() {
+  auto graph_op_range = getOperation().getBody().front().without_terminator();
   tf_executor::GraphOp graph_op;
   if (graph_op_range.begin() != graph_op_range.end() &&
       std::next(graph_op_range.begin()) == graph_op_range.end()) {
@@ -60,35 +57,35 @@ void BreakUpIslands::runOnFunction() {
         getOperation().getBody().front().front());
   }
   if (!graph_op) {
-    getOperation().emitError("expected function to contain only a graph_op");
+    getOperation().emitError("Expected function to contain only a graph_op");
     signalPassFailure();
     return;
   }
 
-  // New control inputs to be added. For an operation x, new_control_inputs[x]
-  // contains all control inputs that need to be added to x as operands.
-  llvm::DenseMap<Operation*, llvm::SmallVector<Value, 4>> new_control_inputs;
+  // Map from the users of the existing islands to the list of control
+  // edges that need to be added.
+  llvm::DenseMap<Operation*, llvm::SmallVector<Value*, 4>> new_control_edges;
   auto& side_effect_analysis = getAnalysis<TF::SideEffectAnalysis>();
   // Iterate in reverse order to avoid invalidating Operation* stored in
-  // new_control_inputs.
+  // new_control_edges.
   for (auto& item :
        llvm::make_early_inc_range(llvm::reverse(graph_op.GetBody()))) {
     if (auto island = dyn_cast<tf_executor::IslandOp>(&item)) {
-      BreakUpIsland(island, side_effect_analysis, &new_control_inputs);
+      BreakUpIsland(island, side_effect_analysis, &new_control_edges);
     }
   }
   OpBuilder builder(getOperation());
 
-  // For every op, add new control inputs in reverse order so that the ops don't
-  // get invalidated.
-  llvm::SmallVector<Value, 8> operands;
-  llvm::SmallPtrSet<Operation*, 4> defining_ops;
+  // Apply edge additions in reverse order so that the ops don't get
+  // invalidated.
+  llvm::SmallVector<Value*, 8> edges;
+  llvm::SmallPtrSet<Operation*, 4> dups;
   llvm::SmallVector<Type, 4> types;
   for (auto& item :
        llvm::make_early_inc_range(llvm::reverse(graph_op.GetBody()))) {
-    auto it = new_control_inputs.find(&item);
-    if (it == new_control_inputs.end()) continue;
-    auto& new_control_inputs_for_item = it->second;
+    auto it = new_control_edges.find(&item);
+    if (it == new_control_edges.end()) continue;
+    auto& edge = *it;
     builder.setInsertionPoint(&item);
     OperationState state(item.getLoc(), item.getName());
     types.assign(item.result_type_begin(), item.result_type_end());
@@ -96,22 +93,17 @@ void BreakUpIslands::runOnFunction() {
     for (Region& region : item.getRegions()) {
       state.addRegion()->takeBody(region);
     }
-    // Assign existing operands for item.
-    operands.assign(item.operand_begin(), item.operand_end());
+    edges.assign(item.operand_begin(), item.operand_end());
+    dups.clear();
 
-    // Collect defining ops for existing operands.
-    defining_ops.clear();
-    for (Value operand : operands) {
-      defining_ops.insert(operand.getDefiningOp());
+    for (Value* input : edges) {
+      dups.insert(input->getDefiningOp());
     }
-    for (Value new_control_input : llvm::reverse(new_control_inputs_for_item)) {
-      // Add new control input if its defining op is not already a defining
-      // op for some other operand. Update defining_ops.
-      if (defining_ops.insert(new_control_input.getDefiningOp()).second) {
-        operands.push_back(new_control_input);
-      }
+    // Insert new control edges removing duplicates.
+    for (Value* value : llvm::reverse(edge.second)) {
+      if (dups.insert(value->getDefiningOp()).second) edges.push_back(value);
     }
-    state.addOperands(operands);
+    state.addOperands(edges);
     Operation* new_op = builder.createOperation(state);
     item.replaceAllUsesWith(new_op);
     new_op->setAttrs(item.getAttrList());
@@ -119,33 +111,10 @@ void BreakUpIslands::runOnFunction() {
   }
 }
 
-// Populates an empty IslandOp and with a NoOp or Identity/IdentityN depending
-// on if there are any data results.
-void PopulateEmptyIsland(tf_executor::IslandOp island) {
-  OpBuilder builder(&island.GetBody(), island.GetBody().begin());
-  tf_executor::YieldOp yield = island.GetYield();
-  if (yield.getNumOperands() == 0) {
-    builder.create<TF::NoOp>(island.getLoc(), llvm::ArrayRef<mlir::Type>{},
-                             llvm::ArrayRef<mlir::Value>{},
-                             llvm::ArrayRef<mlir::NamedAttribute>{});
-  } else if (yield.getNumOperands() == 1) {
-    Value operand = yield.getOperand(0);
-    auto identity = builder.create<TF::IdentityOp>(island.getLoc(),
-                                                   operand.getType(), operand);
-    yield.setOperand(0, identity.output());
-  } else {
-    auto types = llvm::to_vector<4>(yield.getOperandTypes());
-    auto identity_n = builder.create<TF::IdentityNOp>(island.getLoc(), types,
-                                                      yield.getOperands());
-    for (auto it : llvm::enumerate(identity_n.getResults()))
-      yield.setOperand(it.index(), it.value());
-  }
-}
-
 // Helper that creates an island. If `sub_op` is not nullptr, it will be moved
-// to the island. Otherwise a NoOp will be added to the island.
+// to the island.
 tf_executor::IslandOp CreateIsland(ArrayRef<Type> result_types,
-                                   ArrayRef<Value> control_inputs,
+                                   ArrayRef<Value*> control_inputs,
                                    const tf_executor::ControlType& control_type,
                                    const Location& loc, Operation* sub_op,
                                    tf_executor::IslandOp original_island) {
@@ -154,17 +123,17 @@ tf_executor::IslandOp CreateIsland(ArrayRef<Type> result_types,
       loc, result_types, control_type, control_inputs);
   island.body().push_back(new Block);
   Block* block = &island.body().back();
-  OpBuilder island_builder(original_island);
-  island_builder.setInsertionPointToEnd(block);
   if (sub_op) {
     sub_op->replaceAllUsesWith(island.outputs());
     sub_op->moveBefore(block, block->begin());
-    island_builder.create<tf_executor::YieldOp>(loc, sub_op->getResults());
+  }
+  OpBuilder island_builder(original_island);
+  island_builder.setInsertionPointToEnd(block);
+  if (sub_op) {
+    island_builder.create<tf_executor::YieldOp>(
+        loc, llvm::to_vector<4>(sub_op->getResults()));
   } else {
-    island_builder.create<TF::NoOp>(
-        island.getLoc(), llvm::ArrayRef<mlir::Type>{},
-        llvm::ArrayRef<mlir::Value>{}, llvm::ArrayRef<mlir::NamedAttribute>{});
-    island_builder.create<tf_executor::YieldOp>(loc, ArrayRef<Value>{});
+    island_builder.create<tf_executor::YieldOp>(loc, ArrayRef<Value*>{});
   }
   return island;
 }
@@ -172,10 +141,10 @@ tf_executor::IslandOp CreateIsland(ArrayRef<Type> result_types,
 // A struct contains the operations in an island that do not have incoming or
 // outgoing dependencies.
 struct IslandSourcesAndSinks {
-  // Sub-ops that do not depend on other sub-ops in the island.
+  // Sub-ops that do not depend on other ops in the island.
   llvm::SmallPtrSet<Operation*, 4> sources;
-  // Sub-ops that do not have other sub-ops in the island depending on them
-  // (excluding yield).
+  // Sub-ops that do not have other sub-ops island depending on them (excluding
+  // yield).
   llvm::SmallPtrSet<Operation*, 4> sinks;
 };
 
@@ -192,7 +161,7 @@ IslandSourcesAndSinks FindSourcesAndSinksInIsland(
     for (auto predecessor : predecessors) result.sinks.erase(predecessor);
     bool has_in_island_operands = false;
     for (auto operand : sub_op.getOperands()) {
-      auto defining_op = operand.getDefiningOp();
+      auto defining_op = operand->getDefiningOp();
       if (!defining_op || defining_op->getParentOp() != island) continue;
       // Remove operands from sinks.
       result.sinks.erase(defining_op);
@@ -208,55 +177,47 @@ IslandSourcesAndSinks FindSourcesAndSinksInIsland(
 // Converts a single island into multiple islands (one for each op). The islands
 // are chained together by control flow values.
 void BreakUpIslands::BreakUpIsland(
-    tf_executor::IslandOp island_op,
+    tf_executor::IslandOp op,
     const TF::SideEffectAnalysis& side_effect_analysis,
-    llvm::DenseMap<Operation*, llvm::SmallVector<Value, 4>>*
-        new_control_inputs) {
-  auto island_body = island_op.GetBody().without_terminator();
-  // Populate islands that are empty (only yield).
-  if (island_body.empty()) {
-    PopulateEmptyIsland(island_op);
-    return;
-  }
-
+    llvm::DenseMap<Operation*, llvm::SmallVector<Value*, 4>>*
+        new_control_edges) {
+  auto island_body = op.GetBody().without_terminator();
   // Skip islands that are already only a single op.
-  if (has_single_element(island_body)) return;
-
+  // Skip islands that are empty (only yield).
+  if (island_body.empty() || has_single_element(island_body)) return;
   auto control_type = tf_executor::ControlType::get(&getContext());
-  auto island_control_inputs = llvm::to_vector<4>(island_op.controlInputs());
+  auto island_control_inputs = llvm::to_vector<4>(op.controlInputs());
   // Add control dependencies for yields of values defined by other islands to
   // the island that defines that fetched value.
-  for (auto fetch : island_op.GetYield().fetches()) {
-    if (!fetch.getDefiningOp()) {
-      // Skip, because there is no op to add control to (eg: function args).
-      continue;
-    } else if (fetch.getDefiningOp()->getParentOp() == island_op) {
-      // Skip, because it is the same island.
-      continue;
-    } else if (auto other_island_op = llvm::dyn_cast<tf_executor::IslandOp>(
-                   fetch.getDefiningOp())) {
-      island_control_inputs.push_back(other_island_op.control());
+  for (auto* fetch : op.GetYield().fetches()) {
+    // Ok, because there is no op to add control to (eg: function args).
+    if (!fetch->getDefiningOp()) continue;
+    if (fetch->getDefiningOp()->getParentOp() == op) {
+      // OK, because it is the same island.
+    } else if (auto island_op = llvm::dyn_cast<tf_executor::IslandOp>(
+                   fetch->getDefiningOp())) {
+      island_control_inputs.push_back(island_op.control());
     } else {
       // TODO(parkers): Any defining op that has a control output can be handled
       // just like an island.
-      fetch.getDefiningOp()->emitError("fetching non-island as dependency");
+      fetch->getDefiningOp()->emitError("Fetching non-island as dependency.");
       return signalPassFailure();
     }
   }
   // If there are multiple control inputs, create an empty island to group them.
   if (island_control_inputs.size() > 1) {
-    auto new_island = CreateIsland({}, island_control_inputs, control_type,
-                                   island_op.getLoc(), nullptr, island_op);
+    auto island = CreateIsland({}, island_control_inputs, control_type,
+                               op.getLoc(), nullptr, op);
     island_control_inputs.clear();
-    island_control_inputs.push_back(new_island.control());
+    island_control_inputs.push_back(island.control());
   }
   // Find sources and sinks inside the original island.
   auto sources_and_sinks =
-      FindSourcesAndSinksInIsland(island_op, side_effect_analysis);
+      FindSourcesAndSinksInIsland(op, side_effect_analysis);
   // The corresponding control output of the new island created for each sub-op.
-  llvm::SmallDenseMap<Operation*, Value, 8> new_control_for_sub_ops;
+  llvm::SmallDenseMap<Operation*, Value*, 8> new_control_for_sub_ops;
   // Control outputs of newly created islands that are sinks.
-  llvm::SmallVector<Value, 8> sink_island_controls;
+  llvm::SmallVector<Value*, 8> sink_island_controls;
   // For each operation in the island, construct a new island to wrap the op,
   // yield all the results, and replace all the usages with the results of the
   // new island.
@@ -264,63 +225,59 @@ void BreakUpIslands::BreakUpIsland(
     const auto predecessors =
         side_effect_analysis.DirectControlPredecessors(&sub_op);
     // Get the controls from the predecessors.
-    llvm::SmallVector<Value, 4> predecessor_controls;
-    predecessor_controls.reserve(predecessors.size());
+    llvm::SmallVector<Value*, 4> predecessors_control;
+    predecessors_control.reserve(predecessors.size());
     for (auto predecessor : predecessors) {
-      predecessor_controls.push_back(new_control_for_sub_ops[predecessor]);
+      predecessors_control.push_back(new_control_for_sub_ops[predecessor]);
     }
     // If sub_op is a source, use island_control_inputs, because that's required
     // by inter-islands dependencies; otherwise, we do not need to include
     // island_control_inputs, since they must have been tracked by the (direct
     // or indirect) control predecessors or operands.
-    ArrayRef<Value> control = sources_and_sinks.sources.count(&sub_op) > 0
-                                  ? island_control_inputs
-                                  : predecessor_controls;
-    auto new_island =
+    ArrayRef<Value*> control = sources_and_sinks.sources.count(&sub_op) > 0
+                                   ? island_control_inputs
+                                   : predecessors_control;
+    auto island =
         CreateIsland(llvm::to_vector<4>(sub_op.getResultTypes()), control,
-                     control_type, sub_op.getLoc(), &sub_op, island_op);
-    new_control_for_sub_ops[&sub_op] = new_island.control();
+                     control_type, sub_op.getLoc(), &sub_op, op);
+    new_control_for_sub_ops[&sub_op] = island.control();
     if (sources_and_sinks.sinks.count(&sub_op)) {
-      sink_island_controls.push_back(new_island.control());
+      sink_island_controls.push_back(island.control());
     }
   }
-  // Create control outputs for the sinks.
+  // Create output controls for the sinks.
   assert(!sink_island_controls.empty());
-  // If there are multiple control outputs, create an empty island to group
+  // If there are multiple output controls, create an empty island to group
   // them.
   if (sink_island_controls.size() > 1) {
-    auto new_island = CreateIsland({}, sink_island_controls, control_type,
-                                   island_op.getLoc(), nullptr, island_op);
+    auto island = CreateIsland({}, sink_island_controls, control_type,
+                               op.getLoc(), nullptr, op);
     sink_island_controls.clear();
-    sink_island_controls.push_back(new_island.control());
+    sink_island_controls.push_back(island.control());
   }
   assert(sink_island_controls.size() == 1);
-  auto& sink_island_control = sink_island_controls[0];
-  island_op.control().replaceAllUsesWith(sink_island_control);
-  // All existing outputs need to add sink_island_control as control input.
-  // GraphOp, YieldOp and NextIterationSourceOp don't have control inputs so
-  // exclude them below.
-  for (Value out : island_op.outputs()) {
-    for (auto& use : out.getUses()) {
+  op.control()->replaceAllUsesWith(sink_island_controls[0]);
+  // All existing outputs need to add a control flow edge from
+  // sink_island_controls[0].
+  for (Value* out : op.outputs()) {
+    for (auto& use : out->getUses()) {
       Operation* owner = use.getOwner();
-      if (auto other_island_op =
+      if (auto island_op =
               llvm::dyn_cast<tf_executor::IslandOp>(owner->getParentOp())) {
-        (*new_control_inputs)[other_island_op].push_back(sink_island_control);
-      } else if (owner->getDialect() == island_op.getDialect() &&
-                 !llvm::isa<tf_executor::GraphOp>(owner) &&
-                 !llvm::isa<tf_executor::YieldOp>(owner) &&
-                 !llvm::isa<tf_executor::NextIterationSourceOp>(owner)) {
-        (*new_control_inputs)[owner].push_back(sink_island_control);
+        (*new_control_edges)[island_op].push_back(sink_island_controls[0]);
+      } else if (llvm::isa<tf_executor::FetchOp>(owner) ||
+                 llvm::isa<tf_executor::MergeOp>(owner) ||
+                 llvm::isa<tf_executor::SwitchOp>(owner)) {
+        (*new_control_edges)[owner].push_back(sink_island_controls[0]);
       } else {
-        owner->emitOpError("adding control dependency not supported");
+        use.getOwner()->emitError("Adding control dependency not supported");
         return signalPassFailure();
       }
     }
   }
-  for (auto item :
-       llvm::zip(island_op.outputs(), island_op.GetYield().fetches()))
-    std::get<0>(item).replaceAllUsesWith(std::get<1>(item));
-  island_op.erase();
+  for (auto item : llvm::zip(op.outputs(), op.GetYield().fetches()))
+    std::get<0>(item)->replaceAllUsesWith(std::get<1>(item));
+  op.erase();
 }
 
 }  // namespace

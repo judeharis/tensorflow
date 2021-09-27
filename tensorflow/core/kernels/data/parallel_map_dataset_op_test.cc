@@ -12,26 +12,26 @@ limitations under the License.
 #include "tensorflow/core/kernels/data/parallel_map_dataset_op.h"
 
 #include "tensorflow/core/kernels/data/dataset_test_base.h"
-#include "tensorflow/core/kernels/data/name_utils.h"
 
 namespace tensorflow {
 namespace data {
 namespace {
 
 constexpr char kNodeName[] = "parallel_map_dataset";
-constexpr int kOpVersion = 2;
 
 class ParallelMapDatasetParams : public DatasetParams {
  public:
   template <typename T>
-  ParallelMapDatasetParams(
-      T input_dataset_params, std::vector<Tensor> other_arguments,
-      int num_parallel_calls, FunctionDefHelper::AttrValueWrapper func,
-      std::vector<FunctionDef> func_lib, DataTypeVector type_arguments,
-      const DataTypeVector& output_dtypes,
-      const std::vector<PartialTensorShape>& output_shapes,
-      bool use_inter_op_parallelism, const std::string& deterministic,
-      bool preserve_cardinality, string node_name)
+  ParallelMapDatasetParams(T input_dataset_params,
+                           std::vector<Tensor> other_arguments,
+                           int num_parallel_calls,
+                           FunctionDefHelper::AttrValueWrapper func,
+                           std::vector<FunctionDef> func_lib,
+                           DataTypeVector type_arguments,
+                           DataTypeVector output_dtypes,
+                           std::vector<PartialTensorShape> output_shapes,
+                           bool use_inter_op_parallelism, bool sloppy,
+                           bool preserve_cardinality, string node_name)
       : DatasetParams(std::move(output_dtypes), std::move(output_shapes),
                       std::move(node_name)),
         other_arguments_(std::move(other_arguments)),
@@ -40,21 +40,18 @@ class ParallelMapDatasetParams : public DatasetParams {
         func_lib_(std::move(func_lib)),
         type_arguments_(std::move(type_arguments)),
         use_inter_op_parallelism_(use_inter_op_parallelism),
-        deterministic_(deterministic),
+        sloppy_(sloppy),
         preserve_cardinality_(preserve_cardinality) {
     input_dataset_params_.push_back(absl::make_unique<T>(input_dataset_params));
-    op_version_ = kOpVersion;
-    name_utils::IteratorPrefixParams params;
-    params.op_version = op_version_;
-    iterator_prefix_ = name_utils::IteratorPrefix(
-        input_dataset_params.dataset_type(),
-        input_dataset_params.iterator_prefix(), params);
+    iterator_prefix_ =
+        name_utils::IteratorPrefix(input_dataset_params.dataset_type(),
+                                   input_dataset_params.iterator_prefix());
   }
 
   std::vector<Tensor> GetInputTensors() const override {
     auto input_tensors = other_arguments_;
     input_tensors.emplace_back(
-        CreateTensor<int64>(TensorShape({}), {num_parallel_calls_}));
+        CreateTensor<int32>(TensorShape({}), {num_parallel_calls_}));
     return input_tensors;
   }
 
@@ -76,7 +73,7 @@ class ParallelMapDatasetParams : public DatasetParams {
         {ParallelMapDatasetOp::kOutputTypes, output_dtypes_},
         {ParallelMapDatasetOp::kUseInterOpParallelism,
          use_inter_op_parallelism_},
-        {ParallelMapDatasetOp::kDeterministic, deterministic_},
+        {ParallelMapDatasetOp::kSloppy, sloppy_},
         {ParallelMapDatasetOp::kPreserveCardinality, preserve_cardinality_}};
     return Status::OK();
   }
@@ -94,7 +91,7 @@ class ParallelMapDatasetParams : public DatasetParams {
   std::vector<FunctionDef> func_lib_;
   DataTypeVector type_arguments_;
   bool use_inter_op_parallelism_;
-  std::string deterministic_;
+  bool sloppy_;
   bool preserve_cardinality_;
 };
 
@@ -106,43 +103,41 @@ FunctionDefHelper::AttrValueWrapper MapFunc(const string& func_name,
 }
 
 // test case 1: num_parallel_calls = 1, use_inter_op_parallelism = false,
-// deterministic = true, preserve_cardinality = false, MapFunc = XTimesTwo
+// sloppy = false, preserve_cardinality = false, MapFunc = XTimesTwo
 ParallelMapDatasetParams ParallelMapDatasetParams1() {
-  return ParallelMapDatasetParams(
-      RangeDatasetParams(0, 10, 3),
-      /*other_arguments=*/{},
-      /*num_parallel_calls=*/1,
-      /*func=*/MapFunc("XTimesTwo", DT_INT64),
-      /*func_lib*/ {test::function::XTimesTwo()},
-      /*type_arguments=*/{},
-      /*output_dtypes=*/{DT_INT64},
-      /*output_shapes=*/{PartialTensorShape({})},
-      /*use_inter_op_parallelism=*/false,
-      /*deterministic=*/DeterminismPolicy::kDeterministic,
-      /*preserve_cardinality=*/false,
-      /*node_name=*/kNodeName);
+  return ParallelMapDatasetParams(RangeDatasetParams(0, 10, 3),
+                                  /*other_arguments=*/{},
+                                  /*num_parallel_calls=*/1,
+                                  /*func=*/MapFunc("XTimesTwo", DT_INT64),
+                                  /*func_lib*/ {test::function::XTimesTwo()},
+                                  /*type_arguments=*/{},
+                                  /*output_dtypes=*/{DT_INT64},
+                                  /*output_shapes=*/{PartialTensorShape({})},
+                                  /*use_inter_op_parallelism=*/false,
+                                  /*sloppy=*/false,
+                                  /*preserve_cardinality=*/false,
+                                  /*node_name=*/kNodeName);
 }
 
 // test case 2: num_parallel_calls = 2, use_inter_op_parallelism = true,
-// deterministic = false, preserve_cardinality = true, MapFunc = XTimesTwo
+// sloppy = true, preserve_cardinality = true, MapFunc = XTimesTwo
 ParallelMapDatasetParams ParallelMapDatasetParams2() {
-  return ParallelMapDatasetParams(
-      RangeDatasetParams(0, 10, 3),
-      /*other_arguments=*/{},
-      /*num_parallel_calls=*/2,
-      /*func=*/MapFunc("XTimesTwo", DT_INT64),
-      /*func_lib*/ {test::function::XTimesTwo()},
-      /*type_arguments=*/{},
-      /*output_dtypes=*/{DT_INT64},
-      /*output_shapes=*/{PartialTensorShape({})},
-      /*use_inter_op_parallelism=*/true,
-      /*deterministic=*/DeterminismPolicy::kNondeterministic,
-      /*preserve_cardinality=*/true,
-      /*node_name=*/kNodeName);
+  return ParallelMapDatasetParams(RangeDatasetParams(0, 10, 3),
+                                  /*other_arguments=*/{},
+                                  /*num_parallel_calls=*/2,
+                                  /*func=*/MapFunc("XTimesTwo", DT_INT64),
+                                  /*func_lib*/ {test::function::XTimesTwo()},
+                                  /*type_arguments=*/{},
+                                  /*output_dtypes=*/{DT_INT64},
+                                  /*output_shapes=*/{PartialTensorShape({})},
+                                  /*use_inter_op_parallelism=*/true,
+                                  /*sloppy=*/true,
+                                  /*preserve_cardinality=*/true,
+                                  /*node_name=*/kNodeName);
 }
 
 // test case 3: num_parallel_calls = 3, use_inter_op_parallelism = true,
-// deterministic = true, preserve_cardinality = false, MapFunc = XTimesFour
+// sloppy = false, preserve_cardinality = false, MapFunc = XTimesFour
 ParallelMapDatasetParams ParallelMapDatasetParams3() {
   return ParallelMapDatasetParams(
       RangeDatasetParams(0, 10, 3),
@@ -154,31 +149,30 @@ ParallelMapDatasetParams ParallelMapDatasetParams3() {
       /*output_dtypes=*/{DT_INT64},
       /*output_shapes=*/{PartialTensorShape({})},
       /*use_inter_op_parallelism=*/true,
-      /*deterministic=*/DeterminismPolicy::kDeterministic,
+      /*sloppy=*/false,
       /*preserve_cardinality=*/false,
       /*node_name=*/kNodeName);
 }
 
 // test case 4: num_parallel_calls = 4, use_inter_op_parallelism = false,
-// deterministic = true, preserve_cardinality = false, MapFunc = XTimesTwo
+// sloppy = false, preserve_cardinality = false, MapFunc = XTimesTwo
 ParallelMapDatasetParams ParallelMapDatasetParams4() {
-  return ParallelMapDatasetParams(
-      RangeDatasetParams(0, 10, 3),
-      /*other_arguments=*/{},
-      /*num_parallel_calls=*/4,
-      /*func=*/MapFunc("XTimesTwo", DT_INT64),
-      /*func_lib*/ {test::function::XTimesTwo()},
-      /*type_arguments=*/{},
-      /*output_dtypes=*/{DT_INT64},
-      /*output_shapes=*/{PartialTensorShape({})},
-      /*use_inter_op_parallelism=*/false,
-      /*deterministic=*/DeterminismPolicy::kDeterministic,
-      /*preserve_cardinality=*/false,
-      /*node_name=*/kNodeName);
+  return ParallelMapDatasetParams(RangeDatasetParams(0, 10, 3),
+                                  /*other_arguments=*/{},
+                                  /*num_parallel_calls=*/4,
+                                  /*func=*/MapFunc("XTimesTwo", DT_INT64),
+                                  /*func_lib*/ {test::function::XTimesTwo()},
+                                  /*type_arguments=*/{},
+                                  /*output_dtypes=*/{DT_INT64},
+                                  /*output_shapes=*/{PartialTensorShape({})},
+                                  /*use_inter_op_parallelism=*/false,
+                                  /*sloppy=*/false,
+                                  /*preserve_cardinality=*/false,
+                                  /*node_name=*/kNodeName);
 }
 
 // test case 5: num_parallel_calls = kAutotune, use_inter_op_parallelism = true,
-// deterministic = false, preserve_cardinality = true, MapFunc = XTimesFour
+// sloppy = true, preserve_cardinality = true, MapFunc = XTimesFour
 ParallelMapDatasetParams ParallelMapDatasetParams5() {
   return ParallelMapDatasetParams(
       RangeDatasetParams(0, 10, 3),
@@ -190,13 +184,13 @@ ParallelMapDatasetParams ParallelMapDatasetParams5() {
       /*output_dtypes=*/{DT_INT64},
       /*output_shapes=*/{PartialTensorShape({})},
       /*use_inter_op_parallelism=*/true,
-      /*deterministic=*/DeterminismPolicy::kNondeterministic,
+      /*sloppy=*/true,
       /*preserve_cardinality=*/true,
       /*node_name=*/kNodeName);
 }
 
 // test case 6: num_parallel_calls = 4, use_inter_op_parallelism = true,
-// deterministic = true, preserve_cardinality = false, MapFunc = XTimesFour
+// sloppy = false, preserve_cardinality = false, MapFunc = XTimesFour
 ParallelMapDatasetParams ParallelMapDatasetParams6() {
   return ParallelMapDatasetParams(
       RangeDatasetParams(0, 10, 3),
@@ -208,14 +202,14 @@ ParallelMapDatasetParams ParallelMapDatasetParams6() {
       /*output_dtypes=*/{DT_INT64},
       /*output_shapes=*/{PartialTensorShape({})},
       /*use_inter_op_parallelism=*/true,
-      /*deterministic=*/DeterminismPolicy::kDeterministic,
+      /*sloppy=*/false,
       /*preserve_cardinality=*/false,
       /*node_name=*/kNodeName);
 }
 
 // TODO(feihugis): make this test case work.
 // test case 7: num_parallel_calls = 2, use_inter_op_parallelism = false,
-// deterministic = true, preserve_cardinality = false, MapFunc = XTimesFour
+// sloppy = false, preserve_cardinality = false, MapFunc = XTimesFour
 ParallelMapDatasetParams ParallelMapDatasetParams7() {
   return ParallelMapDatasetParams(
       RangeDatasetParams(0, 10, 3),
@@ -227,15 +221,14 @@ ParallelMapDatasetParams ParallelMapDatasetParams7() {
       /*output_dtypes=*/{DT_INT64},
       /*output_shapes=*/{PartialTensorShape({})},
       /*use_inter_op_parallelism=*/false,
-      /*deterministic=*/DeterminismPolicy::kDeterministic,
+      /*sloppy=*/false,
       /*preserve_cardinality=*/false,
       /*node_name=*/kNodeName);
 }
 
 // TODO(feihugis): make this test case work.
 // test case 8: num_parallel_calls = kAutotune, use_inter_op_parallelism =
-// false, deterministic = false, preserve_cardinality = true, MapFunc =
-// XTimesFour
+// false, sloppy = true, preserve_cardinality = true, MapFunc = XTimesFour
 ParallelMapDatasetParams ParallelMapDatasetParams8() {
   return ParallelMapDatasetParams(
       RangeDatasetParams(0, 10, 3),
@@ -247,25 +240,24 @@ ParallelMapDatasetParams ParallelMapDatasetParams8() {
       /*output_dtypes=*/{DT_INT64},
       /*output_shapes=*/{PartialTensorShape({})},
       /*use_inter_op_parallelism=*/false,
-      /*deterministic=*/DeterminismPolicy::kNondeterministic,
+      /*sloppy=*/true,
       /*preserve_cardinality=*/true,
       /*node_name=*/kNodeName);
 }
 
 ParallelMapDatasetParams ParallelMapDatasetParamsWithInvalidNumParallelCalls() {
-  return ParallelMapDatasetParams(
-      RangeDatasetParams(0, 10, 3),
-      /*other_arguments=*/{},
-      /*num_parallel_calls=*/-4,
-      /*func=*/MapFunc("XTimesTwo", DT_INT64),
-      /*func_lib*/ {test::function::XTimesTwo()},
-      /*type_arguments=*/{},
-      /*output_dtypes=*/{DT_INT64},
-      /*output_shapes=*/{PartialTensorShape({})},
-      /*use_inter_op_parallelism=*/true,
-      /*deterministic=*/DeterminismPolicy::kNondeterministic,
-      /*preserve_cardinality=*/true,
-      /*node_name=*/kNodeName);
+  return ParallelMapDatasetParams(RangeDatasetParams(0, 10, 3),
+                                  /*other_arguments=*/{},
+                                  /*num_parallel_calls=*/-4,
+                                  /*func=*/MapFunc("XTimesTwo", DT_INT64),
+                                  /*func_lib*/ {test::function::XTimesTwo()},
+                                  /*type_arguments=*/{},
+                                  /*output_dtypes=*/{DT_INT64},
+                                  /*output_shapes=*/{PartialTensorShape({})},
+                                  /*use_inter_op_parallelism=*/true,
+                                  /*sloppy=*/true,
+                                  /*preserve_cardinality=*/true,
+                                  /*node_name=*/kNodeName);
 }
 
 std::vector<GetNextTestCase<ParallelMapDatasetParams>> GetNextTestCases() {
@@ -308,10 +300,8 @@ TEST_F(ParallelMapDatasetOpTest, DatasetNodeName) {
 TEST_F(ParallelMapDatasetOpTest, DatasetTypeString) {
   auto dataset_params = ParallelMapDatasetParams1();
   TF_ASSERT_OK(Initialize(dataset_params));
-  name_utils::OpNameParams params;
-  params.op_version = dataset_params.op_version();
   TF_ASSERT_OK(CheckDatasetTypeString(
-      name_utils::OpName(ParallelMapDatasetOp::kDatasetType, params)));
+      name_utils::OpName(ParallelMapDatasetOp::kDatasetType)));
 }
 
 TEST_F(ParallelMapDatasetOpTest, DatasetOutputDtypes) {
@@ -360,11 +350,8 @@ TEST_F(ParallelMapDatasetOpTest, IteratorOutputShapes) {
 TEST_F(ParallelMapDatasetOpTest, IteratorPrefix) {
   auto dataset_params = ParallelMapDatasetParams1();
   TF_ASSERT_OK(Initialize(dataset_params));
-  name_utils::IteratorPrefixParams params;
-  params.op_version = dataset_params.op_version();
-  TF_ASSERT_OK(CheckIteratorPrefix(
-      name_utils::IteratorPrefix(ParallelMapDatasetOp::kDatasetType,
-                                 dataset_params.iterator_prefix(), params)));
+  TF_ASSERT_OK(CheckIteratorPrefix(name_utils::IteratorPrefix(
+      ParallelMapDatasetOp::kDatasetType, dataset_params.iterator_prefix())));
 }
 
 std::vector<IteratorSaveAndRestoreTestCase<ParallelMapDatasetParams>>

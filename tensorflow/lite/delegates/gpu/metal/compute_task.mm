@@ -67,7 +67,6 @@ using ::tflite::gpu::ValueId;
   uint3 _groupsSize;
   uint3 _groupsCount;
   DispatchParamsFunction _resizeFunction;
-  std::string _description;
 }
 
 - (Status)compileWithDevice:(id<MTLDevice>)device
@@ -147,7 +146,6 @@ using ::tflite::gpu::ValueId;
   }
   _resizeFunction = desc->resize_function;
   _program = program;
-  _description = desc->description;
   return OkStatus();
 }
 

@@ -18,7 +18,7 @@ limitations under the License.
 
 namespace stream_executor {
 
-std::string AllocatorStats::DebugString() const {
+string AllocatorStats::DebugString() const {
   return absl::StrFormat(
       "Limit:        %20lld\n"
       "InUse:        %20lld\n"

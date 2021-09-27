@@ -146,9 +146,7 @@ enum class OperatorType : uint8 {
   // instead of being given as plain constant arrays. So we need to insert
   // special nodes in the graph to shuffle axes.
   kReorderAxes,
-  kSegmentSum,
   kSelect,
-  kSelectV2,
   kSparseToDense,
   kEqual,
   kNotEqual,
@@ -179,9 +177,7 @@ enum class OperatorType : uint8 {
   kMatrixDiagV2,
   kMatrixSetDiagV2,
   kMatrixDiagV3,
-  kMatrixSetDiagV3,
-  // Debugging operators.
-  kNumericVerify
+  kMatrixSetDiagV3
 };
 
 // Helper to deal with TensorFlow arrays using a different ordering of
@@ -591,21 +587,6 @@ struct FullyConnectedOperator : Operator {
 // TensorFlow equivalent: Dequantize
 struct DequantizeOperator : Operator {
   DequantizeOperator() : Operator(OperatorType::kDequantize) {}
-};
-
-// Numeric verification operator, converting a quantized array of integers with
-// quantization parameters specifying how these integers correspond to real
-// numbers
-// (see QuantizationParams) and verify them with an array of floating-point
-// values.
-
-// Inputs:
-//   inputs[0]: required: the input quantized activations array
-//   inputs[1]: required: the input reference activations array
-//
-// TensorFlow equivalent: Dequantize
-struct NumericVerifyOperator : Operator {
-  NumericVerifyOperator() : Operator(OperatorType::kNumericVerify) {}
 };
 
 // Batch-normalization operator.
@@ -1840,7 +1821,6 @@ struct ResizeBilinearOperator : Operator {
   ResizeBilinearOperator() : Operator(OperatorType::kResizeBilinear) {}
 
   bool align_corners = false;
-  bool half_pixel_centers = false;
 };
 
 // ResizeNearestNeighborOperator operator. It resizes input images with nearest
@@ -2190,10 +2170,6 @@ struct MatrixSetDiagV2Operator : Operator {
 // skipped. (It has never been, and should never be, exposed in the public API.)
 struct MatrixSetDiagV3Operator : Operator {
   MatrixSetDiagV3Operator() : Operator(OperatorType::kMatrixSetDiagV3) {}
-};
-
-struct SegmentSumOperator : Operator {
-  SegmentSumOperator() : Operator(OperatorType::kSegmentSum) {}
 };
 
 // Alloc's are used for transient arrays only. An Alloc specifies which interval

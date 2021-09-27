@@ -1885,12 +1885,9 @@ void ProcessSparseToDenseOperator(Model* model, SparseToDenseOperator* op) {
   } else {
     const std::vector<int64>& output_shape_data =
         output_shape_array.GetBuffer<ArrayDataType::kInt64>().data;
-    // explicitly cast elements to int in order to avoid MSVC warnings about
-    // narrowing conversion.
-    std::transform(
+    std::copy(
         output_shape_data.begin(), output_shape_data.end(),
-        std::back_inserter(*output_array.mutable_shape()->mutable_dims()),
-        [](const int64 dim) { return static_cast<int>(dim); });
+        std::back_inserter(*output_array.mutable_shape()->mutable_dims()));
   }
 }
 
@@ -2444,8 +2441,6 @@ void ProcessMatrixSetDiagOperator(Model* model, MatrixSetDiagOperator* op) {
     case OperatorType::kMatrixSetDiagV3:
       // MatrixSetDiagV3 operators are converted to MatrixSetDiag, after which
       // their shapes are propagated.
-      break;
-    case OperatorType::kSegmentSum:
       break;
     default:
       // Unimplemented, another graph transformation should drop it.

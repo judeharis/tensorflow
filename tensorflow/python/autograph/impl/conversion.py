@@ -61,7 +61,6 @@ from tensorflow.python.autograph.pyct import qual_names
 from tensorflow.python.autograph.pyct import templates
 from tensorflow.python.autograph.pyct import transformer
 from tensorflow.python.autograph.utils import ag_logging as logging
-from tensorflow.python.eager import function
 from tensorflow.python.util import tf_inspect
 
 
@@ -167,7 +166,7 @@ class _UnboundInstanceCache(_FunctionCache):
 
 
 # Using a re-entrant lock to guard against the unlikely possibility that the
-# conversion process triggers additional code execution.
+# conversion process tiggers additional code execution.
 _CACHE_LOCK = threading.RLock()
 
 
@@ -253,7 +252,7 @@ def _wrap_into_dynamic_factory(nodes, entity_name, factory_factory_name,
 
 def _convert_with_cache(entity, program_ctx, free_nonglobal_var_names):
   """Returns a (possibly cached) factory for the converted result of entity."""
-  # The cache subkey encompasses any conversion options on which the generated
+  # The cache subkey encompases any conversion options on which the generated
   # code may depend.
   # The cached factory includes the necessary definitions to distinguish
   # between the global and non-global free variables. For this reason, the
@@ -400,9 +399,7 @@ def is_whitelisted(
         logging.log(2, 'Whitelisted: %s: %s', o, rule)
         return True
 
-  # The check for __code__ below is because isgeneratorfunction crashes
-  # without one.
-  if hasattr(o, '__code__') and tf_inspect.isgeneratorfunction(o):
+  if tf_inspect.isgeneratorfunction(o):
     logging.warn(
         'Entity %s appears to be a generator function. It will not be converted'
         ' by AutoGraph.', o)
@@ -436,8 +433,6 @@ def is_whitelisted(
     # longer be whitelisted.
 
     owner_class = inspect_utils.getmethodclass(o)
-    if owner_class is function.TfMethodTarget:
-      owner_class = o.__self__.target_class
     if owner_class is not None:
       if issubclass(owner_class, unittest.TestCase):
         logging.log(2, 'Whitelisted: %s: method of TestCase subclass', o)
@@ -501,7 +496,7 @@ def convert_entity_to_ast(o, program_ctx):
             keyed by their symbol name.
 
   Raises:
-    NotImplementedError: if entity is of a type that is not yet supported.
+    ValueError: if the entity type is not supported.
   """
   logging.log(1, 'Converting %s', o)
 
@@ -518,7 +513,7 @@ def convert_entity_to_ast(o, program_ctx):
         'cannot convert entity "{}": object conversion is not yet'
         ' supported.'.format(o))
   else:
-    raise NotImplementedError(
+    raise ValueError(
         'Entity "%s" has unsupported type "%s". Only functions and classes are '
         'supported for now.' % (o, type(o)))
 
@@ -604,9 +599,7 @@ def convert_class_to_ast(c, program_ctx):
     renames[qual_names.QN(base.__name__)] = qual_names.QN(alias)
 
   # Generate the definition of the converted class.
-  bases = [
-      gast.Name(n, ctx=gast.Load(), annotation=None, type_comment=None)
-      for n in base_names]
+  bases = [gast.Name(n, gast.Load(), None) for n in base_names]
   class_def = gast.ClassDef(
       class_name,
       bases=bases,
@@ -713,11 +706,7 @@ def convert_func_to_ast(f, program_ctx, do_rename=True):
 
   if isinstance(node, gast.Lambda):
     node = gast.Assign(
-        targets=[
-            gast.Name(
-                new_name, ctx=gast.Store(), annotation=None, type_comment=None)
-        ],
-        value=node)
+        targets=[gast.Name(new_name, gast.Store(), None)], value=node)
   elif do_rename:
     node.name = new_name
   else:

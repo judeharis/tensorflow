@@ -16,20 +16,6 @@ limitations under the License.
 #ifndef TENSORFLOW_LITE_DELEGATES_GPU_METAL_DELEGATE_H_
 #define TENSORFLOW_LITE_DELEGATES_GPU_METAL_DELEGATE_H_
 
-#ifdef SWIG
-#define TFL_CAPI_EXPORT
-#else
-#if defined(_WIN32)
-#ifdef TFL_COMPILE_LIBRARY
-#define TFL_CAPI_EXPORT __declspec(dllexport)
-#else
-#define TFL_CAPI_EXPORT __declspec(dllimport)
-#endif  // TFL_COMPILE_LIBRARY
-#else
-#define TFL_CAPI_EXPORT __attribute__((visibility("default")))
-#endif  // _WIN32
-#endif  // SWIG
-
 #ifdef __cplusplus
 extern "C" {
 #else
@@ -65,11 +51,10 @@ typedef struct {
 // When `options` is set to `nullptr`, the following default values are used:
 // .precision_loss_allowed = false,
 // .wait_type = kPassive,
-TFL_CAPI_EXPORT extern TfLiteDelegate* TFLGpuDelegateCreate(
-    const TFLGpuDelegateOptions* options);
+TfLiteDelegate* TFLGpuDelegateCreate(const TFLGpuDelegateOptions* options);
 
 // Destroys a delegate created with `TFLGpuDelegateCreate` call.
-TFL_CAPI_EXPORT extern void TFLGpuDelegateDelete(TfLiteDelegate* delegate);
+void TFLGpuDelegateDelete(TfLiteDelegate* delegate);
 
 #ifdef __cplusplus
 }  // extern "C"

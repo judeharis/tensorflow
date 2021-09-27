@@ -19,5 +19,5 @@ set -x
 
 # Install latest bazel
 source tensorflow/tools/ci_build/release/common.sh
-install_bazelisk
+update_bazel_macos
 tensorflow/tools/ci_build/osx/libtensorflow_cpu.sh

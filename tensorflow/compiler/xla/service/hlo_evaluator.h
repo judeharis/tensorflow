@@ -133,10 +133,6 @@ class HloEvaluator : public DfsHloVisitorWithDefault {
     dynamic_dimension_inference_ = dynamic_dimension_inference;
   }
 
-  DynamicDimensionInference* dynamic_dimension_inference() {
-    return dynamic_dimension_inference_;
-  }
-
   // Enable the fast path for certain operations like dot or convolution.
   void set_use_fast_path(bool value) { use_fast_path_ = value; }
 
@@ -257,7 +253,7 @@ class HloEvaluator : public DfsHloVisitorWithDefault {
   Status HandleCustomCall(HloInstruction* custom_call) override;
 
   // Unsupported HLOs, note some of them (such as BatchNorm*) are typically
-  // expanded in a semantic-preserving way into other HLOs by adding expansion
+  // expanded in a semantic-preserving way into other HLOs by adding exanpsion
   // HLO pass to the HLO optimization pass during compilation, which can then be
   // handled by the evaluator.
   Status HandleBatchNormGrad(HloInstruction* batch_norm_grad) override {
@@ -308,7 +304,7 @@ class HloEvaluator : public DfsHloVisitorWithDefault {
   //
   // TODO(b/35950897): have better memory management here to free instructions
   // that are no longer a parent for any other subsequent instruction in
-  // post-ordering.
+  // post-orderring.
   //
   // Must be cleared for each evaluation.
   //

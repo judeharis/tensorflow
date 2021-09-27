@@ -18,7 +18,6 @@ from __future__ import division
 from __future__ import print_function
 
 import itertools
-
 import numpy as np
 from six.moves import range  # pylint: disable=redefined-builtin
 
@@ -213,8 +212,6 @@ def convert_kernel(kernel):
 
   Also works reciprocally, since the transformation is its own inverse.
 
-  This is used for converting legacy Theano-saved model files.
-
   Arguments:
       kernel: Numpy array (3D, 4D or 5D).
 
@@ -381,7 +378,7 @@ def conv_kernel_idxs(input_shape, kernel_shape, strides, padding, filters_in,
   elif data_format == 'channels_last':
     concat_idxs = lambda spatial_idx, filter_idx: spatial_idx + (filter_idx,)
   else:
-    raise ValueError('Data format %s not recognized.'
+    raise ValueError('Data format %s not recignized.'
                      '`data_format` must be "channels_first" or '
                      '"channels_last".' % data_format)
 

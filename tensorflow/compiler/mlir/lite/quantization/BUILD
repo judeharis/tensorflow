@@ -13,7 +13,7 @@ package(
 
 package_group(
     name = "friends",
-    includes = ["//third_party/mlir:subpackages"],
+    includes = ["@local_config_mlir//:subpackages"],
     packages = ["//tensorflow/compiler/mlir/..."],
 )
 
@@ -26,8 +26,8 @@ filegroup(
     name = "quantization_td_files",
     srcs = [
         "quantization.td",
-        "@llvm-project//mlir:OpBaseTdFiles",
-        "@llvm-project//mlir:QuantizationOpsTdFiles",
+        "@local_config_mlir//:OpBaseTdFiles",
+        "@local_config_mlir//:QuantizationOpsTdFiles",
     ],
 )
 
@@ -53,13 +53,13 @@ cc_library(
         "//tensorflow/core:lib_proto_parsing",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
-        "@llvm-project//llvm:support",
-        "@llvm-project//mlir:Analysis",
-        "@llvm-project//mlir:IR",
-        "@llvm-project//mlir:Pass",
-        "@llvm-project//mlir:QuantOps",
-        "@llvm-project//mlir:StandardOps",
-        "@llvm-project//mlir:Support",
+        "@llvm//:support",
+        "@local_config_mlir//:Analysis",
+        "@local_config_mlir//:IR",
+        "@local_config_mlir//:Pass",
+        "@local_config_mlir//:QuantOps",
+        "@local_config_mlir//:StandardOps",
+        "@local_config_mlir//:Support",
     ],
     alwayslink = 1,
 )
@@ -71,17 +71,18 @@ cc_library(
         "quantization_utils.cc",
     ],
     hdrs = [
-        "quantization_traits.h",
         "quantization_utils.h",
     ],
     deps = [
-        "//tensorflow/core:lib_proto_parsing",
         "@com_google_absl//absl/memory",
-        "@llvm-project//llvm:support",
-        "@llvm-project//mlir:IR",
-        "@llvm-project//mlir:QuantOps",
-        "@llvm-project//mlir:StandardOps",
-        "@llvm-project//mlir:Support",
+        "@llvm//:support",
+        "@local_config_mlir//:IR",
+        "@local_config_mlir//:QuantOps",
+        "@local_config_mlir//:StandardOps",
+        "@local_config_mlir//:Support",
+        # TODO(fengliuai): remove this dependence.
+        "//tensorflow/compiler/mlir/lite:tensorflow_lite",
+        "//tensorflow/core:lib_proto_parsing",
     ],
 )
 
@@ -96,7 +97,7 @@ cc_library(
     deps = [
         "//tensorflow/core:protos_all_cc",
         "@com_google_absl//absl/strings",
-        "@llvm-project//llvm:support",
+        "@llvm//:support",
     ],
 )
 
@@ -106,8 +107,8 @@ tf_native_cc_binary(
         "tools/op_quant_spec_getters_gen.cc",
     ],
     deps = [
-        "@llvm-project//llvm:support",
-        "@llvm-project//llvm:tablegen",
-        "@llvm-project//mlir:TableGen",
+        "@llvm//:support",
+        "@llvm//:tablegen",
+        "@local_config_mlir//:TableGen",
     ],
 )

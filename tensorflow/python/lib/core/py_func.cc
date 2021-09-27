@@ -18,7 +18,7 @@ limitations under the License.
 #include <Python.h>
 
 // clang-format: off
-// Must be included first.
+// Must be inlcluded first.
 #include "tensorflow/python/lib/core/numpy.h"
 // clang-format: on
 
@@ -34,7 +34,6 @@ limitations under the License.
 #include "tensorflow/core/lib/core/errors.h"
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/lib/core/threadpool.h"
-#include "tensorflow/core/platform/casts.h"
 #include "tensorflow/core/platform/macros.h"
 #include "tensorflow/core/platform/mutex.h"
 #include "tensorflow/core/platform/types.h"
@@ -48,7 +47,7 @@ namespace tensorflow {
 namespace {
 
 static mutex mu(LINKER_INITIALIZED);
-static PyObject* py_trampoline TF_GUARDED_BY(mu) = nullptr;
+static PyObject* py_trampoline GUARDED_BY(mu) = nullptr;
 
 // Returns the py_trampoline that is used to pass the control to the
 // python runtime.
@@ -91,19 +90,18 @@ Status MakeArgTuple(const PyCall* call, EagerContext* ctx, PyObject** tuple) {
   Device* device = IsCPUDevice(call->device) ? nullptr : call->device;
   for (int64 i = 0; i < n; ++i) {
     PyObject* arg = nullptr;
+    const Tensor& t = call->ins[i];
     if (call->eager) {
       TensorHandle* handle;
-      Tensor t = call->ins[i];
       TF_RETURN_IF_ERROR(TensorHandle::CreateLocalHandle(
-          std::move(t), ctx->CanonicalDevice(device), nullptr, ctx, &handle));
-      arg = EagerTensorFromHandle(new TFE_TensorHandle{
-          std::make_unique<tensorflow::TensorHandleInterface>(handle)});
+          t, ctx->CanonicalDevice(device), ctx, &handle));
+      arg = EagerTensorFromHandle(new TFE_TensorHandle(handle));
       if (arg == nullptr) {
         Py_DECREF(lst);
         return errors::Internal("Unable to procure EagerTensor from Tensor.");
       }
     } else {
-      Status s = TensorToNdarray(call->ins[i], &arg);
+      Status s = TensorToNdarray(t, &arg);
       if (!s.ok()) {
         Py_DECREF(lst);
         return s;
@@ -146,14 +144,8 @@ bool IsSingleNone(PyObject* obj) {
 tensorflow::Status ExtractTensorFromEagerTensor(const PyObject* eager_tensor,
                                                 const Device* expected_device,
                                                 const Tensor** output_tensor) {
-  auto handle = down_cast<tensorflow::TensorHandleInterface*>(
-                    EagerTensor_Handle(eager_tensor)->handle.get())
-                    ->Handle();
-  if (VariantDeviceIsCustom(handle->device())) {
-    return errors::Unimplemented(
-        "Custom devices are currently not supported with PyFuncs.");
-  }
-  Device* actual_device = absl::get<Device*>(handle->device());
+  auto handle = EagerTensor_Handle(eager_tensor)->handle;
+  Device* actual_device = handle->device();
   TF_RETURN_IF_ERROR(handle->Tensor(output_tensor));
   // actual_device may be nullptr, which implies local CPU.
   if (expected_device == actual_device) return Status::OK();

@@ -30,7 +30,7 @@ class _NamingStyle(enum.Enum):
 
 
 class Namer(object):
-  """Symbol name generator."""
+  """Symbol name generartor."""
 
   def __init__(self, global_namespace):
     self.global_namespace = global_namespace

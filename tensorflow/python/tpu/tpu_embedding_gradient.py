@@ -54,7 +54,7 @@ def create_dummy_table_variables(tpu_embedding):
   """Create dummy embedding table variables.
 
   The sole purpose of these dummy variables are to trigger gradient
-  calculation wrt them so that the gradients wrt activation can be captured
+  calcuation wrt them so that the gradients wrt activation can be captured
   and later sent to TPU embedding.
 
   Args:
@@ -159,7 +159,8 @@ def get_gradients_through_dummy_table_variables(tpu_embedding):
           'are sent back to TPUEmbedding instead. Gradients of zeros and no '
           'gradients are equivalent for SGD, AdaGrad, FTRL, momentum, etc, but '
           'might differ for other optimizers due to implementation of tpu '
-          'embedding optimizers.'.format(table, table_id))
+          'embedding optimziers.'
+          .format(table, table_id))
     for feature, gradient in zip(tpu_embedding.table_to_features_dict[table],
                                  table_gradients):
       if gradient is not None:

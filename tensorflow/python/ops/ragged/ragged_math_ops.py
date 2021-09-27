@@ -29,6 +29,7 @@ from tensorflow.python.ops import gen_ragged_math_ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops.ragged import ragged_functional_ops
 from tensorflow.python.ops.ragged import ragged_tensor
+from tensorflow.python.ops.ragged import ragged_util
 from tensorflow.python.ops.ragged import segment_id_ops
 from tensorflow.python.util.tf_export import tf_export
 
@@ -403,7 +404,7 @@ _RAGGED_REDUCE_MEAN_EXAMPLE = """
     >>> tf.reduce_mean(rt, axis=0).numpy()
     array([3.75, 4.  , 4. ])
     >>> tf.reduce_mean(rt, axis=1).numpy()
-    array([2.66666667, 3.  , 9.  , 4.  ])
+    array([2.6666..., 3.  , 9.  , 4.  ])
 """
 _RAGGED_REDUCE_ALL_EXAMPLE = """
     >>> rt = tf.ragged.constant([[True, True], [True, True, False, True], [False, True]])
@@ -500,9 +501,7 @@ def ragged_reduce_aggregate(reduce_op,
         # as the sort with negative axis will have different orders.
         # See GitHub issue 27497.
         axis = [
-            array_ops.get_positive_axis(a, rt_input.shape.ndims, 'axis[%s]' % i,
-                                        'rank(input_tensor)')
-            for i, a in enumerate(axis)
+            ragged_util.get_positive_axis(a, rt_input.shape.ndims) for a in axis
         ]
         # When reducing multiple axes, just reduce one at a time.  This is less
         # efficient, and only works for associative ops.  (In particular, it
@@ -519,8 +518,7 @@ def ragged_reduce_aggregate(reduce_op,
     rt_input = ragged_tensor.convert_to_tensor_or_ragged_tensor(
         rt_input, name='rt_input')
 
-    axis = array_ops.get_positive_axis(
-        axis, rt_input.shape.ndims, ndims_name='rank(input_tensor)')
+    axis = ragged_util.get_positive_axis(axis, rt_input.shape.ndims)
 
     if axis == 0:
       # out[i_1, i_2, ..., i_N] = sum_{j} rt_input[j, i_1, i_2, ..., i_N]

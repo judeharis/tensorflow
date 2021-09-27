@@ -20,8 +20,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import weakref
-
 from tensorflow.python.eager import context
 from tensorflow.python.framework import ops
 from tensorflow.python.util import deprecation
@@ -30,8 +28,6 @@ from tensorflow.python.util.tf_export import tf_export
 
 DEFAULT_GRAPH_SEED = 87654321
 _MAXINT32 = 2**31 - 1
-
-_graph_to_seed_dict = weakref.WeakKeyDictionary()
 
 
 def _truncate_seed(seed):
@@ -73,8 +69,7 @@ def get_seed(op_seed):
       if eager:
         op_seed = context.internal_operation_seed()
       else:
-        op_seed = _graph_to_seed_dict.setdefault(ops.get_default_graph(), 0)
-        _graph_to_seed_dict[ops.get_default_graph()] += 1
+        op_seed = ops.get_default_graph()._last_id
 
     seeds = _truncate_seed(global_seed), _truncate_seed(op_seed)
   else:
@@ -255,30 +250,7 @@ def set_seed(seed):
   ```
 
   The reason we get 'A2' instead 'A1' on the second call of `tf.random.uniform`
-  above is because the second call uses a different operation seed.
-
-  Note that `tf.function` acts like a re-run of a program in this case. When
-  the global seed is set but operation seeds are not set, the sequence of random
-  numbers are the same for each `tf.function`. For example:
-
-  ```python
-  tf.random.set_seed(1234)
-
-  @tf.function
-  def f():
-    a = tf.random.uniform([1])
-    b = tf.random.uniform([1])
-    return a, b
-
-  @tf.function
-  def g():
-    a = tf.random.uniform([1])
-    b = tf.random.uniform([1])
-    return a, b
-
-  print(f())  # prints '(A1, A2)'
-  print(g())  # prints '(A1, A2)'
-  ```
+  above is because the secand call uses a different operation seed.
 
   If the operation seed is set, we get different results for every call to the
   random op, but the same sequence for every re-run of the program:
@@ -296,7 +268,7 @@ def set_seed(seed):
   ```
 
   The reason we get 'A2' instead 'A1' on the second call of `tf.random.uniform`
-  above is because the same `tf.random.uniform` kernel (i.e. internal
+  above is because the same `tf.random.uniform` kernel (i.e. internel
   representation) is used by TensorFlow for all calls of it with the same
   arguments, and the kernel maintains an internal counter which is incremented
   every time it is executed, generating different results.

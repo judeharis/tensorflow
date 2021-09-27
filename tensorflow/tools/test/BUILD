@@ -12,10 +12,7 @@ package(
     licenses = ["notice"],  # Apache 2.0
 )
 
-exports_files([
-    "LICENSE",
-    "run_and_gather_logs_lib.py",
-])
+exports_files(["LICENSE"])
 
 py_library(
     name = "system_info_lib",
@@ -90,7 +87,7 @@ py_library(
 #cuda_py_test(
 #    name = "run_and_gather_logs_test",
 #    srcs = ["run_and_gather_logs.py"],
-#    deps = [
+#    additional_deps = [
 #        ":run_and_gather_logs",
 #    ],
 #    args = [

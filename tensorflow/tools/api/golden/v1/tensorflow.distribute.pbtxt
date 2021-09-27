@@ -41,10 +41,6 @@ tf_module {
     mtype: "<type \'type\'>"
   }
   member {
-    name: "RunOptions"
-    mtype: "<type \'type\'>"
-  }
-  member {
     name: "Server"
     mtype: "<type \'type\'>"
   }

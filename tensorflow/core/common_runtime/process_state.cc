@@ -18,7 +18,6 @@ limitations under the License.
 #include <cstring>
 #include <vector>
 
-#include "absl/base/call_once.h"
 #include "tensorflow/core/common_runtime/bfc_allocator.h"
 #include "tensorflow/core/common_runtime/pool_allocator.h"
 #include "tensorflow/core/framework/allocator.h"
@@ -34,8 +33,8 @@ namespace tensorflow {
 
 /*static*/ ProcessState* ProcessState::singleton() {
   static ProcessState* instance = new ProcessState;
-  static absl::once_flag f;
-  absl::call_once(f, []() {
+  static std::once_flag f;
+  std::call_once(f, []() {
     AllocatorFactoryRegistry::singleton()->process_state_ = instance;
   });
 

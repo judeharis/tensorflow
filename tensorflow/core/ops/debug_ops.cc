@@ -95,10 +95,15 @@ REGISTER_OP("DebugIdentityV2")
 
 REGISTER_OP("DebugNumericSummaryV2")
     .Input("input: T")
-    .Output("output: output_dtype")
-    .Attr("output_dtype: {float32, float64} = DT_FLOAT")
+    .Output("output: float32")
     .Attr("T: type")
     .Attr("tensor_debug_mode: int = -1")
     .Attr("tensor_id: int = -1")
-    .SetShapeFn(shape_inference::UnknownShape);
+    .SetShapeFn([](shape_inference::InferenceContext *c) {
+      // The following is for REDUCE_INF_NAN_THREE_SLOTS.
+      // TODO(cais): Support other tensor_debug_mode values.
+      shape_inference::ShapeHandle output_shape = c->MakeShape({3});
+      c->set_output(0, output_shape);
+      return Status::OK();
+    });
 }  // namespace tensorflow

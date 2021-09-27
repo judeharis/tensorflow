@@ -21,7 +21,6 @@ limitations under the License.
 #include "tensorflow/core/lib/core/threadpool.h"
 #include "tensorflow/core/lib/io/record_writer.h"
 #include "tensorflow/core/platform/file_system.h"
-#include "tensorflow/core/platform/resource.h"
 
 namespace tensorflow {
 namespace data {
@@ -57,8 +56,6 @@ class ToTFRecordOp : public AsyncOpKernel {
 
  private:
   Status DoCompute(OpKernelContext* ctx) {
-    tensorflow::ResourceTagger tag(kTFDataResourceTag,
-                                   ctx->op_kernel().type_string());
     tstring filename;
     TF_RETURN_IF_ERROR(
         ParseScalarArgument<tstring>(ctx, "filename", &filename));
@@ -84,8 +81,8 @@ class ToTFRecordOp : public AsyncOpKernel {
 
     IteratorContext iter_ctx(std::move(params));
     std::unique_ptr<IteratorBase> iterator;
-    TF_RETURN_IF_ERROR(dataset->MakeIterator(
-        &iter_ctx, /*parent=*/nullptr, "ToTFRecordOpIterator", &iterator));
+    TF_RETURN_IF_ERROR(
+        dataset->MakeIterator(&iter_ctx, "ToTFRecordOpIterator", &iterator));
 
     std::vector<Tensor> components;
     components.reserve(dataset->output_dtypes().size());

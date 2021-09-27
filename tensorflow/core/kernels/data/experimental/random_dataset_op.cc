@@ -86,7 +86,6 @@ class RandomDatasetOp::Dataset : public DatasetBase {
     Status GetNextInternal(IteratorContext* ctx,
                            std::vector<Tensor>* out_tensors,
                            bool* end_of_sequence) override {
-      out_tensors->reserve(1);
       mutex_lock l(mu_);
       out_tensors->emplace_back(ctx->allocator({}), DT_INT64, TensorShape({}));
       out_tensors->back().scalar<int64>()() = Random();
@@ -122,16 +121,16 @@ class RandomDatasetOp::Dataset : public DatasetBase {
 
    private:
     random::SingleSampleAdapter<random::PhiloxRandom>::ResultType Random()
-        TF_EXCLUSIVE_LOCKS_REQUIRED(mu_) {
+        EXCLUSIVE_LOCKS_REQUIRED(mu_) {
       num_random_samples_++;
       auto out = generator_();
       return out;
     }
     mutex mu_;
-    random::PhiloxRandom parent_generator_ TF_GUARDED_BY(mu_);
+    random::PhiloxRandom parent_generator_ GUARDED_BY(mu_);
     random::SingleSampleAdapter<random::PhiloxRandom> generator_
-        TF_GUARDED_BY(mu_);
-    int64 num_random_samples_ TF_GUARDED_BY(mu_) = 0;
+        GUARDED_BY(mu_);
+    int64 num_random_samples_ GUARDED_BY(mu_) = 0;
   };
 
   const int64 seed_;

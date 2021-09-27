@@ -18,20 +18,16 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from absl.testing import parameterized
-
 from tensorflow.python.eager import context
 from tensorflow.python.framework import constant_op
-from tensorflow.python.framework import errors
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import test_util
-from tensorflow.python.ops import gen_data_flow_ops
 from tensorflow.python.ops import gen_math_ops
 from tensorflow.python.platform import test
 
 
 @test_util.run_all_in_graph_and_eager_modes
-class RawOpsTest(test.TestCase, parameterized.TestCase):
+class RawOpsTest(test.TestCase):
 
   def testSimple(self):
     x = constant_op.constant(1)
@@ -61,13 +57,6 @@ class RawOpsTest(test.TestCase, parameterized.TestCase):
     self.assertAllClose(
         gen_math_ops.Any(input=x, axis=0),
         gen_math_ops.Any(input=x, axis=0, keep_dims=False))
-  
-  def testGetSessionHandle(self):
-    if context.executing_eagerly():
-      with self.assertRaisesRegex(
-          errors.FailedPreconditionError,
-          "GetSessionHandle called on null session state"):
-        gen_data_flow_ops.GetSessionHandle(value=[1])
 
 
 if __name__ == "__main__":

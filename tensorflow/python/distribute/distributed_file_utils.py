@@ -50,6 +50,7 @@ from __future__ import print_function
 
 import os
 from tensorflow.python.distribute import distribution_strategy_context
+from tensorflow.python.distribute import multi_worker_util
 from tensorflow.python.lib.io import file_io
 
 
@@ -79,7 +80,7 @@ def write_dirpath(dirpath, strategy=None):
     return dirpath
   if not strategy.extended._in_multi_worker_mode():  # pylint: disable=protected-access
     return dirpath
-  if strategy.extended.should_checkpoint:
+  if multi_worker_util.is_chief():
     return dirpath
   # If this worker is not chief and hence should not save file, save it to a
   # temporary directory to be removed later.
@@ -95,10 +96,8 @@ def remove_temp_dirpath(dirpath, strategy=None):
     # If strategy is still not available, this is not in distributed training.
     # Fallback to no-op.
     return
-  # TODO(anjalisridhar): Consider removing the check for multi worker mode since
-  # it is redundant when used with the should_checkpoint property.
-  if (strategy.extended._in_multi_worker_mode() and  # pylint: disable=protected-access
-      not strategy.extended.should_checkpoint):
+  if strategy.extended._in_multi_worker_mode():  # pylint: disable=protected-access
+    if not multi_worker_util.is_chief():
       # If this worker is not chief and hence should not save file, remove
       # the temporary directory.
-    file_io.delete_recursively(_get_temp_dir(dirpath, strategy))
+      file_io.delete_recursively(_get_temp_dir(dirpath, strategy))

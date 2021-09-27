@@ -40,7 +40,6 @@ enum class Axis {
   WIDTH = 5,
   BATCH = 6,
   VALUE = 7,
-  DEPTH = 8,
 };
 
 std::string ToString(Axis t);
@@ -58,10 +57,6 @@ enum class Layout {
   IHWO = 8,
   IOHW = 9,
   BHWC = 10,
-  HWDC = 11,
-  BHWDC = 12,
-  HWD = 13,
-  OHWDI = 14,
 };
 
 std::string ToString(Layout l);
@@ -87,13 +82,6 @@ constexpr int GetAxisIndex(Axis axis);
 // Returns axis index for the given layout and axis.
 int GetAxisIndex(Layout layout, Axis axis);
 
-// Checks if fixed layout has given axis
-template <Layout T>
-constexpr bool HasAxis(Axis axis);
-
-// Checks if given layout has given axis
-bool HasAxis(Layout layout, Axis axis);
-
 // Stores Layout(axis set and order) and value for dimensions.
 struct Shape {
   Shape() : layout(Layout::UNKNOWN), dimensions() {}
@@ -115,17 +103,15 @@ struct Shape {
   // Returns back a dimension or -1 if it is not found.
   template <Axis D>
   int32_t get() const;
-  int32_t get(Axis axis) const;
+  int32_t get(Axis d) const;
 
   template <Axis D>
   bool set(int32_t t);
-  bool set(Axis axis, int32_t t);
+  bool set(Axis d, int32_t t);
 
   Axis axis(int index) const { return GetAxis(layout, index); }
 
-  int index(Axis axis) const { return GetAxisIndex(layout, axis); }
-
-  bool has(Axis axis) const { return HasAxis(layout, axis); }
+  int index(Axis d) const { return GetAxisIndex(layout, d); }
 
   int64_t DimensionsProduct() const {
     return std::accumulate(dimensions.begin(), dimensions.end(), 1ll,
@@ -163,16 +149,16 @@ std::string ToString(const Shape& s);
 //
 //   // Returns index for the given axis or -1 if axis is not defined in this
 //   // shape.
-//   static constexpr int index(Axis axis);
+//   static constexpr int index(Axis d);
 //
 //   // Getters
 //   int32_t get(int index) const;
-//   int32_t get(Axis axis) const;
+//   int32_t get(Axis d) const;
 //   int32_t get<Axis>() const;
 //
 //   // Setters that return false if set was not successful.
 //   bool set(int index, int32_t v);
-//   bool set(Axis axis, int32_t v);
+//   bool set(Axis d, int32_t v);
 //   bool set<Axis>(int32_t v);
 //
 //   // Returns shape's layout.
@@ -190,23 +176,17 @@ struct StrongShape;
 using Scalar = StrongShape<Layout::SCALAR>;
 using Linear = StrongShape<Layout::LINEAR>;
 using HW = StrongShape<Layout::HW>;
-using HWD = StrongShape<Layout::HWD>;
 
 // Common tensor shape for CNN models working with images.
 using CHW = StrongShape<Layout::CHW>;
 using HWC = StrongShape<Layout::HWC>;
-using HWDC = StrongShape<Layout::HWDC>;
 using BHWC = StrongShape<Layout::BHWC>;
-using BHWDC = StrongShape<Layout::BHWDC>;
 
 // Tensor shape used in convolution_2d weights.
 using OIHW = StrongShape<Layout::OIHW>;
 using OHWI = StrongShape<Layout::OHWI>;
 using IHWO = StrongShape<Layout::IHWO>;
 using IOHW = StrongShape<Layout::IOHW>;
-
-// Tensor shape used in convolution_3d weights.
-using OHWDI = StrongShape<Layout::OHWDI>;
 
 // -----------------------------------------------------------------------------
 // Everything below are internal implementation details.
@@ -238,7 +218,6 @@ TFLITE_GPU_AXIS_TRAITS(INPUT_CHANNELS, i);
 TFLITE_GPU_AXIS_TRAITS(OUTPUT_CHANNELS, o);
 TFLITE_GPU_AXIS_TRAITS(BATCH, b);
 TFLITE_GPU_AXIS_TRAITS(VALUE, v);
-TFLITE_GPU_AXIS_TRAITS(DEPTH, d);
 
 #undef TFLITE_GPU_AXIS_TRAITS
 
@@ -252,8 +231,6 @@ struct StrongShapeImpl<N> {
   static constexpr Axis axis(int) { return Axis::UNKNOWN; }
 
   static constexpr int index(Axis) { return -1; }
-
-  static constexpr bool has(Axis) { return false; }
 
   int32_t get(Axis) const { return -1; }
 
@@ -294,17 +271,12 @@ struct StrongShapeImpl<N, A, As...>
     return index == N ? A : rest_type::axis(index);
   }
 
-  static constexpr int index(Axis axis) {
-    return axis == A ? N : rest_type::index(axis);
+  static constexpr int index(Axis d) {
+    return d == A ? N : rest_type::index(d);
   }
 
-  static constexpr bool has(Axis axis) {
-    return axis == A ? true : rest_type::has(axis);
-  }
-
-  int32_t get(Axis axis) const {
-    return axis == A ? dimension_holder_type::operator()()
-                     : rest_type::get(axis);
+  int32_t get(Axis d) const {
+    return d == A ? dimension_holder_type::operator()() : rest_type::get(d);
   }
 
   template <Axis B>
@@ -318,12 +290,12 @@ struct StrongShapeImpl<N, A, As...>
                       : rest_type::get(index);
   }
 
-  bool set(Axis axis, int32_t t) {
-    if (axis == A) {
+  bool set(Axis d, int32_t t) {
+    if (d == A) {
       dimension_holder_type::operator()(t);
       return true;
     }
-    return rest_type::set(axis, t);
+    return rest_type::set(d, t);
   }
 
   bool set(int index, int32_t t) {
@@ -354,7 +326,6 @@ struct LayoutTraits;
   }
 
 TFLITE_GPU_LAYOUT_TRAITS(HW, Axis::HEIGHT, Axis::WIDTH);
-TFLITE_GPU_LAYOUT_TRAITS(HWD, Axis::HEIGHT, Axis::WIDTH, Axis::DEPTH);
 TFLITE_GPU_LAYOUT_TRAITS(OHWI, Axis::OUTPUT_CHANNELS, Axis::HEIGHT, Axis::WIDTH,
                          Axis::INPUT_CHANNELS);
 TFLITE_GPU_LAYOUT_TRAITS(OIHW, Axis::OUTPUT_CHANNELS, Axis::INPUT_CHANNELS,
@@ -365,16 +336,10 @@ TFLITE_GPU_LAYOUT_TRAITS(IHWO, Axis::INPUT_CHANNELS, Axis::HEIGHT, Axis::WIDTH,
                          Axis::OUTPUT_CHANNELS);
 TFLITE_GPU_LAYOUT_TRAITS(CHW, Axis::CHANNELS, Axis::HEIGHT, Axis::WIDTH);
 TFLITE_GPU_LAYOUT_TRAITS(HWC, Axis::HEIGHT, Axis::WIDTH, Axis::CHANNELS);
-TFLITE_GPU_LAYOUT_TRAITS(HWDC, Axis::HEIGHT, Axis::WIDTH, Axis::DEPTH,
-                         Axis::CHANNELS);
 TFLITE_GPU_LAYOUT_TRAITS(LINEAR, Axis::VALUE);
 TFLITE_GPU_LAYOUT_TRAITS(SCALAR, Axis::VALUE);
 TFLITE_GPU_LAYOUT_TRAITS(BHWC, Axis::BATCH, Axis::HEIGHT, Axis::WIDTH,
                          Axis::CHANNELS);
-TFLITE_GPU_LAYOUT_TRAITS(BHWDC, Axis::BATCH, Axis::HEIGHT, Axis::WIDTH,
-                         Axis::DEPTH, Axis::CHANNELS);
-TFLITE_GPU_LAYOUT_TRAITS(OHWDI, Axis::OUTPUT_CHANNELS, Axis::HEIGHT,
-                         Axis::WIDTH, Axis::DEPTH, Axis::INPUT_CHANNELS);
 
 #undef TFLITE_GPU_LAYOUT_TRAITS
 
@@ -396,10 +361,10 @@ struct DimensionGetterFixedAxisFunc {
 struct DimensionGetterFunc {
   template <Layout T>
   int32_t operator()() const {
-    int i = GetAxisIndex<T>(axis);
+    int i = GetAxisIndex<T>(d);
     return i >= 0 && i < l->dimensions.size() ? l->dimensions[i] : -1;
   }
-  Axis axis;
+  Axis d;
   const Shape* l;
 };
 
@@ -421,14 +386,14 @@ struct DimensionSetterFixedAxisFunc {
 struct DimensionSetterFunc {
   template <Layout T>
   bool operator()() const {
-    int i = GetAxisIndex<T>(axis);
+    int i = GetAxisIndex<T>(d);
     if (i >= 0 && i < l->dimensions.size()) {
       l->dimensions[i] = v;
       return true;
     }
     return false;
   }
-  Axis axis;
+  Axis d;
   Shape* l;
   int32_t v;
 };
@@ -594,12 +559,8 @@ auto DispatchByLayout(Layout type, F f)
   switch (type) {
     case Layout::HW:
       return f.template operator()<Layout::HW>();
-    case Layout::HWD:
-      return f.template operator()<Layout::HWD>();
     case Layout::HWC:
       return f.template operator()<Layout::HWC>();
-    case Layout::HWDC:
-      return f.template operator()<Layout::HWDC>();
     case Layout::CHW:
       return f.template operator()<Layout::CHW>();
     case Layout::OIHW:
@@ -616,10 +577,6 @@ auto DispatchByLayout(Layout type, F f)
       return f.template operator()<Layout::SCALAR>();
     case Layout::BHWC:
       return f.template operator()<Layout::BHWC>();
-    case Layout::BHWDC:
-      return f.template operator()<Layout::BHWDC>();
-    case Layout::OHWDI:
-      return f.template operator()<Layout::OHWDI>();
     case Layout::UNKNOWN:
       return f.template operator()<Layout::UNKNOWN>();
   }
@@ -640,20 +597,14 @@ constexpr int GetAxisIndex(Axis axis) {
   return StrongShape<T>::index(axis);
 }
 
-template <Layout T>
-constexpr bool HasAxis(Axis axis) {
-  return StrongShape<T>::has(axis);
-}
-
 template <Axis D>
 inline int32_t Shape::get() const {
   return DispatchByLayout(
       layout, internal_shape::DimensionGetterFixedAxisFunc<D>{this});
 }
 
-inline int32_t Shape::get(Axis axis) const {
-  return DispatchByLayout(layout,
-                          internal_shape::DimensionGetterFunc{axis, this});
+inline int32_t Shape::get(Axis d) const {
+  return DispatchByLayout(layout, internal_shape::DimensionGetterFunc{d, this});
 }
 
 template <Axis D>
@@ -662,9 +613,9 @@ inline bool Shape::set(int32_t t) {
       layout, internal_shape::DimensionSetterFixedAxisFunc<D>{this, t});
 }
 
-inline bool Shape::set(Axis axis, int32_t t) {
+inline bool Shape::set(Axis d, int32_t t) {
   return DispatchByLayout(layout,
-                          internal_shape::DimensionSetterFunc{axis, this, t});
+                          internal_shape::DimensionSetterFunc{d, this, t});
 }
 
 }  // namespace gpu

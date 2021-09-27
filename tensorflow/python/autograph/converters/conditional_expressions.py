@@ -23,7 +23,7 @@ from tensorflow.python.autograph.pyct import templates
 
 
 class ConditionalExpressionTransformer(converter.Base):
-  """Converts conditional expressions to functional form."""
+  """Converts contitional expressions to functional form."""
 
   def visit_IfExp(self, node):
     return templates.replace_as_expression(

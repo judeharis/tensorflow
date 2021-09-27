@@ -35,7 +35,6 @@ limitations under the License.
 #include "tensorflow/core/framework/tensor_types.h"
 #include "tensorflow/core/framework/types.h"
 #include "tensorflow/core/framework/variant_op_registry.h"
-#include "tensorflow/core/graph/graph_node_util.h"
 #include "tensorflow/core/kernels/fill_functor.h"
 #include "tensorflow/core/platform/macros.h"
 
@@ -47,30 +46,31 @@ namespace tensorflow {
 
 namespace {
 
-NodeDef StripTensorDataFromNodeDef(OpKernelConstruction* ctx) {
-#ifndef TENSORFLOW_LITE_PROTOS
+std::unique_ptr<const NodeDef> StripTensorDataFromNodeDef(
+    OpKernelConstruction* ctx) {
+#ifndef __ANDROID__
   DCHECK_EQ(NodeDef::descriptor()->field_count(), 6)
       << "The NodeDef format has changed, and the attr-stripping code may need "
       << "to be updated.";
 #endif
   const NodeDef& original = ctx->def();
-  NodeDef ret;
-  ret.set_name(original.name());
-  ret.set_op(original.op());
-  ret.set_device(original.device());
+  NodeDef* ret = new NodeDef;
+  ret->set_name(original.name());
+  ret->set_op(original.op());
+  ret->set_device(original.device());
   // Strip the "value" attr from the returned NodeDef.
   // NOTE(mrry): The present implementation of `OpKernel::OpKernel()` only uses
   // attrs that affect the cardinality of list-typed inputs and outputs, so it
   // is safe to drop other attrs from the NodeDef.
-  AddNodeAttr("dtype", ctx->output_type(0), &ret);
-  MergeDebugInfo(original, &ret);
-  return ret;
+  AddNodeAttr("dtype", ctx->output_type(0), ret);
+  MergeDebugInfo(original, ret);
+  return std::unique_ptr<const NodeDef>(ret);
 }
 
 }  // namespace
 
 ConstantOp::ConstantOp(OpKernelConstruction* ctx)
-    : OpKernel(ctx, StripTensorDataFromNodeDef(ctx), false),
+    : OpKernel(ctx, StripTensorDataFromNodeDef(ctx)),
       tensor_(ctx->output_type(0)) {
   const TensorProto* proto = nullptr;
   MEMDEBUG_CACHE_OP(ctx->def().name().c_str());
@@ -158,23 +158,13 @@ class FillOp : public OpKernel {
 
   void Compute(OpKernelContext* context) override {
     const Tensor& Tdims = context->input(0);
-    OP_REQUIRES(
-        context,
-        // TODO(rmlarsen): Disallow legacy use of scalars to represent shape.
-        (TensorShapeUtils::IsVector(Tdims.shape()) ||
-         TensorShapeUtils::IsScalar(Tdims.shape())),
-        errors::InvalidArgument("dims must represent a vector, got shape ",
-                                Tdims.shape().DebugString()));
+    OP_REQUIRES(context, IsLegacyVector(Tdims.shape()),
+                errors::InvalidArgument("dims must be a vector, got shape ",
+                                        Tdims.shape().DebugString()));
     const Tensor& Tvalue = context->input(1);
-    OP_REQUIRES(
-        context,
-        // TODO(rmlarsen): Disallow legacy use of length-1 vector to represent
-        // scalar.
-        TensorShapeUtils::IsScalar(Tvalue.shape()) ||
-            (TensorShapeUtils::IsVector(Tvalue.shape()) &&
-             Tvalue.shape().dim_size(0) == 1),
-        errors::InvalidArgument("value must represent a scalar, got shape ",
-                                Tvalue.shape().DebugString()));
+    OP_REQUIRES(context, IsLegacyScalar(Tvalue.shape()),
+                errors::InvalidArgument("value must be a scalar, got shape ",
+                                        Tvalue.shape().DebugString()));
     auto dims = Tdims.flat<Index>();
     TensorShape shape;
     OP_REQUIRES_OK(context, TensorShapeUtils::MakeShape(
@@ -278,7 +268,7 @@ class ZerosLikeOp : public OpKernel {
       const Variant& v = input.scalar<Variant>()();
       // DT_VARIANT tensors must be allocated on CPU since they wrap C++
       // objects which can not be efficiently represented in GPU memory.
-      int numa_node = ctx->device()->NumaNode();
+      int numa_node = DeviceNumaNode(ctx->device());
       Tensor out(cpu_allocator(numa_node), DT_VARIANT, TensorShape({}));
       Variant* out_v = &(out.scalar<Variant>()());
       OP_REQUIRES_OK(ctx, UnaryOpVariant<Device>(

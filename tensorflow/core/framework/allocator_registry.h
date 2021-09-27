@@ -101,12 +101,12 @@ class AllocatorFactoryRegistry {
     // 1).
     std::vector<std::unique_ptr<SubAllocator>> sub_allocators;
   };
-  std::vector<FactoryEntry> factories_ TF_GUARDED_BY(mu_);
+  std::vector<FactoryEntry> factories_ GUARDED_BY(mu_);
 
   // Returns any FactoryEntry registered under 'name' and 'priority',
   // or 'nullptr' if none found.
   const FactoryEntry* FindEntry(const string& name, int priority) const
-      TF_EXCLUSIVE_LOCKS_REQUIRED(mu_);
+      EXCLUSIVE_LOCKS_REQUIRED(mu_);
 
   TF_DISALLOW_COPY_AND_ASSIGN(AllocatorFactoryRegistry);
 };

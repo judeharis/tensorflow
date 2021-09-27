@@ -45,15 +45,13 @@ limitations under the License.
 #include "tensorflow/core/lib/io/path.h"
 #include "tensorflow/core/lib/strings/str_util.h"
 #include "tensorflow/core/lib/strings/strcat.h"
-#include "tensorflow/core/platform/path.h"
-#include "tensorflow/core/platform/resource_loader.h"
 #include "tensorflow/core/platform/test.h"
 #include "tensorflow/core/protobuf/error_codes.pb.h"
 #include "tensorflow/core/protobuf/meta_graph.pb.h"
 #include "tensorflow/core/util/equal_graph_def.h"
 
 namespace tensorflow {
-TF_Tensor* TF_TensorFromTensor(const Tensor& src, Status* status);
+TF_Tensor* TF_TensorFromTensor(const Tensor& src, TF_Status* status);
 Status TF_TensorToTensor(const TF_Tensor* src, Tensor* dst);
 
 namespace {
@@ -195,9 +193,8 @@ TEST(CAPI, LibraryLoadFunctions) {
   {
     // Load the library.
     TF_Status* status = TF_NewStatus();
-    string lib_path = tensorflow::GetDataDependencyFilepath(
-        tensorflow::io::JoinPath("tensorflow", "c", "test_op1.so"));
-    TF_Library* lib = TF_LoadLibrary(lib_path.c_str(), status);
+    TF_Library* lib =
+        TF_LoadLibrary("tensorflow/c/test_op1.so", status);
     TF_Code code = TF_GetCode(status);
     string status_msg(TF_Message(status));
     TF_DeleteStatus(status);
@@ -230,7 +227,7 @@ TEST(CAPI, LibraryLoadFunctions) {
 
 void TestEncodeDecode(int line, const std::vector<string>& data) {
   const tensorflow::int64 n = data.size();
-  Status status;
+  TF_Status* status = TF_NewStatus();
   for (const std::vector<tensorflow::int64>& dims :
        std::vector<std::vector<tensorflow::int64>>{
            {n}, {1, n}, {n, 1}, {n / 2, 2}}) {
@@ -239,8 +236,8 @@ void TestEncodeDecode(int line, const std::vector<string>& data) {
     for (tensorflow::int64 i = 0; i < src.NumElements(); ++i) {
       src.flat<tstring>()(i) = data[i];
     }
-    TF_Tensor* dst = TF_TensorFromTensor(src, &status);
-    ASSERT_TRUE(status.ok()) << status.error_message();
+    TF_Tensor* dst = TF_TensorFromTensor(src, status);
+    ASSERT_EQ(TF_OK, TF_GetCode(status)) << TF_Message(status);
 
     // Convert back to a C++ Tensor and ensure we get expected output.
     Tensor output;
@@ -252,6 +249,7 @@ void TestEncodeDecode(int line, const std::vector<string>& data) {
 
     TF_DeleteTensor(dst);
   }
+  TF_DeleteStatus(status);
 }
 
 TEST(CAPI, TensorEncodeDecodeStrings) {
@@ -1353,9 +1351,9 @@ TEST_F(CApiColocationTest, ClearViaProto) {
 
 TEST(CAPI, SavedModel) {
   // Load the saved model.
-  const string saved_model_dir = tensorflow::GetDataDependencyFilepath(
-      tensorflow::io::JoinPath("tensorflow", "cc", "saved_model", "testdata",
-                               "half_plus_two", "00000123"));
+  const char kSavedModel[] = "cc/saved_model/testdata/half_plus_two/00000123";
+  const string saved_model_dir = tensorflow::io::JoinPath(
+      tensorflow::testing::TensorFlowSrcRoot(), kSavedModel);
   TF_SessionOptions* opt = TF_NewSessionOptions();
   TF_Buffer* run_options = TF_NewBufferFromString("", 0);
   TF_Buffer* metagraph = TF_NewBuffer();
@@ -1396,9 +1394,8 @@ TEST(CAPI, SavedModel) {
   TF_Operation* input_op =
       TF_GraphOperationByName(graph, input_op_name.c_str());
   ASSERT_TRUE(input_op != nullptr);
-  Status status;
-  csession.SetInputs({{input_op, TF_TensorFromTensor(input, &status)}});
-  ASSERT_TRUE(status.ok()) << status.error_message();
+  csession.SetInputs({{input_op, TF_TensorFromTensor(input, s)}});
+  ASSERT_EQ(TF_OK, TF_GetCode(s)) << TF_Message(s);
 
   const tensorflow::string output_op_name(
       tensorflow::ParseTensorName(output_name).first);
@@ -1429,9 +1426,9 @@ TEST(CAPI, SavedModel) {
 }
 
 TEST(CAPI, SavedModelNullArgsAreValid) {
-  const string saved_model_dir = tensorflow::GetDataDependencyFilepath(
-      tensorflow::io::JoinPath("tensorflow", "cc", "saved_model", "testdata",
-                               "half_plus_two", "00000123"));
+  const char kSavedModel[] = "cc/saved_model/testdata/half_plus_two/00000123";
+  const string saved_model_dir = tensorflow::io::JoinPath(
+      tensorflow::testing::TensorFlowSrcRoot(), kSavedModel);
   TF_SessionOptions* opt = TF_NewSessionOptions();
   TF_Status* s = TF_NewStatus();
   const char* tags[] = {tensorflow::kSavedModelTagServe};
@@ -2525,11 +2522,12 @@ TEST(CAPI, TestTensorIsNotAligned) {
 
   // Take an unaligned slice.
   Tensor y = x.Slice(1, 13);
-  Status status;
-  TF_Tensor* a = TF_TensorFromTensor(y, &status);
+  TF_Status* status = TF_NewStatus();
+  TF_Tensor* a = TF_TensorFromTensor(y, status);
   if (EIGEN_MAX_ALIGN_BYTES > 0) {
     EXPECT_FALSE(TF_TensorIsAligned(a));
   }
+  TF_DeleteStatus(status);
   TF_DeleteTensor(a);
 }
 

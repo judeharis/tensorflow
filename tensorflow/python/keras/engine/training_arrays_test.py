@@ -133,7 +133,8 @@ class PrintTrainingInfoTest(keras_parameterized.TestCase,
     model.compile(
         loss="mae",
         optimizer="adam",
-        run_eagerly=testing_utils.should_run_eagerly())
+        run_eagerly=testing_utils.should_run_eagerly(),
+        experimental_run_tf_function=testing_utils.should_run_tf_function())
 
     model.fit(
         x={

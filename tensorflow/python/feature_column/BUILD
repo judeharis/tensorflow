@@ -45,8 +45,7 @@ py_library(
         "//tensorflow/python:util",
         "//tensorflow/python:variable_scope",
         "//tensorflow/python:variables",
-        "//tensorflow/python/eager:context",
-        "//tensorflow/python/keras/engine",
+        "//tensorflow/python/keras:engine",
         "@six_archive//:six",
     ],
 )
@@ -76,20 +75,19 @@ py_library(
         "//tensorflow/python:nn_ops",
         "//tensorflow/python:parsing_ops",
         "//tensorflow/python:platform",
+        "//tensorflow/python:resource_variable_ops",
         "//tensorflow/python:sparse_ops",
         "//tensorflow/python:sparse_tensor",
         "//tensorflow/python:string_ops",
+        "//tensorflow/python:template",
         "//tensorflow/python:tensor_shape",
         "//tensorflow/python:training",
         "//tensorflow/python:util",
         "//tensorflow/python:variable_scope",
         "//tensorflow/python:variables",
-        "//tensorflow/python/eager:context",
-        "//tensorflow/python/keras:base_layer",
         "//tensorflow/python/keras:engine",
-        "//tensorflow/python/keras:initializers",
-        "//tensorflow/python/keras/utils:generic_utils",
-        "//tensorflow/python/training/tracking",
+        "//tensorflow/python/keras:generic_utils",
+        "//tensorflow/python/keras:layers_base",
         "//third_party/py/numpy",
         "@six_archive//:six",
     ],
@@ -101,7 +99,6 @@ filegroup(
         "testdata/embedding.ckpt.data-00000-of-00001",
         "testdata/embedding.ckpt.index",
         "testdata/embedding.ckpt.meta",
-        "testdata/unicode_vocabulary",
         "testdata/warriors_vocabulary.txt",
         "testdata/wire_vocabulary.txt",
     ],
@@ -110,23 +107,23 @@ filegroup(
 tf_py_test(
     name = "feature_column_test",
     srcs = ["feature_column_test.py"],
+    additional_deps = [
+        ":feature_column_test_main_lib",
+    ],
     tags = [
         "no_cuda_on_cpu_tap",
         "no_pip",
         "no_windows",
-    ],
-    deps = [
-        ":feature_column_test_main_lib",
     ],
 )
 
 tf_py_test(
     name = "dense_features_test",
     srcs = ["dense_features_test.py"],
-    tags = ["no_pip"],
-    deps = [
+    additional_deps = [
         ":feature_column_test_main_lib",
     ],
+    tags = ["no_pip"],
 )
 
 py_library(
@@ -161,22 +158,22 @@ py_library(
 tf_py_test(
     name = "feature_column_v2_test",
     srcs = ["feature_column_v2_test.py"],
+    additional_deps = [":feature_column_v2_test_main_lib"],
     shard_count = 5,
     tags = [
         "no_cuda_on_cpu_tap",
         "no_pip",
         "no_windows",
     ],
-    deps = [":feature_column_v2_test_main_lib"],
 )
 
 tf_py_test(
     name = "dense_features_v2_test",
     srcs = ["dense_features_v2_test.py"],
-    tags = ["no_pip"],
-    deps = [
+    additional_deps = [
         ":feature_column_v2_test_main_lib",
     ],
+    tags = ["no_pip"],
 )
 
 py_library(
@@ -224,8 +221,10 @@ py_library(
 tf_py_test(
     name = "sequence_feature_column_test",
     srcs = ["sequence_feature_column_test.py"],
-    deps = [
+    additional_deps = [
         ":feature_column_v2",
+        "@absl_py//absl/testing:parameterized",
+        "//third_party/py/numpy",
         "//tensorflow/python:client_testlib",
         "//tensorflow/python:dtypes",
         "//tensorflow/python:errors",
@@ -235,20 +234,15 @@ tf_py_test(
         "//tensorflow/python:session",
         "//tensorflow/python:sparse_tensor",
         "//tensorflow/python:training",
-        "//third_party/py/numpy",
-        "@absl_py//absl/testing:parameterized",
     ],
 )
 
 py_test(
     name = "sequence_feature_column_integration_test",
     srcs = ["sequence_feature_column_integration_test.py"],
-    python_version = "PY3",
+    python_version = "PY2",
     srcs_version = "PY2AND3",
-    tags = [
-        "no_mac",
-        "no_pip",
-    ],
+    tags = ["no_pip"],
     deps = [
         ":feature_column_v2",
         "//tensorflow/python:client_testlib",
@@ -256,17 +250,17 @@ py_test(
         "//tensorflow/python:parsing_ops",
         "//tensorflow/python:training",
         "//tensorflow/python:util",
-        "//tensorflow/python/keras/layers",
+        "//tensorflow/python/keras:layers",
     ],
 )
 
 tf_py_test(
     name = "serialization_test",
     srcs = ["serialization_test.py"],
-    deps = [
+    additional_deps = [
         ":feature_column_v2",
+        "@absl_py//absl/testing:parameterized",
         "//tensorflow/python:client_testlib",
         "//tensorflow/python:util",
-        "@absl_py//absl/testing:parameterized",
     ],
 )

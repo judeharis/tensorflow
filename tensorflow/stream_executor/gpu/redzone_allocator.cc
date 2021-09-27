@@ -15,7 +15,6 @@ limitations under the License.
 
 #include "tensorflow/stream_executor/gpu/redzone_allocator.h"
 
-#include "absl/base/call_once.h"
 #include "absl/container/fixed_array.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/optional.h"
@@ -24,7 +23,6 @@ limitations under the License.
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/stream_executor/device_memory.h"
 #include "tensorflow/stream_executor/gpu/asm_compiler.h"
-#include "tensorflow/stream_executor/gpu/gpu_asm_opts.h"
 #include "tensorflow/stream_executor/kernel.h"
 #include "tensorflow/stream_executor/kernel_spec.h"
 #include "tensorflow/stream_executor/stream.h"
@@ -309,12 +307,11 @@ port::StatusOr<RedzoneCheckStatus> RedzoneAllocator::CheckRedzones() const {
   if (compiled_ptx_or.ok()) {
     compiled_ptx = compiled_ptx_or.ValueOrDie();
   } else {
-    static absl::once_flag ptxas_not_found_logged;
-    absl::call_once(ptxas_not_found_logged, [&]() {
+    static std::once_flag ptxas_not_found_logged;
+    std::call_once(ptxas_not_found_logged, [&]() {
       LOG(WARNING) << compiled_ptx_or.status().ToString()
                    << "\nRelying on driver to perform ptx compilation. "
-                   << "\nModify $PATH to customize ptxas location."
-                   << "\nThis message will be only logged once.";
+                   << "This message will be only logged once.";
     });
   }
 

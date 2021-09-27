@@ -113,7 +113,7 @@ opts = model_analyzer.PRINT_ALL_TIMING_MEMORY.copy()
 opts['account_type_regexes'] = ['.*']
 
 with session.Session() as sess:
-  r1, r2, r3 = lib.BuildSplittableModel()
+  r1, r2, r3 = lib.BuildSplitableModel()
   sess.run(variables.global_variables_initializer())
 
   # Create a profiler.

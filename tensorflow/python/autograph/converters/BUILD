@@ -26,7 +26,6 @@ py_library(
         "conditional_expressions.py",
         "continue_statements.py",
         "control_flow.py",
-        "control_flow_deprecated_py2.py",
         "directives.py",
         "function_scopes.py",
         "list_comprehensions.py",
@@ -135,8 +134,6 @@ py_test(
         ":converters",
         "//tensorflow/python:client_testlib",
         "//tensorflow/python/autograph/core:test_lib",
-        # TOODO(b/145618471): Remove this transitive dependency.
-        "//tensorflow/python/distribute:input_lib",
     ],
 )
 

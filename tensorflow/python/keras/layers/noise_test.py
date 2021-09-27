@@ -47,18 +47,16 @@ class NoiseLayersTest(keras_parameterized.TestCase):
         keras.layers.AlphaDropout, kwargs={'rate': 0.2}, input_shape=(3, 2, 3))
 
   @staticmethod
-  def _make_model(dtype, class_type):
+  def _make_model(dtype, gtype):
     assert dtype in (dtypes_module.float32, dtypes_module.float64)
-    assert class_type in ('gaussian_noise', 'gaussian_dropout', 'alpha_noise')
+    assert gtype in ('noise', 'dropout')
     model = keras.Sequential()
     model.add(keras.layers.Dense(8, input_shape=(32,), dtype=dtype))
-    if class_type == 'gaussian_noise':
-      layer = keras.layers.GaussianNoise(0.0003, dtype=dtype)
-    elif class_type == 'gaussian_dropout':
-      layer = keras.layers.GaussianDropout(0.1, dtype=dtype)
+    if gtype == 'noise':
+      gaussian = keras.layers.GaussianNoise(0.0003)
     else:
-      layer = keras.layers.AlphaDropout(0.5, dtype=dtype)
-    model.add(layer)
+      gaussian = keras.layers.GaussianDropout(0.1)
+    model.add(gaussian)
     return model
 
   def _train_model(self, dtype, gtype):
@@ -70,22 +68,16 @@ class NoiseLayersTest(keras_parameterized.TestCase):
     model.train_on_batch(np.zeros((8, 32)), np.zeros((8, 8)))
 
   def test_noise_float32(self):
-    self._train_model(dtypes_module.float32, 'gaussian_noise')
+    self._train_model(dtypes_module.float32, 'noise')
 
   def test_noise_float64(self):
-    self._train_model(dtypes_module.float64, 'gaussian_noise')
+    self._train_model(dtypes_module.float64, 'noise')
 
   def test_dropout_float32(self):
-    self._train_model(dtypes_module.float32, 'gaussian_dropout')
+    self._train_model(dtypes_module.float32, 'dropout')
 
   def test_dropout_float64(self):
-    self._train_model(dtypes_module.float64, 'gaussian_dropout')
-
-  def test_alpha_dropout_float32(self):
-    self._train_model(dtypes_module.float32, 'alpha_noise')
-
-  def test_alpha_dropout_float64(self):
-    self._train_model(dtypes_module.float64, 'alpha_noise')
+    self._train_model(dtypes_module.float64, 'dropout')
 
 
 if __name__ == '__main__':

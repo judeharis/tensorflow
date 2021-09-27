@@ -35,57 +35,55 @@ namespace {
 // will be VLOG'ed. We need overloads, instead of
 // e.g. BatchDescriptorToVlogString(), as the code that calls these
 // functions does not know what the type of the parameter is.
-std::string ToVlogString(const dnn::BatchDescriptor &descriptor) {
+string ToVlogString(const dnn::BatchDescriptor &descriptor) {
   return descriptor.ToShortString();
 }
 
-std::string ToVlogString(const dnn::FilterDescriptor &descriptor) {
+string ToVlogString(const dnn::FilterDescriptor &descriptor) {
   return descriptor.ToShortString();
 }
 
-std::string ToVlogString(const dnn::ConvolutionDescriptor &descriptor) {
+string ToVlogString(const dnn::ConvolutionDescriptor &descriptor) {
   return descriptor.ToShortString();
 }
 
-std::string ToVlogString(const dnn::PoolingDescriptor &descriptor) {
+string ToVlogString(const dnn::PoolingDescriptor &descriptor) {
   return descriptor.ToShortString();
 }
 
-std::string ToVlogString(const dnn::NormalizeDescriptor &descriptor) {
+string ToVlogString(const dnn::NormalizeDescriptor &descriptor) {
   return descriptor.ToShortString();
 }
 
-std::string ToVlogString(dnn::ActivationMode mode) {
+string ToVlogString(dnn::ActivationMode mode) {
   return dnn::ActivationModeString(mode);
 }
 
-std::string ToVlogString(const dnn::AlgorithmConfig &algo_config) {
+string ToVlogString(const dnn::AlgorithmConfig &algo_config) {
   return algo_config.ToString();
 }
 
-std::string ToVlogString(dnn::ElementwiseOperation op) {
+string ToVlogString(dnn::ElementwiseOperation op) {
   return dnn::ElementwiseOperationString(op);
 }
 
-std::string ToVlogString(dnn::QuantizedActivationMode mode) {
+string ToVlogString(dnn::QuantizedActivationMode mode) {
   return dnn::QuantizedActivationModeString(mode);
 }
 
-std::string ToVlogString(blas::Transpose t) { return blas::TransposeString(t); }
+string ToVlogString(blas::Transpose t) { return blas::TransposeString(t); }
 
-std::string ToVlogString(blas::UpperLower ul) {
-  return blas::UpperLowerString(ul);
-}
+string ToVlogString(blas::UpperLower ul) { return blas::UpperLowerString(ul); }
 
-std::string ToVlogString(blas::Diagonal d) { return blas::DiagonalString(d); }
+string ToVlogString(blas::Diagonal d) { return blas::DiagonalString(d); }
 
-std::string ToVlogString(blas::Side s) { return blas::SideString(s); }
+string ToVlogString(blas::Side s) { return blas::SideString(s); }
 
-std::string ToVlogString(blas::ComputationType ty) {
+string ToVlogString(blas::ComputationType ty) {
   return blas::ComputationTypeString(ty);
 }
 
-std::string ToVlogString(const void *ptr) {
+string ToVlogString(const void *ptr) {
   if (ptr == nullptr) {
     return "null";
   }
@@ -97,7 +95,7 @@ std::string ToVlogString(const void *ptr) {
 }
 
 template <class T>
-std::string ToVlogString(const std::complex<T> &c) {
+string ToVlogString(const std::complex<T> &c) {
   // StrCat does not convert std::complex to text.
   std::ostringstream out;
   out << c;
@@ -105,36 +103,36 @@ std::string ToVlogString(const std::complex<T> &c) {
 }
 
 template <class T>
-std::string ToVlogString(const std::function<T> &f) {
+string ToVlogString(const std::function<T> &f) {
   return f == nullptr ? "null" : "<non-null function>";
 }
 
-std::string ToVlogString(const DeviceMemoryBase &memory) {
+string ToVlogString(const DeviceMemoryBase &memory) {
   return ToVlogString(memory.opaque());
 }
 
-std::string ToVlogString(const DeviceMemoryBase *memory) {
+string ToVlogString(const DeviceMemoryBase *memory) {
   return memory == nullptr ? "null" : ToVlogString(*memory);
 }
 
-std::string ToVlogString(const Eigen::half &h) {
+string ToVlogString(const Eigen::half &h) {
   return absl::StrCat(static_cast<float>(h));
 }
 
-std::string ToVlogString(int i) { return absl::StrCat(i); }
+string ToVlogString(int i) { return absl::StrCat(i); }
 
-std::string ToVlogString(uint32 i) { return absl::StrCat(i); }
+string ToVlogString(uint32 i) { return absl::StrCat(i); }
 
-std::string ToVlogString(uint64 i) { return absl::StrCat(i); }
+string ToVlogString(uint64 i) { return absl::StrCat(i); }
 
-std::string ToVlogString(int64 i) { return absl::StrCat(i); }
+string ToVlogString(int64 i) { return absl::StrCat(i); }
 
-std::string ToVlogString(float f) { return absl::StrCat(f); }
+string ToVlogString(float f) { return absl::StrCat(f); }
 
-std::string ToVlogString(double d) { return absl::StrCat(d); }
+string ToVlogString(double d) { return absl::StrCat(d); }
 
 template <typename T>
-std::string ToVlogString(const HostOrDeviceScalar<T> &memory_or_constant) {
+string ToVlogString(const HostOrDeviceScalar<T> &memory_or_constant) {
   if (memory_or_constant.is_pointer()) {
     return ToVlogString(memory_or_constant.pointer());
   }
@@ -142,8 +140,8 @@ std::string ToVlogString(const HostOrDeviceScalar<T> &memory_or_constant) {
 }
 
 template <class T>
-std::string ToVlogString(port::ArraySlice<T> elements) {
-  std::string str = absl::StrCat(
+string ToVlogString(port::ArraySlice<T> elements) {
+  string str = absl::StrCat(
       ToVlogString(reinterpret_cast<const void *>(elements.data())), "[",
       elements.size(), "]{");
   const char *separator = "";
@@ -168,11 +166,11 @@ std::string ToVlogString(port::ArraySlice<T> elements) {
 }
 
 template <class T>
-std::string ToVlogString(port::MutableArraySlice<T> elements) {
+string ToVlogString(port::MutableArraySlice<T> elements) {
   return ToVlogString(port::ArraySlice<T>(elements));
 }
 
-std::string ToVlogString(dnn::DepthToSpaceLayout depth_to_space_layout) {
+string ToVlogString(dnn::DepthToSpaceLayout depth_to_space_layout) {
   switch (depth_to_space_layout) {
     case dnn::DepthToSpaceLayout::DepthHeightWidth:
       return "DepthToSpaceLayout::DepthHeightWidth";
@@ -180,7 +178,7 @@ std::string ToVlogString(dnn::DepthToSpaceLayout depth_to_space_layout) {
   return "unknown DepthToSpaceLayout";
 }
 
-std::string ToVlogString(dnn::DataType data_type) {
+string ToVlogString(dnn::DataType data_type) {
   switch (data_type) {
     case dnn::DataType::kFloat:
       return "dnn::DataType::kFloat";
@@ -207,14 +205,14 @@ std::string ToVlogString(dnn::DataType data_type) {
 // See VLOG_CALL for a short-hand for this. This way of doing it saves
 // a tremendous amount of boilerplate code given how many functions
 // there are on Stream and how many parameters they each have.
-std::string CallStr(const char *function_name, Stream *stream,
-                    std::vector<std::pair<const char *, std::string>> params) {
+string CallStr(const char *function_name, Stream *stream,
+               std::vector<std::pair<const char *, string>> params) {
   // Do not call this function unless VLOG is on since just
   // constructing all the strings in params is expensive.
   CHECK(VLOG_IS_ON(1));
 
-  std::string str = absl::StrCat(stream->DebugStreamPointers(),
-                                 " Called Stream::", function_name, "(");
+  string str = absl::StrCat(stream->DebugStreamPointers(),
+                            " Called Stream::", function_name, "(");
   const char *separator = "";
   for (const auto &param : params) {
     absl::StrAppend(&str, separator, param.first, "=", param.second);
@@ -346,11 +344,12 @@ Stream &Stream::ThenBatchNormalizationForward(
     const DeviceMemory<float> &estimated_variance,
     const DeviceMemory<float> &side_input, const dnn::BatchDescriptor &x_desc,
     const dnn::BatchDescriptor &scale_offset_desc, const double epsilon,
-    const double exponential_average_factor,
     dnn::ActivationMode activation_mode, DeviceMemory<float> *y,
     DeviceMemory<float> *batch_mean, DeviceMemory<float> *batch_var,
     DeviceMemory<float> *saved_mean, DeviceMemory<float> *saved_inv_var,
     bool is_training,
+    std::function<const DeviceMemory<float> &()> var_to_inv_var,
+    std::function<void()> inv_var_to_var,
     ScratchAllocator *reserve_space_allocator,
     ScratchAllocator *workspace_allocator) {
   VLOG_CALL(PARAM(x), PARAM(scale), PARAM(offset), PARAM(x_desc),
@@ -359,10 +358,10 @@ Stream &Stream::ThenBatchNormalizationForward(
     if (dnn::DnnSupport *dnn = parent_->AsDnn()) {
       CheckError(dnn->DoBatchNormalizationForward(
           this, x, scale, offset, estimated_mean, estimated_variance,
-          side_input, x_desc, scale_offset_desc, epsilon,
-          exponential_average_factor, activation_mode, y, batch_mean, batch_var,
-          saved_mean, saved_inv_var, is_training, reserve_space_allocator,
-          workspace_allocator));
+          side_input, x_desc, scale_offset_desc, epsilon, activation_mode, y,
+          batch_mean, batch_var, saved_mean, saved_inv_var, is_training,
+          reserve_space_allocator, workspace_allocator,
+          std::move(var_to_inv_var), std::move(inv_var_to_var)));
     } else {
       SetErrorAndLogNoDnnSupport();
     }
@@ -402,11 +401,12 @@ Stream &Stream::ThenBatchNormalizationForward(
     const DeviceMemory<float> &estimated_variance,
     const DeviceMemory<float> &side_input, const dnn::BatchDescriptor &x_desc,
     const dnn::BatchDescriptor &scale_offset_desc, const double epsilon,
-    const double exponential_average_factor,
     dnn::ActivationMode activation_mode, DeviceMemory<Eigen::half> *y,
     DeviceMemory<float> *batch_mean, DeviceMemory<float> *batch_var,
     DeviceMemory<float> *saved_mean, DeviceMemory<float> *saved_inv_var,
     bool is_training,
+    std::function<const DeviceMemory<float> &()> var_to_inv_var,
+    std::function<void()> inv_var_to_var,
     ScratchAllocator *reserve_space_allocator,
     ScratchAllocator *workspace_allocator) {
   VLOG_CALL(PARAM(x), PARAM(scale), PARAM(offset), PARAM(x_desc),
@@ -415,10 +415,10 @@ Stream &Stream::ThenBatchNormalizationForward(
     if (dnn::DnnSupport *dnn = parent_->AsDnn()) {
       CheckError(dnn->DoBatchNormalizationForward(
           this, x, scale, offset, estimated_mean, estimated_variance,
-          side_input, x_desc, scale_offset_desc, epsilon,
-          exponential_average_factor, activation_mode, y, batch_mean, batch_var,
-          saved_mean, saved_inv_var, is_training, reserve_space_allocator,
-          workspace_allocator));
+          side_input, x_desc, scale_offset_desc, epsilon, activation_mode, y,
+          batch_mean, batch_var, saved_mean, saved_inv_var, is_training,
+          reserve_space_allocator, workspace_allocator,
+          std::move(var_to_inv_var), std::move(inv_var_to_var)));
     } else {
       SetErrorAndLogNoDnnSupport();
     }
@@ -5230,39 +5230,6 @@ Stream &Stream::ThenRnnBackward(
   return *this;
 }
 
-Stream &Stream::ThenCtcLoss(const dnn::RnnStateTensorDescriptor &probs_desc,
-                            const DeviceMemory<float> &probs_data,
-                            absl::Span<const int> labels_data,
-                            absl::Span<const int> labels_lengths_data,
-                            absl::Span<const int> input_lengths_data,
-                            DeviceMemory<float> *costs_data,
-                            const dnn::RnnStateTensorDescriptor &grads_desc,
-                            DeviceMemory<float> *grads_data,
-                            ScratchAllocator *workspace_allocator) {
-  if (ok()) {
-    if (dnn::DnnSupport *dnn = parent_->AsDnn()) {
-      DeviceMemory<uint8> scratch_memory;
-      auto status = dnn->PrepareForCtcLoss(
-                           this, probs_desc, probs_data, grads_desc,
-                           labels_data, labels_lengths_data, input_lengths_data,
-                           workspace_allocator, &scratch_memory)
-                        .ok();
-      if (status) {
-        status =
-            dnn->DoCtcLoss(this, probs_desc, probs_data, labels_data,
-                           labels_lengths_data, input_lengths_data, costs_data,
-                           grads_desc, grads_data, &scratch_memory);
-      }
-      if (!status) {
-        SetError();
-      }
-    } else {
-      SetErrorAndLogNoDnnSupport();
-    }
-  }
-  return *this;
-}
-
 Stream &Stream::ThenTransformTensor(const dnn::BatchDescriptor &input_desc,
                                     dnn::DataType input_type,
                                     const DeviceMemoryBase &input_data,
@@ -5472,7 +5439,7 @@ void Stream::RunAfterBlockHostUntilDoneCallbacks() {
   }
 }
 
-std::string Stream::DebugStreamPointers() const {
+string Stream::DebugStreamPointers() const {
   // Relies on the ToVlogString(const void*) overload above.
   return absl::StrCat("[stream=", ToVlogString(this),
                       ",impl=", ToVlogString(implementation_.get()), "]");

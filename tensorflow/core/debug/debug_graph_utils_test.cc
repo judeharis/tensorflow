@@ -126,7 +126,7 @@ TEST_F(DebugGraphUtilsTest, TestValidDebugOpNameWithMoreThanOneAttributes) {
   ASSERT_EQ("100", attributes["first_n"]);
 }
 
-TEST_F(DebugGraphUtilsTest, TestValidDebugOpNameWithMoreDuplicateAttributes) {
+TEST_F(DebugGraphUtilsTest, TestValidDebugOpNameWithMoreDuplicatettributes) {
   string debug_op_name_proper;
   std::unordered_map<string, string> attributes;
   Status s = ParseDebugOpName(

@@ -27,14 +27,14 @@ static bool IsAbsolutePath(absl::string_view path) {
 
 // For an array of paths of length count, append them all together,
 // ensuring that the proper path separators are inserted between them.
-std::string JoinPathImpl(std::initializer_list<absl::string_view> paths) {
-  std::string result;
+string JoinPathImpl(std::initializer_list<absl::string_view> paths) {
+  string result;
 
   for (absl::string_view path : paths) {
     if (path.empty()) continue;
 
     if (result.empty()) {
-      result = std::string(path);
+      result = string(path);
       continue;
     }
 

@@ -23,11 +23,12 @@ limitations under the License.
 #include "tensorflow/lite/allocation.h"
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/core/api/profiler.h"
-#include "tensorflow/lite/core/macros.h"
 #include "tensorflow/lite/delegates/nnapi/nnapi_delegate.h"
 #include "tensorflow/lite/experimental/resource/resource_base.h"
 #include "tensorflow/lite/memory_planner.h"
 #include "tensorflow/lite/util.h"
+
+#include "tensorflow/lite/kernels/convs.h"
 
 namespace tflite {
 
@@ -95,17 +96,16 @@ class Subgraph {
   inline TfLiteStatus SetTensorParametersReadOnly(
       int tensor_index, TfLiteType type, const char* name,
       const std::vector<int>& dims, TfLiteQuantization quantization,
-      const char* buffer, size_t bytes, const Allocation* allocation = nullptr,
-      TfLiteSparsity* sparsity = nullptr) {
+      const char* buffer, size_t bytes,
+      const Allocation* allocation = nullptr) {
     return SetTensorParametersReadOnly(tensor_index, type, name, dims.size(),
                                        dims.data(), quantization, buffer, bytes,
-                                       allocation, sparsity);
+                                       allocation);
   }
   TfLiteStatus SetTensorParametersReadOnly(
       int tensor_index, TfLiteType type, const char* name, const size_t rank,
       const int* dims, TfLiteQuantization quantization, const char* buffer,
-      size_t bytes, const Allocation* allocation = nullptr,
-      TfLiteSparsity* sparsity = nullptr);
+      size_t bytes, const Allocation* allocation = nullptr);
 
   // Set description of inputs/outputs/data/fptrs for node `node_index`.
   // This variant assumes an external buffer has been allocated of size
@@ -114,17 +114,15 @@ class Subgraph {
   inline TfLiteStatus SetTensorParametersReadWrite(
       int tensor_index, TfLiteType type, const char* name,
       const std::vector<int>& dims, TfLiteQuantization quantization,
-      bool is_variable = false, const size_t rank_dims_signature = 0,
-      const int* dims_signature = nullptr) {
+      bool is_variable = false) {
     return SetTensorParametersReadWrite(tensor_index, type, name, dims.size(),
-                                        dims.data(), quantization, is_variable,
-                                        rank_dims_signature, dims_signature);
+                                        dims.data(), quantization, is_variable);
   }
-  TfLiteStatus SetTensorParametersReadWrite(
-      int tensor_index, TfLiteType type, const char* name, const size_t rank,
-      const int* dims, TfLiteQuantization quantization,
-      bool is_variable = false, const size_t rank_dims_signature = 0,
-      const int* dims_signature = nullptr);
+  TfLiteStatus SetTensorParametersReadWrite(int tensor_index, TfLiteType type,
+                                            const char* name, const size_t rank,
+                                            const int* dims,
+                                            TfLiteQuantization quantization,
+                                            bool is_variable = false);
 
   // WARNING: Experimental interface, subject to change
   // Overrides execution plan. This bounds checks indices sent in.
@@ -233,6 +231,10 @@ class Subgraph {
   // AllocateTensors().
   // Returns status of success or failure.
   TfLiteStatus Invoke();
+
+  //SECDA Added
+  TfLiteStatus Invoke2(gemm_driver &gd);
+
 
   // Entry point for C node plugin API to report an error.
   void ReportError(const char* format, ...);
@@ -345,13 +347,6 @@ class Subgraph {
       profiler_->EndEvent(event_handle);
     }
 
-    void AddEvent(const char* tag, EventType event_type,
-                  uint32_t event_metadata, uint64_t start,
-                  uint64_t end) override {
-      if (!profiler_) return;
-      profiler_->AddEvent(tag, event_type, event_metadata, start, end);
-    }
-
    private:
     // Not own the memory.
     Profiler* const profiler_;
@@ -390,6 +385,12 @@ class Subgraph {
     return op_reg.invoke(&context_, node);
   }
 
+  // Invoke the operator represented by 'node'.
+  TfLiteStatus OpInvoke2(gemm_driver &gd,const TfLiteRegistration& op_reg, TfLiteNode* node) {
+    if (op_reg.invoke == nullptr) return kTfLiteError;
+      return tflite::ops::builtin::conv::BeforeEval(gd,&context_, node);
+  }
+
   // Call OpPrepare() for as many ops as possible, allocating memory for their
   // tensors. If an op containing dynamic tensors is found, preparation will be
   // postponed until this function is called again. This allows the interpreter
@@ -414,15 +415,6 @@ class Subgraph {
   // NOTE: this changes consistent_ to be false if indices are out of bounds.
   TfLiteStatus CheckTensorIndices(const char* label, const int* indices,
                                   int length);
-
-  // Check that the input indices and the output indices don't overlap.
-  // This is needed because same tensor must not be used both as input and
-  // output for an operator.
-  // NOTE: this changes consistent_ to be false if indices are out of bounds.
-  TfLiteStatus CheckInputAndOutputForOverlap(const int* input_indices,
-                                             int num_inputs,
-                                             const int* output_indices,
-                                             int num_outputs);
 
   // Compute the number of bytes required to represent a tensor with dimensions
   // specified by the array dims (of length dims_size). Returns the status code
@@ -484,28 +476,6 @@ class Subgraph {
   // Entry point for C node plugin API to get the execution plan.
   static TfLiteStatus GetExecutionPlan(struct TfLiteContext* context,
                                        TfLiteIntArray** execution_plan);
-
-  // WARNING: This is an experimental interface that is subject to change.
-  // Provides a preview of post-delegation partitioning. Each
-  // TfLiteDelegateParams in the referenced array corresponds to one instance of
-  // the delegate kernel.
-  // nodes_to_replace should point to a valid array. partition_params_array &
-  // num_partitions should be non-null.
-  // Memory allocated by this method is automatically released with another call
-  // to PreviewDelegateParitioning, or after TfLiteDelegate::Prepare is done.
-  TfLiteStatus PreviewDelegatePartitioning(
-      const TfLiteIntArray* nodes_to_replace,
-      TfLiteDelegateParams** partition_params_array, int* num_partitions);
-
-  // WARNING: This is an experimental interface that is subject to change.
-  // Entry point for C node plugin API to preview delegation partitioning.
-  static TfLiteStatus PreviewDelegatePartitioning(
-      struct TfLiteContext* context, const TfLiteIntArray* nodes_to_replace,
-      TfLiteDelegateParams** partition_params_array, int* num_partitions);
-
-  // Used to clear partitioning_preview_cache_, in case
-  // PreviewDelegatePartitioning was called.
-  void FreeDelegatePartitioningData();
 
   // Retrieve an existing external context by type.
   TfLiteExternalContext* GetExternalContext(TfLiteExternalContextType type);
@@ -573,7 +543,7 @@ class Subgraph {
   // A pure C data structure used to communicate with the pure C plugin
   // interface. To avoid copying tensor metadata, this is also the definitive
   // structure to store tensors.
-  TfLiteContext context_ = {};
+  TfLiteContext context_;
 
   // A pointer to the external contexts (kTfLiteMaxExternalContexts) array that
   // sits inside the associated TFLite interpreter instance.
@@ -645,9 +615,6 @@ class Subgraph {
   // TODO(aselle): replace execution_plan_ with this.
   std::unique_ptr<TfLiteIntArray, TfLiteIntArrayDeleter> plan_cache_;
 
-  // Used by PreviewDelegateParitioning.
-  std::vector<TfLiteDelegateParams> partitioning_preview_cache_;
-
   // Whether to use delegate to modify the graph.
   bool should_apply_nnapi_delegate_ = false;
   bool applied_nnapi_delegate_ = false;
@@ -682,10 +649,6 @@ class Subgraph {
 
   // A map of resources. Owned by interpreter and shared by multiple subgraphs.
   resource::ResourceMap* resources_ = nullptr;
-
-  // Whether the subgraph is currently in use (e.g. running the `Invoke`
-  // or `AllocateTensors` functions).
-  bool is_subgraph_in_use_ = false;
 };
 
 }  // namespace tflite

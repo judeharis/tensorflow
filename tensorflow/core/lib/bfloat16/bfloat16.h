@@ -18,7 +18,6 @@ limitations under the License.
 
 #include <cmath>
 #include <complex>
-#include <iostream>
 
 #include "tensorflow/core/platform/byte_order.h"
 

@@ -685,11 +685,15 @@ class FusedResizeConv2DUsingGemmOp : public OpKernel {
             paddings.dim_size(1) == 2,
         errors::InvalidArgument("paddings must be a matrix with 2 columns: ",
                                 paddings.shape().DebugString()));
+    const int fixed_dims =
+        (allow_legacy_scalars() && dims == 0 && paddings.dim_size(0) == 1)
+            ? 1
+            : dims;
     OP_REQUIRES(
-        context, dims == paddings.dim_size(0),
+        context, fixed_dims == paddings.dim_size(0),
         errors::InvalidArgument(
             "The first dimension of paddings must be the rank of inputs: ",
-            dims, " ", paddings.shape().DebugString(), " ",
+            fixed_dims, " ", paddings.shape().DebugString(), " ",
             resized_shape.DebugString()));
     OP_REQUIRES(
         context, dims == paddings.dim_size(0),

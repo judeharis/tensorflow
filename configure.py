@@ -33,7 +33,7 @@ except ImportError:
   from distutils.spawn import find_executable as which
 # pylint: enable=g-import-not-at-top
 
-_DEFAULT_CUDA_VERSION = '10'
+_DEFAULT_CUDA_VERSION = '10.1'
 _DEFAULT_CUDNN_VERSION = '7'
 _DEFAULT_TENSORRT_VERSION = '6'
 _DEFAULT_CUDA_COMPUTE_CAPABILITIES = '3.5,7.0'
@@ -49,8 +49,8 @@ _TF_BAZELRC_FILENAME = '.tf_configure.bazelrc'
 _TF_WORKSPACE_ROOT = ''
 _TF_BAZELRC = ''
 _TF_CURRENT_BAZEL_VERSION = None
-_TF_MIN_BAZEL_VERSION = '2.0.0'
-_TF_MAX_BAZEL_VERSION = '2.0.0'
+_TF_MIN_BAZEL_VERSION = '1.0.0'
+_TF_MAX_BAZEL_VERSION = '1.1.0'
 
 NCCL_LIB_PATHS = [
     'lib64/', 'lib/powerpc64le-linux-gnu/', 'lib/x86_64-linux-gnu/', ''
@@ -147,16 +147,14 @@ def write_action_env_to_bazelrc(var_name, var):
   write_to_bazelrc('build --action_env %s="%s"' % (var_name, str(var)))
 
 
-def run_shell(cmd, allow_non_zero=False, stderr=None):
-  if stderr is None:
-    stderr = sys.stdout
+def run_shell(cmd, allow_non_zero=False):
   if allow_non_zero:
     try:
-      output = subprocess.check_output(cmd, stderr=stderr)
+      output = subprocess.check_output(cmd)
     except subprocess.CalledProcessError as e:
       output = e.output
   else:
-    output = subprocess.check_output(cmd, stderr=stderr)
+    output = subprocess.check_output(cmd)
   return output.decode('UTF-8').strip()
 
 
@@ -171,12 +169,10 @@ def get_python_path(environ_cp, python_bin_path):
   if environ_cp.get('PYTHONPATH'):
     python_paths = environ_cp.get('PYTHONPATH').split(':')
   try:
-    stderr = open(os.devnull, 'wb')
     library_paths = run_shell([
         python_bin_path, '-c',
         'import site; print("\\n".join(site.getsitepackages()))'
-    ],
-                              stderr=stderr).split('\n')
+    ]).split('\n')
   except subprocess.CalledProcessError:
     library_paths = [
         run_shell([
@@ -1183,17 +1179,10 @@ def system_specific_test_config(env):
       write_to_bazelrc('test --test_env=LD_LIBRARY_PATH')
     else:
       test_and_build_filters.append('-gpu')
-
-  # Disable tests with "v1only" tag in "v2" Bazel config, but not in "v1" config
-  write_to_bazelrc('test:v1 --test_tag_filters=%s' %
+  write_to_bazelrc('test --test_tag_filters=%s' %
                    ','.join(test_and_build_filters + test_only_filters))
-  write_to_bazelrc('test:v1 --build_tag_filters=%s' %
+  write_to_bazelrc('test --build_tag_filters=%s' %
                    ','.join(test_and_build_filters))
-  write_to_bazelrc(
-      'test:v2 --test_tag_filters=%s' %
-      ','.join(test_and_build_filters + test_only_filters + ['-v1only']))
-  write_to_bazelrc('test:v2 --build_tag_filters=%s' %
-                   ','.join(test_and_build_filters + ['-v1only']))
 
 
 def set_system_libs_flag(environ_cp):
@@ -1221,7 +1210,7 @@ def is_reduced_optimize_huge_functions_available(environ_cp):
   only, as of 2019-11-19). TensorFlow needs this flag to massively reduce
   compile times, but until 16.4 is officially released, we can't depend on it.
 
-  See also https://groups.google.com/a/tensorflow.org/d/topic/build/SsW98Eo7l3o/discussion
+  See also https://groups.google.com/a/tensorflow.org/g/build/c/SsW98Eo7l3o
 
   Because it's very annoying to check this manually (to check the MSVC installed
   versions, you need to use the registry, and it's not clear if Bazel will be
@@ -1390,8 +1379,9 @@ def main():
   else:
     environ_cp['TF_CONFIGURE_IOS'] = '0'
 
-  if environ_cp.get('TF_ENABLE_XLA', '1') == '1':
-    write_to_bazelrc('build --config=xla')
+  xla_enabled_by_default = is_linux() or is_macos()
+  set_build_var(environ_cp, 'TF_ENABLE_XLA', 'XLA JIT', 'with_xla_support',
+                xla_enabled_by_default, 'xla')
 
   set_action_env_var(
       environ_cp,

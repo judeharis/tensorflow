@@ -201,9 +201,4 @@ CancellationManager::~CancellationManager() {
   }
 }
 
-bool CancellationManager::IsCancelling() {
-  mutex_lock lock(mu_);
-  return is_cancelling_;
-}
-
 }  // end namespace tensorflow

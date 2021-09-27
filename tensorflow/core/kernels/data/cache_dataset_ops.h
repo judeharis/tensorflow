@@ -22,8 +22,8 @@ namespace data {
 
 class CacheDatasetOp : public UnaryDatasetOpKernel {
  public:
-  class FileDatasetBase;
-  class MemoryDatasetBase;
+  class FileDataset;
+  class MemoryDataset;
 
   static constexpr const char* const kDatasetType = "Cache";
   static constexpr const char* const kInputDataset = "input_dataset";
@@ -38,12 +38,10 @@ class CacheDatasetOp : public UnaryDatasetOpKernel {
                    DatasetBase** output) override;
 
  private:
-  class FileDataset;
   class FileDatasetV2;
-  class MemoryDataset;
   class MemoryDatasetV2;
 
-  const int op_version_;
+  int op_version_;
 };
 
 }  // namespace data

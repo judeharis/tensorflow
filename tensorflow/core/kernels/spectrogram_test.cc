@@ -23,8 +23,6 @@ limitations under the License.
 #include "tensorflow/core/kernels/spectrogram_test_utils.h"
 #include "tensorflow/core/lib/core/status_test_util.h"
 #include "tensorflow/core/lib/io/path.h"
-#include "tensorflow/core/platform/path.h"
-#include "tensorflow/core/platform/resource_loader.h"
 #include "tensorflow/core/platform/test.h"
 #include "tensorflow/core/platform/types.h"
 
@@ -32,24 +30,17 @@ namespace tensorflow {
 
 using ::std::complex;
 
-string InputFilename() {
-  return io::JoinPath("tensorflow", "core", "kernels", "spectrogram_test_data",
-                      "short_test_segment.wav");
-}
+const char kInputFilename[] =
+    "core/kernels/spectrogram_test_data/short_test_segment.wav";
 
-string ExpectedFilename() {
-  return io::JoinPath("tensorflow", "core", "kernels", "spectrogram_test_data",
-                      "short_test_segment_spectrogram.csv.bin");
-}
-
+const char kExpectedFilename[] =
+    "core/kernels/spectrogram_test_data/short_test_segment_spectrogram.csv.bin";
 const int kDataVectorLength = 257;
 const int kNumberOfFramesInTestData = 178;
 
-string ExpectedNonPowerOfTwoFilename() {
-  return io::JoinPath("tensorflow", "core", "kernels", "spectrogram_test_data",
-                      "short_test_segment_spectrogram_400_200.csv.bin");
-}
-
+const char kExpectedNonPowerOfTwoFilename[] =
+    "core/kernels/spectrogram_test_data/"
+    "short_test_segment_spectrogram_400_200.csv.bin";
 const int kNonPowerOfTwoDataVectorLength = 257;
 const int kNumberOfFramesInNonPowerOfTwoTestData = 228;
 
@@ -215,8 +206,9 @@ TEST(SpectrogramTest, ReInitializationWorks) {
   Spectrogram sgram;
   sgram.Initialize(512, 256);
   std::vector<double> input;
-  CHECK(
-      ReadWaveFileToVector(GetDataDependencyFilepath(InputFilename()), &input));
+  CHECK(ReadWaveFileToVector(
+      tensorflow::io::JoinPath(testing::TensorFlowSrcRoot(), kInputFilename),
+      &input));
   std::vector<std::vector<complex<double>>> first_output;
   std::vector<std::vector<complex<double>>> second_output;
   sgram.Initialize(512, 256);
@@ -241,13 +233,14 @@ TEST(SpectrogramTest, ComputedComplexDataAgreeWithMatlab) {
   Spectrogram sgram;
   sgram.Initialize(512, 256);
   std::vector<double> input;
-  CHECK(
-      ReadWaveFileToVector(GetDataDependencyFilepath(InputFilename()), &input));
+  CHECK(ReadWaveFileToVector(
+      tensorflow::io::JoinPath(testing::TensorFlowSrcRoot(), kInputFilename),
+      &input));
   EXPECT_EQ(kInputDataLength, input.size());
   std::vector<std::vector<complex<double>>> expected_output;
   ASSERT_TRUE(ReadRawFloatFileToComplexVector(
-      GetDataDependencyFilepath(ExpectedFilename()), kDataVectorLength,
-      &expected_output));
+      tensorflow::io::JoinPath(testing::TensorFlowSrcRoot(), kExpectedFilename),
+      kDataVectorLength, &expected_output));
   EXPECT_EQ(kNumberOfFramesInTestData, expected_output.size());
   EXPECT_EQ(kDataVectorLength, expected_output[0].size());
   std::vector<std::vector<complex<double>>> output;
@@ -260,15 +253,16 @@ TEST(SpectrogramTest, ComputedFloatComplexDataAgreeWithMatlab) {
   Spectrogram sgram;
   sgram.Initialize(512, 256);
   std::vector<double> double_input;
-  CHECK(ReadWaveFileToVector(GetDataDependencyFilepath(InputFilename()),
-                             &double_input));
+  CHECK(ReadWaveFileToVector(
+      tensorflow::io::JoinPath(testing::TensorFlowSrcRoot(), kInputFilename),
+      &double_input));
   std::vector<float> input;
   input.assign(double_input.begin(), double_input.end());
   EXPECT_EQ(kInputDataLength, input.size());
   std::vector<std::vector<complex<double>>> expected_output;
   ASSERT_TRUE(ReadRawFloatFileToComplexVector(
-      GetDataDependencyFilepath(ExpectedFilename()), kDataVectorLength,
-      &expected_output));
+      tensorflow::io::JoinPath(testing::TensorFlowSrcRoot(), kExpectedFilename),
+      kDataVectorLength, &expected_output));
   EXPECT_EQ(kNumberOfFramesInTestData, expected_output.size());
   EXPECT_EQ(kDataVectorLength, expected_output[0].size());
   std::vector<std::vector<complex<float>>> output;
@@ -281,13 +275,14 @@ TEST(SpectrogramTest, ComputedSquaredMagnitudeDataAgreeWithMatlab) {
   Spectrogram sgram;
   sgram.Initialize(512, 256);
   std::vector<double> input;
-  CHECK(
-      ReadWaveFileToVector(GetDataDependencyFilepath(InputFilename()), &input));
+  CHECK(ReadWaveFileToVector(
+      tensorflow::io::JoinPath(testing::TensorFlowSrcRoot(), kInputFilename),
+      &input));
   EXPECT_EQ(kInputDataLength, input.size());
   std::vector<std::vector<complex<double>>> expected_output;
   ASSERT_TRUE(ReadRawFloatFileToComplexVector(
-      GetDataDependencyFilepath(ExpectedFilename()), kDataVectorLength,
-      &expected_output));
+      tensorflow::io::JoinPath(testing::TensorFlowSrcRoot(), kExpectedFilename),
+      kDataVectorLength, &expected_output));
   EXPECT_EQ(kNumberOfFramesInTestData, expected_output.size());
   EXPECT_EQ(kDataVectorLength, expected_output[0].size());
   std::vector<std::vector<double>> output;
@@ -300,15 +295,16 @@ TEST(SpectrogramTest, ComputedFloatSquaredMagnitudeDataAgreeWithMatlab) {
   Spectrogram sgram;
   sgram.Initialize(512, 256);
   std::vector<double> double_input;
-  CHECK(ReadWaveFileToVector(GetDataDependencyFilepath(InputFilename()),
-                             &double_input));
+  CHECK(ReadWaveFileToVector(
+      tensorflow::io::JoinPath(testing::TensorFlowSrcRoot(), kInputFilename),
+      &double_input));
   EXPECT_EQ(kInputDataLength, double_input.size());
   std::vector<float> input;
   input.assign(double_input.begin(), double_input.end());
   std::vector<std::vector<complex<double>>> expected_output;
   ASSERT_TRUE(ReadRawFloatFileToComplexVector(
-      GetDataDependencyFilepath(ExpectedFilename()), kDataVectorLength,
-      &expected_output));
+      tensorflow::io::JoinPath(testing::TensorFlowSrcRoot(), kExpectedFilename),
+      kDataVectorLength, &expected_output));
   EXPECT_EQ(kNumberOfFramesInTestData, expected_output.size());
   EXPECT_EQ(kDataVectorLength, expected_output[0].size());
   std::vector<std::vector<float>> output;
@@ -325,12 +321,14 @@ TEST(SpectrogramTest, ComputedNonPowerOfTwoComplexDataAgreeWithMatlab) {
   Spectrogram sgram;
   sgram.Initialize(400, 200);
   std::vector<double> input;
-  CHECK(
-      ReadWaveFileToVector(GetDataDependencyFilepath(InputFilename()), &input));
+  CHECK(ReadWaveFileToVector(
+      tensorflow::io::JoinPath(testing::TensorFlowSrcRoot(), kInputFilename),
+      &input));
   EXPECT_EQ(kInputDataLength, input.size());
   std::vector<std::vector<complex<double>>> expected_output;
   ASSERT_TRUE(ReadRawFloatFileToComplexVector(
-      GetDataDependencyFilepath(ExpectedNonPowerOfTwoFilename()),
+      tensorflow::io::JoinPath(testing::TensorFlowSrcRoot(),
+                               kExpectedNonPowerOfTwoFilename),
       kNonPowerOfTwoDataVectorLength, &expected_output));
   EXPECT_EQ(kNumberOfFramesInNonPowerOfTwoTestData, expected_output.size());
   EXPECT_EQ(kNonPowerOfTwoDataVectorLength, expected_output[0].size());

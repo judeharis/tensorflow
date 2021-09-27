@@ -21,20 +21,16 @@ from __future__ import print_function
 import collections
 import re
 
-from tensorflow.python.distribute.cluster_resolver import cluster_resolver
+from tensorflow.python.distribute.cluster_resolver.cloud_tpu_client import CloudTPUClient
+from tensorflow.python.distribute.cluster_resolver.cluster_resolver import ClusterResolver
+from tensorflow.python.distribute.cluster_resolver.cluster_resolver import format_master_url
+from tensorflow.python.distribute.cluster_resolver.cluster_resolver import get_accelerator_devices
 from tensorflow.python.framework import errors
 from tensorflow.python.platform import tf_logging as logging
 from tensorflow.python.training import server_lib
 from tensorflow.python.util import compat
 from tensorflow.python.util.tf_export import tf_export
 
-try:
-  from cloud_tpu_client import client  # pylint: disable=g-import-not-at-top
-except ImportError:
-  logging.debug(
-      'Falling back to TensorFlow client; we recommended you install the Cloud '
-      'TPU client directly with pip install cloud-tpu-client.')
-  from tensorflow.python.tpu.client import client
 
 def is_running_in_gce():
   return True
@@ -48,7 +44,7 @@ DeviceDetails = collections.namedtuple(
 
 
 @tf_export('distribute.cluster_resolver.TPUClusterResolver')
-class TPUClusterResolver(cluster_resolver.ClusterResolver):
+class TPUClusterResolver(ClusterResolver):
   """Cluster Resolver for Google Cloud TPUs.
 
   This is an implementation of cluster resolvers for the Google Cloud TPU
@@ -139,6 +135,7 @@ class TPUClusterResolver(cluster_resolver.ClusterResolver):
         filled in produce an absolute URL to the discovery document for that
         service. The environment variable 'TPU_API_DISCOVERY_URL' will override
         this.
+     **kwargs: Extra keyword arguments passed to CloudTPUClient.
 
     Raises:
       ImportError: If the googleapiclient is not installed.
@@ -147,7 +144,7 @@ class TPUClusterResolver(cluster_resolver.ClusterResolver):
         Google Cloud environment.
     """
 
-    self._cloud_tpu_client = client.Client(
+    self._cloud_tpu_client = CloudTPUClient(
         tpu=tpu,
         zone=zone,
         project=project,
@@ -211,7 +208,7 @@ class TPUClusterResolver(cluster_resolver.ClusterResolver):
       if not job_tasks:
         raise ValueError('No TPUs with the specified names exist.')
       master = job_tasks[0]
-    return cluster_resolver.format_master_url(master, 'grpc')
+    return format_master_url(master, 'grpc')
 
   def get_master(self):
     return self.master()
@@ -280,8 +277,7 @@ class TPUClusterResolver(cluster_resolver.ClusterResolver):
     while True:
       try:
         device_details = TPUClusterResolver._get_device_dict_and_cores(
-            cluster_resolver.get_accelerator_devices(
-                self.master(), config_proto=config_proto))
+            get_accelerator_devices(self.master(), config_proto=config_proto))
         break
       except errors.DeadlineExceededError:
         error_message = ('Failed to connect to master. The TPU might not be '

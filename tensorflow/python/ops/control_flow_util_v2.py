@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-"""Utilities for V2 control flow."""
+"""Utilties for V2 control flow."""
 
 from __future__ import absolute_import
 from __future__ import division

@@ -16,7 +16,6 @@ limitations under the License.
 // Test that validates tensorflow/core/api_def/base_api/api_def*.pbtxt files.
 
 #include <ctype.h>
-
 #include <algorithm>
 #include <string>
 #include <unordered_map>
@@ -34,24 +33,16 @@ limitations under the License.
 #include "tensorflow/core/platform/env.h"
 #include "tensorflow/core/platform/init_main.h"
 #include "tensorflow/core/platform/protobuf.h"
-#include "tensorflow/core/platform/resource_loader.h"
 #include "tensorflow/core/platform/test.h"
 #include "tensorflow/core/platform/types.h"
 
 namespace tensorflow {
 namespace {
-
+constexpr char kDefaultApiDefDir[] =
+    "tensorflow/core/api_def/base_api";
+constexpr char kPythonApiDefDir[] =
+    "tensorflow/core/api_def/python_api";
 constexpr char kApiDefFilePattern[] = "api_def_*.pbtxt";
-
-string DefaultApiDefDir() {
-  return GetDataDependencyFilepath(
-      io::JoinPath("tensorflow", "core", "api_def", "base_api"));
-}
-
-string PythonApiDefDir() {
-  return GetDataDependencyFilepath(
-      io::JoinPath("tensorflow", "core", "api_def", "python_api"));
-}
 
 // Reads golden ApiDef files and returns a map from file name to ApiDef file
 // contents.
@@ -200,6 +191,7 @@ void TestDeprecationVersionSetCorrectly(
     }
   }
 }
+}  // namespace
 
 class BaseApiTest : public ::testing::Test {
  protected:
@@ -208,7 +200,7 @@ class BaseApiTest : public ::testing::Test {
     const std::vector<string> multi_line_fields = {"description"};
 
     Env* env = Env::Default();
-    GetGoldenApiDefs(env, DefaultApiDefDir(), &api_defs_map_);
+    GetGoldenApiDefs(env, kDefaultApiDefDir, &api_defs_map_);
   }
   OpList ops_;
   std::unordered_map<string, ApiDef> api_defs_map_;
@@ -304,7 +296,7 @@ class PythonApiTest : public ::testing::Test {
     const std::vector<string> multi_line_fields = {"description"};
 
     Env* env = Env::Default();
-    GetGoldenApiDefs(env, PythonApiDefDir(), &api_defs_map_);
+    GetGoldenApiDefs(env, kPythonApiDefDir, &api_defs_map_);
   }
   OpList ops_;
   std::unordered_map<string, ApiDef> api_defs_map_;
@@ -344,5 +336,4 @@ TEST_F(PythonApiTest, DeprecationVersionSetCorrectly) {
   TestDeprecationVersionSetCorrectly(api_defs_map_);
 }
 
-}  // namespace
 }  // namespace tensorflow
