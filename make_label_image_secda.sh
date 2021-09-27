@@ -7,11 +7,6 @@ if [[ "$1" = "vm" ]]; then
     mkdir -p ./out
     cp ./tensorflow/lite/tools/make/gen/pynq_vm_armv7l/bin/label_image ./out/label_image_secda_vm
     echo "sh build_pynq_lib.sh pynq_vm"
-elif [[ "$1" = "vm2" ]]; then
-    sh ./tensorflow/lite/tools/make/build_pynq_lib.sh pynq_vm2
-    mkdir -p ./out
-    cp ./tensorflow/lite/tools/make/gen/pynq_vm2_armv7l/bin/label_image ./out/label_image_secda_vm2
-    echo "sh build_pynq_lib.sh pynq_vm2"
 else
     sh ./tensorflow/lite/tools/make/build_pynq_lib.sh pynq_sa
     mkdir -p ./out
