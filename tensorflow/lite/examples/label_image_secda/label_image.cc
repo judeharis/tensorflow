@@ -273,7 +273,6 @@ void RunInference(Settings* s) {
     }
 
 //SECDA <-------------------------------->
-if(s->accon){
   int* acc = getArray<int>(acc_address,page_size);
   int dh = open("/dev/mem", O_RDWR | O_SYNC);
 
@@ -478,20 +477,6 @@ if(s->accon){
     }
   }
   //SECDA <-------------------------------->
-
-  }else{
-    struct timeval start_time, stop_time;
-    gettimeofday(&start_time, nullptr);
-    for (int i = 0; i < s->trys; i++) {
-      if (interpreter->Invoke() != kTfLiteOk) LOG(FATAL) << "Failed to invoke tflite!\n";
-      cout << "Run " << i << " Complete" << endl;
-    }
-      gettimeofday(&stop_time, nullptr);
-    cout << "-----------------------------------------------------------------------------" << endl;
-    cout << "Image used: " << s->input_bmp_name << endl;
-    LOG(INFO) << "average time: "<< (get_us(stop_time) - get_us(start_time)) / (s->trys * 1000)<< " ms \n";    
-  }
-
 
 
 

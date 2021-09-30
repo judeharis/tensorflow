@@ -906,13 +906,13 @@ TfLiteStatus Subgraph::Invoke2(gemm_driver &gd) {
     //SECDA:  Added
     //Only CONV2D
     if(registration.builtin_code==3 && gd.on){
-      if(gd.t.profile)std::cout << std::endl << "--------------------Layer :" << gd.t.layer << " --------------------" << std::endl;
+      if(gd.t.profile)std::cout << std::endl << "--------------------Accelerated CONV Layer :" << gd.t.layer << " --------------------" << std::endl;
       prf_start(1);
       if (OpInvoke2(gd,registration, &node) == kTfLiteError) return ReportOpError(&context_, node, registration, node_index,"failed to invoke");
       prf_end(1,gd.t.convtime);
       gd.t.layer++;
     }else{
-      if(gd.t.profile)if(registration.builtin_code==3)std::cout << std::endl << "--------------------Skipped CONV Layer :" << gd.t.layer << " --------------------" << std::endl;
+      if(gd.t.profile)if(registration.builtin_code==3)std::cout << std::endl << "--------------------CPU CONV Layer :" << gd.t.layer << " --------------------" << std::endl;
       if (OpInvoke(registration, &node) == kTfLiteError) return ReportOpError(&context_, node, registration, node_index,"failed to invoke");
       if(registration.builtin_code==3)gd.t.layer++;
     }
