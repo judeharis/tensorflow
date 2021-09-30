@@ -47,7 +47,7 @@ struct Settings {
   bool accon = true;
   int trys = 1;
   bool acc_prof = 1;
-  bool acc_store = 1;
+  bool acc_store = 0;
 };
 
 }  // namespace label_image_secda

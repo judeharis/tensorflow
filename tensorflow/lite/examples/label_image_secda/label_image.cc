@@ -441,7 +441,7 @@ void RunInference(Settings* s) {
       ofstream profile_file;
       string acceled = s->accon?"_acc":"_cpu";
       string outfilename =  mname+ "_t" + to_string(s->number_of_threads) + acceled + "_" + accname + "_d1";
-      profile_file.open("benchmarks/" + outfilename+".csv");
+      profile_file.open(outfilename +".csv");
       profile_file << "run" << ",";
       profile_file << "gemm_times" << ",";
       profile_file << "miscs" << ",";
