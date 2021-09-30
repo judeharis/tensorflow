@@ -44,7 +44,7 @@ struct Settings {
   int number_of_warmup_runs = 2;
 
   // SECDA Custom args
-  bool accon = false;
+  bool accon = true;
   int trys = 1;
   bool acc_prof = 1;
   bool acc_store = 1;
