@@ -1,5 +1,6 @@
 #!/bin/bash -x
 
+#
 curr_dir=$(pwd)
 
 if [[ "$1" = "vm" ]]; then
