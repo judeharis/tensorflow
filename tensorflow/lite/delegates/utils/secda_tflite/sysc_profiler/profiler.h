@@ -65,6 +65,8 @@ public:
   // Creates copy of the profiled metrics as a record
   void saveProfile(vector<Metric *>);
 
+  void saveBlank(vector<Metric *>);
+
   // Creates CSV of all saved Records
   void saveCSVRecords(string);
 

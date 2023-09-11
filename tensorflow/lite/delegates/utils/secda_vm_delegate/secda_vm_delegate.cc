@@ -444,7 +444,7 @@ public:
     }
 
     prf_end(0, vm_t.conv_total);
-    if (dparams.delegated_nodes == 0) vm_t.print();
+    // if (dparams.delegated_nodes == 0) vm_t.print();
     return kTfLiteOk;
   }
 
@@ -552,6 +552,7 @@ void TfLiteSecdaVMDelegateDelete(TfLiteDelegate *delegate) {
     std::cout << "Unmapped DMA I/O Buffers" << std::endl;
     std::cout << "===========================" << std::endl;
     dparams.unmap = true;
+    vm_t.print();
     for (int i = 0; i < 4; i++)
       dfs[i].free();
   }

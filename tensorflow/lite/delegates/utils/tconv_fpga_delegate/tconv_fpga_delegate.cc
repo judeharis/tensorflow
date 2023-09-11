@@ -33,13 +33,13 @@ namespace tconvfpga_test {
 
 // TCONVFPGA delegate kernel
 class TCONVFPGADelegateKernel : public SimpleDelegateKernelInterface {
- public:
-  explicit TCONVFPGADelegateKernel(const TCONVFPGADelegateOptions& options)
+public:
+  explicit TCONVFPGADelegateKernel(const TCONVFPGADelegateOptions &options)
       : options_(options) {}
 
   // Runs once per delegate partition
-  TfLiteStatus Init(TfLiteContext* context,
-                    const TfLiteDelegateParams* params) override {
+  TfLiteStatus Init(TfLiteContext *context,
+                    const TfLiteDelegateParams *params) override {
     // // Init SystemC Modules & Profilier
     if (!dparams.init) {
       dparams.acc = getAccBaseAddress<int>(acc_address, 65536);
@@ -53,27 +53,6 @@ class TCONVFPGADelegateKernel : public SimpleDelegateKernelInterface {
       std::cout << std::endl;
       std::cout << "===========================" << std::endl;
     }
-
-    // if (!dparams.init) {
-    //   static struct sysC_sigs scs1(1);
-    //   static ACCNAME _acc("TCONV");
-    //   static struct multi_dma _mdma(4, dma_addrs, dma_addrs_in,
-    //   dma_addrs_out,
-    //                                 563840);
-    //   static struct Profile _profile;
-    //   sysC_init();
-    //   sysC_binder(&_acc, &_mdma, &scs1);
-    //   mdma = &_mdma;
-    //   acc = &_acc;
-    //   profile = &_profile;
-    //   dparams.init = true;
-
-    //   std::cout << "===========================" << std::endl;
-    //   std::cout << "Initialised the SystemC Modules" << std::endl;
-    //   std::cout << "Vector MAC Accelerator";
-    //   std::cout << std::endl;
-    //   std::cout << "===========================" << std::endl;
-    // }
 
     // Save Tensors input & outputs
     // Save other info (opdata)
@@ -100,8 +79,8 @@ class TCONVFPGADelegateKernel : public SimpleDelegateKernelInterface {
     for (int i = 0; i < params->nodes_to_replace->size; ++i) {
       const int node_index = params->nodes_to_replace->data[i];
       // Get this node information.
-      TfLiteNode* delegated_node = nullptr;
-      TfLiteRegistration* delegated_node_registration = nullptr;
+      TfLiteNode *delegated_node = nullptr;
+      TfLiteRegistration *delegated_node_registration = nullptr;
       TF_LITE_ENSURE_EQ(
           context,
           context->GetNodeAndRegistration(context, node_index, &delegated_node,
@@ -114,10 +93,10 @@ class TCONVFPGADelegateKernel : public SimpleDelegateKernelInterface {
       outputs_[i].push_back(delegated_node->outputs->data[0]);
       builtin_code_[i] = delegated_node_registration->builtin_code;
       associated_nodes.push_back(node_index);
-      TfLiteTransposeConvParams* tparam =
-          reinterpret_cast<TfLiteTransposeConvParams*>(
+      TfLiteTransposeConvParams *tparam =
+          reinterpret_cast<TfLiteTransposeConvParams *>(
               delegated_node->builtin_data);
-      OpData* opdata = reinterpret_cast<OpData*>(delegated_node->user_data);
+      OpData *opdata = reinterpret_cast<OpData *>(delegated_node->user_data);
       tparams[i] = tparam;
       opdatas[i] = opdata;
     }
@@ -129,19 +108,19 @@ class TCONVFPGADelegateKernel : public SimpleDelegateKernelInterface {
   // quantization parameters For more info look into
   // "tensorflow/lite/kernels/conv.cc" for the default implementation for Conv2D
   // Nodes
-  TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) override {
+  TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) override {
     int node_count = inputs_.size();
     int out_tid = 0;
 
     for (int i = 0; i < node_count; i++) {
-      TfLiteTransposeConvParams* params = tparams[i];
-      OpData* data = opdatas[i];
+      TfLiteTransposeConvParams *params = tparams[i];
+      OpData *data = opdatas[i];
 
-      TfLiteTensor* output;
-      const TfLiteTensor* output_shape;
-      const TfLiteTensor* input;
-      const TfLiteTensor* weights;
-      const TfLiteTensor* bias;
+      TfLiteTensor *output;
+      const TfLiteTensor *output_shape;
+      const TfLiteTensor *input;
+      const TfLiteTensor *weights;
+      const TfLiteTensor *bias;
 
       GetOutputSafe(context, outputs_[i][0], &output);
       GetInputSafe(context, inputs_[i][0], &output_shape);
@@ -152,7 +131,7 @@ class TCONVFPGADelegateKernel : public SimpleDelegateKernelInterface {
       if (SizeOfDimension(input, 3) != SizeOfDimension(weights, 3))
         return kTfLiteError;
 
-      OpData* user_data = opdatas[i];
+      OpData *user_data = opdatas[i];
       int temp_out_id;
       bool req_temp_out = outputs_[i][0] != node->outputs->data[out_tid];
       if (!req_temp_out) out_tid++;
@@ -161,7 +140,7 @@ class TCONVFPGADelegateKernel : public SimpleDelegateKernelInterface {
           context, node, params, data, req_temp_out, outputs_[i][0],
           temp_out_id));
 
-      TfLiteTensor* col2im = nullptr;
+      TfLiteTensor *col2im = nullptr;
       if (data->has_col2im) {
         node->temporaries->data[data->col2im_index] = data->col2im_id;
         TF_LITE_ENSURE_OK(
@@ -185,7 +164,7 @@ class TCONVFPGADelegateKernel : public SimpleDelegateKernelInterface {
 
       if (req_temp_out && !IsConstantTensor(output_shape)) {
         node->temporaries->data[temp_out_id] = outputs_[i][0];
-        TfLiteTensor* temp_out_tensor = &context->tensors[outputs_[i][0]];
+        TfLiteTensor *temp_out_tensor = &context->tensors[outputs_[i][0]];
         temp_out_tensor->type = kTfLiteInt8;
         temp_out_tensor->allocation_type = kTfLiteDynamic;
         TF_LITE_ENSURE_STATUS(
@@ -195,11 +174,11 @@ class TCONVFPGADelegateKernel : public SimpleDelegateKernelInterface {
       if (data->weights_are_transposed) {
         node->temporaries->data[data->transposed_weights_index] =
             data->transposed_weights_id;
-        TfLiteTensor* transposed_weights;
-        TF_LITE_ENSURE_OK(
-            context,
-            GetTemporarySafe(context, node, user_data->transposed_weights_index,
-                             &transposed_weights));
+        TfLiteTensor *transposed_weights;
+        TF_LITE_ENSURE_OK(context,
+                          GetTemporarySafe(context, node,
+                                           user_data->transposed_weights_index,
+                                           &transposed_weights));
         if (!IsConstantTensor(weights)) {
           SetTensorToDynamic(transposed_weights);
         } else {
@@ -209,10 +188,10 @@ class TCONVFPGADelegateKernel : public SimpleDelegateKernelInterface {
 
       node->temporaries->data[data->scratch_tensor_index] =
           data->scratch_tensor_id;
-      TfLiteTensor* scratch_buffer;
-      TF_LITE_ENSURE_OK(
-          context, GetTemporarySafe(context, node, data->scratch_tensor_index,
-                                    &scratch_buffer));
+      TfLiteTensor *scratch_buffer;
+      TF_LITE_ENSURE_OK(context, GetTemporarySafe(context, node,
+                                                  data->scratch_tensor_index,
+                                                  &scratch_buffer));
 
       scratch_buffer->type = kTfLiteInt32;
       scratch_buffer->allocation_type = kTfLiteDynamic;
@@ -225,8 +204,8 @@ class TCONVFPGADelegateKernel : public SimpleDelegateKernelInterface {
 
       TF_LITE_ENSURE_EQ(context, weights->quantization.type,
                         kTfLiteAffineQuantization);
-      const auto* affine_quantization =
-          reinterpret_cast<TfLiteAffineQuantization*>(
+      const auto *affine_quantization =
+          reinterpret_cast<TfLiteAffineQuantization *>(
               weights->quantization.params);
       const int channels_out = weights->dims->data[0];
       TF_LITE_ENSURE(context, affine_quantization);
@@ -253,12 +232,12 @@ class TCONVFPGADelegateKernel : public SimpleDelegateKernelInterface {
 
       biases[i] = bias->data.i32;
 
-      TfLiteTensor* transposed_weights;
-      TF_LITE_ENSURE_OK(
-          context,
-          GetTemporarySafe(context, node, user_data->transposed_weights_index,
-                           &transposed_weights));
-      int* dims = transposed_weights->dims->data;
+      TfLiteTensor *transposed_weights;
+      TF_LITE_ENSURE_OK(context,
+                        GetTemporarySafe(context, node,
+                                         user_data->transposed_weights_index,
+                                         &transposed_weights));
+      int *dims = transposed_weights->dims->data;
       preload_weights(transposed_weights->data.int8, dims, wb0[i], wb1[i],
                       wb2[i], wb3[i], wt_sum1[i], wt_sum2[i], wt_sum3[i],
                       wt_sum4[i]);
@@ -272,33 +251,33 @@ class TCONVFPGADelegateKernel : public SimpleDelegateKernelInterface {
   // computation to the gemm_driver For more info look into
   // "tensorflow/lite/kernels/conv.cc" for the default implementation for Conv2D
   // Nodes
-  TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) override {
+  TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) override {
     prf_start(0);
 
     int node_count = inputs_.size();
     for (int i = 0; i < node_count; i++) {
-      auto* params = tparams[i];
-      OpData* data = opdatas[i];
-      const TfLiteTensor* input;
-      const TfLiteTensor* weights;
-      TfLiteTensor* output;
-      const TfLiteTensor* bias;
-      const TfLiteTensor* output_shape_tensor;
+      auto *params = tparams[i];
+      OpData *data = opdatas[i];
+      const TfLiteTensor *input;
+      const TfLiteTensor *weights;
+      TfLiteTensor *output;
+      const TfLiteTensor *bias;
+      const TfLiteTensor *output_shape_tensor;
       bool has_bias = inputs_[i][3] != 0;
 
-      TfLiteTensor* transposed_weights =
+      TfLiteTensor *transposed_weights =
           data->weights_are_transposed
               ? GetTemporary(context, node, data->transposed_weights_index)
               : nullptr;
 
-      TfLiteTensor* col2im =
+      TfLiteTensor *col2im =
           data->has_col2im ? GetTemporary(context, node, data->col2im_index)
                            : nullptr;
 
-      TfLiteTensor* scratch_buffer;
-      TF_LITE_ENSURE_OK(
-          context, GetTemporarySafe(context, node, data->scratch_tensor_index,
-                                    &scratch_buffer));
+      TfLiteTensor *scratch_buffer;
+      TF_LITE_ENSURE_OK(context, GetTemporarySafe(context, node,
+                                                  data->scratch_tensor_index,
+                                                  &scratch_buffer));
 
       GetInputSafe(context, inputs_[i][0], &output_shape_tensor);
       GetInputSafe(context, inputs_[i][2], &input);
@@ -312,9 +291,9 @@ class TCONVFPGADelegateKernel : public SimpleDelegateKernelInterface {
                           ResizeTensor(context, output_shape_tensor, output));
       }
       if (data->has_col2im && tflite::IsDynamicTensor(col2im)) {
-        TF_LITE_ENSURE_OK(
-            context, ResizeCol2ImTensor(context, output_shape_tensor, weights,
-                                        input, col2im));
+        TF_LITE_ENSURE_OK(context,
+                          ResizeCol2ImTensor(context, output_shape_tensor,
+                                             weights, input, col2im));
       }
 
       if (tflite::IsDynamicTensor(scratch_buffer)) {
@@ -349,22 +328,22 @@ class TCONVFPGADelegateKernel : public SimpleDelegateKernelInterface {
       op_params.quantized_activation_min = data->output_activation_min;
       op_params.quantized_activation_max = data->output_activation_max;
 
-      ConvParams& cparams = op_params;
-      const RuntimeShape& input_shape = GetTensorShape(input);
-      const RuntimeShape& hwoi_ordered_filter_shape =
+      ConvParams &cparams = op_params;
+      const RuntimeShape &input_shape = GetTensorShape(input);
+      const RuntimeShape &hwoi_ordered_filter_shape =
           GetTensorShape(transposed_weights);
-      const RuntimeShape& output_shape = GetTensorShape(output);
-      const RuntimeShape& col2im_shape = GetTensorShape(col2im);
-      const RuntimeShape& scratch_shape = GetTensorShape(scratch_buffer);
-      int32* output_multiplier = &crf[i][0];
-      int32* output_shift = &crx[i][0];
-      const int8_t* input_data = GetTensorData<int8>(input);
-      const int8_t* hwoi_ordered_filter_data =
+      const RuntimeShape &output_shape = GetTensorShape(output);
+      const RuntimeShape &col2im_shape = GetTensorShape(col2im);
+      const RuntimeShape &scratch_shape = GetTensorShape(scratch_buffer);
+      int32 *output_multiplier = &crf[i][0];
+      int32 *output_shift = &crx[i][0];
+      const int8_t *input_data = GetTensorData<int8>(input);
+      const int8_t *hwoi_ordered_filter_data =
           GetTensorData<int8>(transposed_weights);
-      int8_t* output_data = GetTensorData<int8>(output);
-      int32_t* col2im_data = GetTensorData<int32>(col2im);
-      int32_t* scratch_data = GetTensorData<int32>(scratch_buffer);
-      CpuBackendContext* cpu_backend_context =
+      int8_t *output_data = GetTensorData<int8>(output);
+      int32_t *col2im_data = GetTensorData<int32>(col2im);
+      int32_t *scratch_data = GetTensorData<int32>(scratch_buffer);
+      CpuBackendContext *cpu_backend_context =
           CpuBackendContext::GetFromContext(context);
 
       const int batch_size =
@@ -394,8 +373,8 @@ class TCONVFPGADelegateKernel : public SimpleDelegateKernelInterface {
       const int hwoi_ordered_filter_total_size =
           filter_height * filter_width * output_depth;
 
-      const RuntimeShape& bias_shape = GetTensorShape(bias);
-      const int32* bias_data = GetTensorData<int32>(bias);
+      const RuntimeShape &bias_shape = GetTensorShape(bias);
+      const int32 *bias_data = GetTensorData<int32>(bias);
 
       cpu_backend_gemm::MatrixParams<int8_t> lhs_params;
       lhs_params.order = cpu_backend_gemm::Order::kRowMajor;
@@ -404,7 +383,7 @@ class TCONVFPGADelegateKernel : public SimpleDelegateKernelInterface {
       // Since our weight is symmetric quantized, the zp will always be 0.
       lhs_params.zero_point = 0;
 
-      int32_t* scratch_data_p = scratch_data;
+      int32_t *scratch_data_p = scratch_data;
       std::fill_n(scratch_data, output_offset * batch_size,
                   static_cast<int32>(0));
 
@@ -515,10 +494,10 @@ class TCONVFPGADelegateKernel : public SimpleDelegateKernelInterface {
         in_sum3[sums_curr] = (ss2);
         in_sum4[sums_curr++] = (ss3);
       }
-      int* wb_0 = reinterpret_cast<int*>(&wb0[i][0]);
-      int* wb_1 = reinterpret_cast<int*>(&wb1[i][0]);
-      int* wb_2 = reinterpret_cast<int*>(&wb2[i][0]);
-      int* wb_3 = reinterpret_cast<int*>(&wb3[i][0]);
+      int *wb_0 = reinterpret_cast<int *>(&wb0[i][0]);
+      int *wb_1 = reinterpret_cast<int *>(&wb1[i][0]);
+      int *wb_2 = reinterpret_cast<int *>(&wb2[i][0]);
+      int *wb_3 = reinterpret_cast<int *>(&wb3[i][0]);
 
       struct acc_container drv(wb_0, wb_1, wb_2, wb_3, wt_sum1[i], wt_sum2[i],
                                wt_sum3[i], wt_sum4[i], crf[i], crx_8[i]);
@@ -529,10 +508,10 @@ class TCONVFPGADelegateKernel : public SimpleDelegateKernelInterface {
       drv.thread_count = context->recommended_num_threads;
 
       drv.in_id = 0;
-      int* inb_0 = reinterpret_cast<int*>(inb0);
-      int* inb_1 = reinterpret_cast<int*>(inb1);
-      int* inb_2 = reinterpret_cast<int*>(inb2);
-      int* inb_3 = reinterpret_cast<int*>(inb3);
+      int *inb_0 = reinterpret_cast<int *>(inb0);
+      int *inb_1 = reinterpret_cast<int *>(inb1);
+      int *inb_2 = reinterpret_cast<int *>(inb2);
+      int *inb_3 = reinterpret_cast<int *>(inb3);
       drv.inb_0 = inb_0;
       drv.inb_1 = inb_1;
       drv.inb_2 = inb_2;
@@ -542,10 +521,8 @@ class TCONVFPGADelegateKernel : public SimpleDelegateKernelInterface {
       drv.in_sum3 = in_sum3;
       drv.in_sum4 = in_sum4;
       int fake_bias[output_depth] = {};
-      if (has_bias)
-        drv.bias = biases[i];
-      else
-        drv.bias = fake_bias;
+      if (has_bias) drv.bias = biases[i];
+      else drv.bias = fake_bias;
 
       drv.recv_len = recv_len;
       drv.ra = cparams.output_offset;
@@ -567,17 +544,19 @@ class TCONVFPGADelegateKernel : public SimpleDelegateKernelInterface {
       drv.rows = rhs_params.cols;
       drv.cols = lhs_params.rows;
       drv.depth = rhs_params.rows;
+      drv.t2 = tconv_t;
       tflite_vm_tconv_fpga::Entry(drv, col2im_data, output_data);
-      
+
       // saveMatrixCSV("aData/tconv/" + std::to_string(associated_nodes[i]) +
       //                   "_del_out_acc.csv",
       //               output_data, scratch_cols, scratch_rows);
+      tconv_t = drv.t2;
       dparams.layer++;
       dparams.delegated_nodes--;
     }
 
-    prf_end(0, tconv_t.conv_total);
-    if (dparams.delegated_nodes == 0) tconv_t.print();
+    prf_end(0, tconv_t.tconv_total);
+    // if (dparams.delegated_nodes == 0) tconv_t.print();
 
     return kTfLiteOk;
   }
@@ -593,28 +572,28 @@ class TCONVFPGADelegateKernel : public SimpleDelegateKernelInterface {
   std::vector<std::vector<int8_t>> wb2;
   std::vector<std::vector<int8_t>> wb3;
 
-  std::vector<int*> biases;
-  std::vector<OpData*> opdatas;
+  std::vector<int *> biases;
+  std::vector<OpData *> opdatas;
   std::vector<std::vector<int>> crf;
   std::vector<std::vector<int>> crx;
   std::vector<std::vector<int8_t>> crx_8;
 
-  std::vector<TfLiteTransposeConvParams*> tparams;
+  std::vector<TfLiteTransposeConvParams *> tparams;
 
- private:
+private:
   const TCONVFPGADelegateOptions options_;
 };
 
 // TCONVFPGADelegate implements the interface of SimpleDelegateInterface.
 // This holds the Delegate capabilities.
 class TCONVFPGADelegate : public SimpleDelegateInterface {
- public:
-  explicit TCONVFPGADelegate(const TCONVFPGADelegateOptions& options)
+public:
+  explicit TCONVFPGADelegate(const TCONVFPGADelegateOptions &options)
       : options_(options) {}
 
-  bool IsNodeSupportedByDelegate(const TfLiteRegistration* registration,
-                                 const TfLiteNode* node,
-                                 TfLiteContext* context) const override {
+  bool IsNodeSupportedByDelegate(const TfLiteRegistration *registration,
+                                 const TfLiteNode *node,
+                                 TfLiteContext *context) const override {
     // Only supports TCONV op
     if (kTfLiteBuiltinTransposeConv != registration->builtin_code) return false;
 
@@ -623,17 +602,17 @@ class TCONVFPGADelegate : public SimpleDelegateInterface {
 
     // This delegate only supports int8 types.
     for (int i = 1; i < 3; ++i) {
-      auto& tensor = context->tensors[node->inputs->data[i]];
+      auto &tensor = context->tensors[node->inputs->data[i]];
       if (tensor.type != kTfLiteInt8) return false;
     }
 
     // Ensures output shape tensor is supports int32 type
-    auto& tensor = context->tensors[node->inputs->data[0]];
+    auto &tensor = context->tensors[node->inputs->data[0]];
     if (tensor.type != kTfLiteInt32) return false;
 
     if (node->inputs->size == 4) {
       // Ensures bias tensor is supports int32 type
-      auto& tensor2 = context->tensors[node->inputs->data[3]];
+      auto &tensor2 = context->tensors[node->inputs->data[3]];
       if (tensor2.type != kTfLiteInt32) return false;
     }
 
@@ -642,15 +621,15 @@ class TCONVFPGADelegate : public SimpleDelegateInterface {
     return true;
   }
 
-  TfLiteStatus Initialize(TfLiteContext* context) override { return kTfLiteOk; }
+  TfLiteStatus Initialize(TfLiteContext *context) override { return kTfLiteOk; }
 
-  const char* Name() const override {
+  const char *Name() const override {
     static constexpr char kName[] = "TCONVFPGADelegate";
     return kName;
   }
 
-  std::unique_ptr<SimpleDelegateKernelInterface> CreateDelegateKernelInterface()
-      override {
+  std::unique_ptr<SimpleDelegateKernelInterface>
+  CreateDelegateKernelInterface() override {
     return std::make_unique<TCONVFPGADelegateKernel>(options_);
   }
 
@@ -659,12 +638,12 @@ class TCONVFPGADelegate : public SimpleDelegateInterface {
     return SimpleDelegateInterface::Options();
   }
 
- private:
+private:
   const TCONVFPGADelegateOptions options_;
 };
 
-}  // namespace tconvfpga_test
-}  // namespace tflite
+} // namespace tconvfpga_test
+} // namespace tflite
 
 TCONVFPGADelegateOptions TfLiteTCONVFPGADelegateOptionsDefault() {
   TCONVFPGADelegateOptions options = {0};
@@ -677,8 +656,8 @@ TCONVFPGADelegateOptions TfLiteTCONVFPGADelegateOptionsDefault() {
 // Creates a new delegate instance that need to be destroyed with
 // `TfLiteTCONVFPGADelegateDelete` when delegate is no longer used by TFLite.
 // When `options` is set to `nullptr`, the above default values are used:
-TfLiteDelegate* TfLiteTCONVFPGADelegateCreate(
-    const TCONVFPGADelegateOptions* options) {
+TfLiteDelegate *
+TfLiteTCONVFPGADelegateCreate(const TCONVFPGADelegateOptions *options) {
   std::unique_ptr<tflite::tconvfpga_test::TCONVFPGADelegate> tconvfpga(
       new tflite::tconvfpga_test::TCONVFPGADelegate(
           options ? *options : TfLiteTCONVFPGADelegateOptionsDefault()));
@@ -687,12 +666,13 @@ TfLiteDelegate* TfLiteTCONVFPGADelegateCreate(
 }
 
 // Destroys a delegate created with `TfLiteTCONVFPGADelegateCreate` call.
-void TfLiteTCONVFPGADelegateDelete(TfLiteDelegate* delegate) {
+void TfLiteTCONVFPGADelegateDelete(TfLiteDelegate *delegate) {
   if (!dparams.unmap) {
     mdma.multi_free_dmas();
     std::cout << "===========================" << std::endl;
     std::cout << "Unmapped DMA I/O Buffers" << std::endl;
     std::cout << "===========================" << std::endl;
+    tconv_t.print();
     dparams.unmap = true;
   }
   tflite::TfLiteDelegateFactory::DeleteSimpleDelegate(delegate);

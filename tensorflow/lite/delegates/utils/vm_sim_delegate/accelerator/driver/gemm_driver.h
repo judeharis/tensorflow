@@ -133,7 +133,7 @@ void Load_Weight_Data(acc_container &drv, int8_t *results, int output_stride,
     in0[inl0++] = *(int *)(ex);
   }
   drv.w_c += data_length / 4;
-  in0[inl0++] = -1;
+  // in0[inl0++] = -1;
 
   int8_t *res_pointer = results + c + r * output_stride;
   drv.st_params.dst = reinterpret_cast<int *>(res_pointer);
@@ -149,6 +149,14 @@ void Load_Weight_Data(acc_container &drv, int8_t *results, int output_stride,
   drv.mdma->dmas[3].dma_start_send(inl3);
   drv.mdma->multi_dma_wait_send();
   drv.profile->saveProfile(drv.acc->profiling_vars);
+}
+
+void Start_Schedule(acc_container &drv) {
+  int *in0 = drv.mdma->dmas[0].dma_get_inbuffer();
+  int inl0 = 0;
+  in0[inl0++] = -1;
+  drv.mdma->dmas[0].dma_start_send(inl0);
+  drv.mdma->multi_dma_wait_send();
 }
 
 void Store_Results(acc_container &drv) {
@@ -216,6 +224,7 @@ void Load_Weight_Compute_Store(acc_container &drv, int8_t *results,
                                int cols_step) {
   Load_Weight_Data(drv, results, output_stride, c, rcols_step, r, rrows_step,
                    rdepth_step, rows_step, cols_step);
+  Start_Schedule(drv);
   drv.mdma->multi_dma_start_recv();
   drv.mdma->multi_dma_wait_recv();
   drv.profile->saveProfile(drv.acc->profiling_vars);
@@ -227,11 +236,11 @@ void TileGEMM(acc_container &drv, int output_stride, int depth, int rdepth,
 
   drv.t.layer_weight_tile = 0;
   drv.t.layer_input_tile = 0;
-  int acc_weight_buffer_size = 2048 * 16;
+  int acc_weight_buffer_size = 1024 * 16;
   int acc_input_buffer_size = 8192 * 16;
   int max_cols = acc_weight_buffer_size / rdepth;
   max_cols = max_cols - (max_cols % 4);
-  int col_inc = std::min(std::min(rcols, max_cols), 2048);
+  int col_inc = std::min(std::min(rcols, max_cols), 1024);
   int max_rows = acc_input_buffer_size / rdepth;
   max_rows = max_rows - (max_rows % 4);
   int row_inc = std::min(std::min(rrows, max_rows), 2048);

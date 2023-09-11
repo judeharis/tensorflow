@@ -35,15 +35,12 @@ int CPU_Quantised_Multiplier(int x, int qm, int8_t shift) {
   }
   // int64_t val = x * pl;
   int64_t val = x * (1 << pl);
-  if (val > MAX)
-    val = MAX; // ALU MIN
-  if (val < MIN)
-    val = MIN; // ALU MAX
+  if (val > MAX) val = MAX; // ALU MIN
+  if (val < MIN) val = MIN; // ALU MAX
   int64_t val_2 = val * qm;
   int32_t temp_1;
   temp_1 = (val_2 + POS) / DIVMAX;
-  if (val_2 < 0)
-    temp_1 = (val_2 + NEG) / DIVMAX;
+  if (val_2 < 0) temp_1 = (val_2 + NEG) / DIVMAX;
   int32_t val_3 = temp_1;
   val_3 = val_3 >> pr;
   int32_t temp_2 = temp_1 & msk;
@@ -126,15 +123,12 @@ void col2im_mapping_v3(int depth, int height, int width, int filter_h,
 int ComputeOutSize(string padding, int image_size, int filter_size, int stride,
                    int dilation_rate = 1) {
   int effective_filter_size = (filter_size - 1) * dilation_rate + 1;
-  if (stride == 0)
-    return 0;
+  if (stride == 0) return 0;
 
-  if (padding == "same")
-    return (image_size + stride - 1) / stride;
+  if (padding == "same") return (image_size + stride - 1) / stride;
   else if (padding == "valid")
     return (image_size + stride - effective_filter_size) / stride;
-  else
-    return 0;
+  else return 0;
 }
 
 int compute_padding_with_offset(int stride, int dilation_rate, int in_size,
@@ -226,7 +220,9 @@ void calParams(int stride_x, int stride_y, int filters, int kernel_size,
   cout << "oh," << out1 << endl;
   cout << "ow," << out2 << endl;
   cout << "oc," << out3 << endl;
-
+  cout << "rows: " << rows << ", ";
+  cout << "cols: " << cols << ", ";
+  cout << "depth: " << depth << endl;
 
   cerr << "*******************" << endl;
 
@@ -278,8 +274,7 @@ struct mm2im_params {
     mm2im_map.clear();
     mm2im_map.resize(output_size);
     for (int j = 0; j < rows * cols; j++) {
-      if (dex_map[j] != -1)
-        mm2im_map[dex_map[j]].push_back(j);
+      if (dex_map[j] != -1) mm2im_map[dex_map[j]].push_back(j);
     }
   }
 
@@ -339,8 +334,7 @@ struct mm2im_params {
           o1_row_map.push_back(output_map);
         }
 
-        if (o_3 == 0)
-          o1_map.push_back(o1_row_map);
+        if (o_3 == 0) o1_map.push_back(o1_row_map);
         o1_ends.push_back(hi);
         o1_starts.push_back(lo);
         o1_lengths.push_back(hi - lo);
@@ -373,10 +367,8 @@ struct mm2im_params {
 
       int qm_ret =
           ra + CPU_Quantised_Multiplier(sum + bias, crf_data, crx_data);
-      if (qm_ret > MAX8)
-        qm_ret = MAX8;
-      else if (qm_ret < MIN8)
-        qm_ret = MIN8;
+      if (qm_ret > MAX8) qm_ret = MAX8;
+      else if (qm_ret < MIN8) qm_ret = MIN8;
 
       output_data[k] = qm_ret;
     }

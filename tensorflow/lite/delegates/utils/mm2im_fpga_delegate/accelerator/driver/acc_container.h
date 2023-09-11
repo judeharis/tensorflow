@@ -1,6 +1,7 @@
 #ifndef ACC_CONTAINER
 #define ACC_CONTAINER
 
+#include <assert.h>
 #include <chrono>
 #include <iomanip>
 #include <vector>
@@ -15,6 +16,10 @@
 
 using namespace std;
 using namespace std::chrono;
+
+// #define MS chrono::duration_cast<chrono::milliseconds>
+// #define MS chrono::duration_cast<chrono::microseconds>
+#define MS chrono::duration_cast<chrono::nanoseconds>
 
 #ifdef ACC_PROFILE
 #define prf_start(N) auto start##N = chrono::steady_clock::now();
@@ -54,42 +59,26 @@ struct mm2im_times {
   void print() {
 #ifdef ACC_PROFILE
     cout << "================================================" << endl;
-    cout << "driver_total, "
-         << chrono::duration_cast<chrono::milliseconds>(driver_total).count()
-         << endl;
-    cout << "acc_total, "
-         << chrono::duration_cast<chrono::milliseconds>(acc_total).count()
-         << endl;
-    cout << "tconv_total, "
-         << chrono::duration_cast<chrono::milliseconds>(tconv_total).count()
-         << endl;
-    cout << "store, "
-         << chrono::duration_cast<chrono::milliseconds>(store).count() << endl;
-    cout << "load_wgt, "
-         << chrono::duration_cast<chrono::milliseconds>(load_wgt).count()
-         << endl;
-    cout << "load_inp, "
-         << chrono::duration_cast<chrono::milliseconds>(load_inp).count()
-         << endl;
-    cout << "load_rowmap, "
-         << chrono::duration_cast<chrono::milliseconds>(load_rowmap).count()
-         << endl;
-    cout << "load_colmap, "
-         << chrono::duration_cast<chrono::milliseconds>(load_colmap).count()
-         << endl;
-    cout << "start_sched, "
-         << chrono::duration_cast<chrono::milliseconds>(start_sched).count()
-         << endl;
-    cout << "load_config, "
-         << chrono::duration_cast<chrono::milliseconds>(load_config).count()
-         << endl;
-    cout << "handle_rest, "
-         << chrono::duration_cast<chrono::milliseconds>(handle_rest).count()
-         << endl;
-    cout << "del_inp, "
-         << chrono::duration_cast<chrono::milliseconds>(del_inp).count()
-         << endl;
+    cout << "driver_total, " << MS(driver_total).count() << endl;
+    cout << "acc_total, " << MS(acc_total).count() << endl;
+    cout << "tconv_total, " << MS(tconv_total).count() << endl;
+    cout << "store, " << MS(store).count() << endl;
+    cout << "load_wgt, " << MS(load_wgt).count() << endl;
+    cout << "load_inp, " << MS(load_inp).count() << endl;
+    cout << "load_colmap, " << MS(load_colmap).count() << endl;
+    cout << "start_sched, " << MS(start_sched).count() << endl;
+    cout << "load_config, " << MS(load_config).count() << endl;
+    cout << "handle_rest, " << MS(handle_rest).count() << endl;
+    cout << "del_inp, " << MS(del_inp).count() << endl;
     cout << "================================================" << endl;
+
+    // write driver total time to file
+    ofstream myfile;
+    myfile.open("driver_total.txt", ios::app);
+    myfile << MS(driver_total).count() << ", " << MS(load_wgt).count() << ", "
+           << MS(load_inp).count() << ", " << MS(load_colmap).count() << ", "<< MS(store).count()  << endl;
+
+    myfile.close();
 #endif
   }
 };
@@ -107,14 +96,18 @@ struct acc_container {
   const int8_t *inputs;
 
   // mm2im map
-  vector<vector<int>> mm2im_map;
-  vector<vector<vector<int>>> o1_map;
+  vector<vector<int>> *mm2im_map;
+  vector<vector<vector<int>>> *o1_map;
+  // vector<vector<int>> mm2im_map;
+  // vector<vector<vector<int>>> o1_map;
   int *o1_lengths;
   int *o1_starts;
   int *o1_ends;
 
-  vector<vector<int>> col_dexs;
-  vector<vector<int>> out_dexs;
+  // vector<vector<int>> col_dexs;
+  // vector<vector<int>> out_dexs;
+  vector<vector<int>> *col_dexs;
+  vector<vector<int>> *out_dexs;
 
   // Output Pipeline Metadata
   int32_t *acc_wt_sum;
@@ -144,12 +137,47 @@ struct acc_container {
   int cols = 0;
   int depth = 0;
 
+  int wgt_inl0 = 0;
+  int inp_inl0 = 0;
+  bool first = false;
+
   // GEMM Profiling variable
   struct gemm_details t;
   bool verb;
   struct mm2im_times p_t;
 
   acc_container() {}
+
+  void validate() {
+    int padded_depth = roundUp(depth, 16);
+    int padded_out_width = o2 + pl + pr;
+    int noOfStepsX = nofSteps(padded_out_width, sx, ks);
+    int max_input_rows_per_o1 = noOfStepsX * ceiling(ks, sy);
+
+    int PE_COUNT_val = o3;
+    int PE_WGTCOLBUF_SIZE_val = ks * ks * padded_depth / UF;
+    int PE_WGTCOLSUMBUF_SIZE_val = ks * ks;
+    int PE_INPROWBUF_SIZE_val = padded_depth / UF;
+    int PE_OUTBUF_SIZE_val = ks * ks * max_input_rows_per_o1;
+    int PE_POUTDEXBUF_SIZE_val = ks * ks;
+    int PE_ACC_BUF_SIZE_val = o1 * o2;
+    assert(PE_COUNT_val >= PE_COUNT);
+    assert(PE_WGTCOLBUF_SIZE_val <= PE_WGTCOLBUF_SIZE);
+    assert(PE_WGTCOLSUMBUF_SIZE_val <= PE_WGTCOLSUMBUF_SIZE);
+    assert(PE_INPROWBUF_SIZE_val <= PE_INPROWBUF_SIZE);
+    assert(PE_OUTBUF_SIZE_val <= PE_OUTBUF_SIZE);
+    assert(PE_POUTDEXBUF_SIZE_val <= PE_POUTDEXBUF_SIZE);
+    assert(PE_ACC_BUF_SIZE_val <= PE_ACC_BUF_SIZE);
+    // cerr << "=====================" << endl;
+    // cerr << "PE_COUNT_val: " << PE_COUNT_val << endl;
+    // cerr << "PE_WGTCOLBUF_SIZE_val: " << PE_WGTCOLBUF_SIZE_val << endl;
+    // cerr << "PE_WGTCOLSUMBUF_SIZE_val: " << PE_WGTCOLSUMBUF_SIZE_val << endl;
+    // cerr << "PE_INPROWBUF_SIZE_val: " << PE_INPROWBUF_SIZE_val << endl;
+    // cerr << "PE_OUTBUF_SIZE_val: " << PE_OUTBUF_SIZE_val << endl;
+    // cerr << "PE_POUTDEXBUF_SIZE_val: " << PE_POUTDEXBUF_SIZE_val << endl;
+    // cerr << "PE_ACC_BUF_SIZE_val: " << PE_ACC_BUF_SIZE_val << endl;
+    // cerr << "=====================" << endl;
+  }
 };
 
 void preload_weights(int8_t *wgt, int depth, int rows, int *wt_sum,

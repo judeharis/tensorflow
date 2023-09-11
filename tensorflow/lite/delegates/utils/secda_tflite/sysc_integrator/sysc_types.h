@@ -12,7 +12,6 @@ typedef struct _DATA {
   }
 } DATA;
 
-
 typedef struct _SDATA {
   sc_int<32> data;
   bool tlast;
@@ -22,5 +21,17 @@ typedef struct _SDATA {
   }
 } SDATA;
 
+template <int W>
+struct _FDATA {
+  sc_uint<W> data;
+  bool tlast;
+  inline friend ostream &operator<<(ostream &os, const _FDATA &v) {
+    cout << "data&colon; " << v.data << " tlast: " << v.tlast;
+    return os;
+  }
+};
+
+template <int W>
+using FDATA = _FDATA<W>;
 
 #endif

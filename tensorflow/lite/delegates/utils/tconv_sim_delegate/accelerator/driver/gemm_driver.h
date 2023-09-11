@@ -19,6 +19,8 @@
 // GEMM_Driver for simulated VM acccelerator
 namespace tflite_vm_tconv_sim {
 
+int data_sent_length = 0;
+
 void Col2im_Mapping(int depth, int height, int width, int filter_h,
                     int filter_w, int pad_t, int pad_l, int pad_b, int pad_r,
                     int stride_h, int stride_w, uint32_t *index_map) {
@@ -107,6 +109,8 @@ void Load_Input_Data(acc_container &drv, int start_row, int rows_step,
   drv.mdma->dmas[3].dma_start_send(inl3);
   drv.mdma->multi_dma_wait_send();
   drv.profile->saveProfile(drv.acc->profiling_vars);
+  // data_sent_length += (inl1 + inl1 + inl2 + inl3)*4;
+
 }
 
 void Load_Weight_Data(acc_container &drv, int32_t *gemm_dst, int output_stride,
@@ -266,6 +270,7 @@ void Load_Weight_Data(acc_container &drv, int32_t *gemm_dst, int output_stride,
   drv.mdma->dmas[3].dma_start_send(inl3);
   drv.mdma->multi_dma_wait_send();
   drv.profile->saveProfile(drv.acc->profiling_vars);
+  // data_sent_length += (inl1 + inl1 + inl2 + inl3)*4;
 }
 
 void Store_Results(acc_container &drv) {
@@ -348,6 +353,7 @@ void Store_Results_COL2IM(acc_container &drv, int8_t *dst) {
 
   drv.mdma->dmas[0].dma_start_send(inl0);
   drv.mdma->dmas[0].dma_wait_send();
+  data_sent_length += inl0 * 4;
   drv.mdma->multi_dma_start_recv();
   drv.mdma->multi_dma_wait_recv();
 
@@ -427,6 +433,7 @@ void TileGEMM(acc_container &drv, int output_stride, int depth, int rdepth,
     drv.t.layer_input_tile++;
   }
   Store_Results_COL2IM(drv, dst);
+  cout << "Data sent: " << data_sent_length << endl;
 }
 
 void Entry(acc_container &drv, int32_t *gemm_dst, int8_t *dst) {

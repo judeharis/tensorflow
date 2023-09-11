@@ -17,13 +17,19 @@ void ACCNAME::load_wgt_PEs() {
       vars[i].col_dexs_fifo.write(wgt_sum_buf[pe_dex]);
     }
     for (int d = 0; d < depth; d++) {
-      for (int u = 0; u < UF; u++) {
-        for (int i = 0; i < PE_COUNT; i++) {
+#pragma HLS loop_tripcount min = 16 max = 16 avg = 16
+      bUF d1[8];
+      for (int i = 0; i < PE_COUNT; i++) {
 #pragma HLS unroll
-          vars[i].wgt_fifo.write(wgt_buf[ocols[i] + d][u]);
-        }
+        d1[i].insert(wgt_buf, ocols[i] + d);
       }
+      for (int i = 0; i < PE_COUNT; i++) {
+#pragma HLS unroll
+        vars.wgt_write(d1[i], i);
+      }
+      DWAIT(7);
     }
+    DWAIT(7);
   }
 
   scheduleS.write(32);
@@ -35,62 +41,82 @@ void ACCNAME::load_wgt_PEs() {
   wait();
 }
 
+void ACCNAME::FIFO_Loader() {
+  wait();
+  while (1) {
+
+    while (!load_fifo) wait();
+
+    for (int r = 0; r < number_of_rows; r++) {
+      int col_indice_start = col_indice_starts[r];
+      int col_indice_len = col_indice_lens[r];
+      int orow = r * depth;
+      DWAIT(5);
+
+      for (int d = 0; d < depth; d++) {
+#pragma HLS PIPELINE II = 1
+        bUF d1[8];
+        for (int i = 0; i < PE_COUNT; i++) {
+#pragma HLS unroll
+          d1[i].insert(inp_buf, orow + d);
+        }
+        for (int i = 0; i < PE_COUNT; i++) {
+#pragma HLS unroll
+          vars.inp_write(d1[i], i);
+        }
+        DWAIT(3);
+      }
+      DWAIT();
+
+      for (int j = 0; j < col_indice_len; j++) {
+        for (int i = 0; i < PE_COUNT; i++) {
+#pragma HLS unroll
+          vars[i].col_dexs_fifo.write(col_indices[col_indice_start + j]);
+        }
+        DWAIT(4);
+      }
+      for (int j = 0; j < col_indice_len; j++) {
+        for (int i = 0; i < PE_COUNT; i++) {
+#pragma HLS unroll
+          vars[i].dex_fifo.write(out_indices[col_indice_start + j]);
+        }
+        DWAIT(4);
+      }
+    }
+
+    load_fifo.write(false);
+    DWAIT();
+  }
+}
+
 // Generalise for any number of PEs
 void ACCNAME::load_inp_PEs() {
   // load & process one row inputs to PE at a time
 
-  scheduleS.write(61);
+  // scheduleS.write(61);
+  load_fifo.write(true);
   for (int r = 0; r < number_of_rows; r++) {
     // send the cols_indices to perform vector product with the input row
     int col_indice_start = col_indice_starts[r];
     int col_indice_len = col_indice_lens[r];
     int orow = r * depth;
 
-    scheduleS.write(62);
+    // scheduleS.write(62);
     start_compute(col_indice_len);
-    wait();
-
-    scheduleS.write(63);
-    // load the input row
-    for (int d = 0; d < depth; d++) {
-      for (int u = 0; u < UF; u++) {
-        for (int i = 0; i < PE_COUNT; i++) {
-#pragma HLS unroll
-          vars[i].inp_fifo.write(inp_buf[orow + d][u]);
-        }
-      }
-    }
-
-    scheduleS.write(64);
-    // load the cols_indices
-    for (int j = 0; j < col_indice_len; j++) {
-      for (int i = 0; i < PE_COUNT; i++) {
-#pragma HLS unroll
-        vars[i].col_dexs_fifo.write(col_indices[col_indice_start + j]);
-      }
-    }
-
-    scheduleS.write(65);
-    wait();
-
-    for (int j = 0; j < col_indice_len; j++) {
-      for (int i = 0; i < PE_COUNT; i++) {
-#pragma HLS unroll
-        vars[i].dex_fifo.write(out_indices[col_indice_start + j]);
-      }
-    }
+    // scheduleS.write(63);
+    DWAIT(5);
 
     while (compute_done()) {
-      scheduleS.write(66);
+      // scheduleS.write(66);
       DWAIT();
     }
-    wait();
-
-    scheduleS.write(67);
+    // wait();
+    // scheduleS.write(67);
     stop_compute();
+    DWAIT();
 
     while (compute_resetted()) {
-      scheduleS.write(68);
+      // scheduleS.write(68);
       DWAIT();
     }
 
@@ -98,9 +124,14 @@ void ACCNAME::load_inp_PEs() {
 #pragma HLS unroll
       vars[i].reset_compute.write(false);
     }
+    DWAIT();
 
-    scheduleS.write(69);
-    wait();
+    // scheduleS.write(69);
+    // wait();
+  }
+  while (load_fifo) {
+    // scheduleS.write(691);
+    DWAIT();
   }
 }
 
@@ -117,7 +148,7 @@ void ACCNAME::store(int start, int length) {
     vars[i].crx_data.write(crx_buf[i]);
     vars[i].ra_data.write(ra);
   }
-  scheduleS.write(711);
+  // scheduleS.write(711);
 
   for (int i = 0; i < PE_COUNT; i++) {
 #pragma HLS unroll
@@ -125,10 +156,10 @@ void ACCNAME::store(int start, int length) {
   }
 
   tempS.write(length);
-  scheduleS.write(72);
-  DWAIT();
+  // scheduleS.write(72);
+  DWAIT(5);
   while (store_done()) {
-    scheduleS.write(73);
+    // scheduleS.write(73);
     DWAIT();
   }
   scheduleS.write(74);
@@ -137,6 +168,7 @@ void ACCNAME::store(int start, int length) {
     vars[i].send.write(false);
   }
   scheduleS.write(75);
+  DWAIT();
 }
 
 void ACCNAME::Scheduler() {
@@ -163,6 +195,7 @@ void ACCNAME::Scheduler() {
       scheduleS.write(4);
       wait();
       opcode op = opcode(din1.read().data.to_uint());
+      DWAIT();
       ready = op.schedule;
       if (op.load_inp || op.load_col_map) {
         if (op.load_inp) load_inp.write(true);
@@ -173,6 +206,7 @@ void ACCNAME::Scheduler() {
         while (load_data.read()) wait();
         load_inp.write(false);
         load_col_map.write(false);
+        DWAIT(3);
       }
       if (op.load_col_map) {
         scheduleS.write(6);
@@ -182,6 +216,7 @@ void ACCNAME::Scheduler() {
         scheduleS.write(7);
         int send_start = din1.read().data;
         int send_len = din1.read().data;
+        DWAIT(2);
         store(send_start, send_len);
       }
     }

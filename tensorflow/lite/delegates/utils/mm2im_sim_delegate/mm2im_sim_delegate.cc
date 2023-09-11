@@ -52,7 +52,7 @@ public:
 
       std::cout << "===========================" << std::endl;
       std::cout << "Initialised the SystemC Modules" << std::endl;
-      std::cout << "Vector MAC Accelerator";
+      std::cout << "MM2IM Accelerator";
       std::cout << std::endl;
       std::cout << "===========================" << std::endl;
     }
@@ -128,6 +128,44 @@ public:
       GetInputSafe(context, inputs_[i][2], &input);
       GetInputSafe(context, inputs_[i][3], &bias);
 
+      int stride_x = params->stride_width;
+      int stride_y = params->stride_height;
+      int filters = weights->dims->data[0];
+      int kernel_size = weights->dims->data[1];
+      int in1 = input->dims->data[1];
+      int in2 = input->dims->data[2];
+      int in3 = weights->dims->data[3];
+      string padding = params->padding == kTfLitePaddingSame ? "same" : "valid";
+      int out1, out2, out3, rows, cols, depth;
+      int pt, pb, pl, pr;
+      cerr << "====================================" << endl;
+      calParams(stride_x, stride_y, filters, kernel_size, in1, in2, in3,
+                padding, rows, cols, depth, out1, out2, out3, pt, pb, pl, pr);
+      cerr << "====================================" << endl;
+      // Input Params
+      int ra = 26;
+      int rhs_offset = 0;
+      int lhs_offset = 0;
+      int output_height = out1;
+      int output_width = out2;
+      int output_depth = out3;
+      int filter_height = kernel_size;
+      int filter_width = kernel_size;
+      int padding_top = pt;
+      int padding_left = pl;
+      int padding_bottom = pb;
+      int padding_right = pr;
+      int stride_height = stride_x;
+      int stride_width = stride_y;
+      int rounded_depth = roundUp(in3, 16);
+
+      TfLiteIntArray* oshape = TfLiteIntArrayCreate(output->dims->size);
+      oshape->data[0] = 1;
+      oshape->data[1] = out1;
+      oshape->data[2] = out2;
+      oshape->data[3] = out3;
+
+
       if (SizeOfDimension(input, 3) != SizeOfDimension(weights, 3))
         return kTfLiteError;
 
@@ -148,14 +186,18 @@ public:
             GetTemporarySafe(context, node, user_data->col2im_index, &col2im));
       }
 
-      if (!IsConstantTensor(output_shape)) {
+      if (!IsConstantTensor(output_shape) && false) {
         // Defer resizing until Eval().
         SetTensorToDynamic(output);
         if (data->has_col2im) {
           SetTensorToDynamic(col2im);
         }
       } else {
-        TF_LITE_ENSURE_STATUS(ResizeTensor(context, output_shape, output));
+        // TF_LITE_ENSURE_STATUS(ResizeTensor(context, output_shape, output));
+        // TF_LITE_ENSURE_STATUS(ResizeTensor2(context, output, output));
+        TF_LITE_ENSURE_STATUS(ResizeTensor3(context, oshape, output));
+
+        
         if (data->has_col2im) {
           TF_LITE_ENSURE_STATUS(ResizeCol2ImTensor(context, output_shape,
                                                    weights, input, col2im));
@@ -167,8 +209,11 @@ public:
         TfLiteTensor *temp_out_tensor = &context->tensors[outputs_[i][0]];
         temp_out_tensor->type = kTfLiteInt8;
         temp_out_tensor->allocation_type = kTfLiteDynamic;
-        TF_LITE_ENSURE_STATUS(
-            ResizeTensor(context, output_shape, temp_out_tensor));
+        // TF_LITE_ENSURE_STATUS(
+        //     ResizeTensor(context, output_shape, temp_out_tensor));
+        // TF_LITE_ENSURE_STATUS(ResizeTensor2(context, output, temp_out_tensor));
+        TF_LITE_ENSURE_STATUS(ResizeTensor3(context, oshape, temp_out_tensor));
+
       }
 
       if (data->weights_are_transposed) {
@@ -195,11 +240,14 @@ public:
 
       scratch_buffer->type = kTfLiteInt32;
       scratch_buffer->allocation_type = kTfLiteDynamic;
-      if (!IsConstantTensor(output_shape)) {
+      if (!IsConstantTensor(output_shape) && false) {
         SetTensorToDynamic(scratch_buffer);
       } else {
-        TF_LITE_ENSURE_STATUS(
-            ResizeTensor(context, output_shape, scratch_buffer));
+        // TF_LITE_ENSURE_STATUS(
+        //     ResizeTensor(context, output_shape, scratch_buffer));
+        // TF_LITE_ENSURE_STATUS(ResizeTensor2(context, output, scratch_buffer));
+        TF_LITE_ENSURE_STATUS(ResizeTensor3(context, oshape, scratch_buffer));
+
       }
 
       TF_LITE_ENSURE_EQ(context, weights->quantization.type,
@@ -237,40 +285,6 @@ public:
                         GetTemporarySafe(context, node,
                                          user_data->transposed_weights_index,
                                          &transposed_weights));
-      int *dims = transposed_weights->dims->data;
-
-      int stride_x = params->stride_width;
-      int stride_y = params->stride_height;
-      int filters = transposed_weights->dims->data[2];
-      int kernel_size = transposed_weights->dims->data[0];
-      int in1 = input->dims->data[1];
-      int in2 = input->dims->data[2];
-      int in3 = transposed_weights->dims->data[3];
-      string padding = params->padding == kTfLitePaddingSame ? "same" : "valid";
-      int out1, out2, out3, rows, cols, depth;
-      int pt, pb, pl, pr;
-
-      cerr << "====================================" << endl;
-      calParams(stride_x, stride_y, filters, kernel_size, in1, in2, in3,
-                padding, rows, cols, depth, out1, out2, out3, pt, pb, pl, pr);
-      cerr << "====================================" << endl;
-
-      // Input Params
-      int ra = 26;
-      int rhs_offset = 0;
-      int lhs_offset = 0;
-      int output_height = out1;
-      int output_width = out2;
-      int output_depth = out3;
-      int filter_height = kernel_size;
-      int filter_width = kernel_size;
-      int padding_top = pt;
-      int padding_left = pl;
-      int padding_bottom = pb;
-      int padding_right = pr;
-      int stride_height = stride_x;
-      int stride_width = stride_y;
-      int rounded_depth = roundUp(in3, 16);
 
       acc_weights[i].resize(rounded_depth * rows);
       acc_inputs[i].resize(rounded_depth * cols);
@@ -339,20 +353,21 @@ public:
       GetOutputSafe(context, outputs_[i][0], &output);
 
       // Resize any deferred dynamic tensors
-      if (tflite::IsDynamicTensor(output)) {
-        TF_LITE_ENSURE_OK(context,
-                          ResizeTensor(context, output_shape_tensor, output));
-      }
-      if (data->has_col2im && tflite::IsDynamicTensor(col2im)) {
-        TF_LITE_ENSURE_OK(context,
-                          ResizeCol2ImTensor(context, output_shape_tensor,
-                                             weights, input, col2im));
-      }
+      // if (tflite::IsDynamicTensor(output)) {
+      //   TF_LITE_ENSURE_OK(context,
+      //                     ResizeTensor(context, output_shape_tensor,
+      //                     output));
+      // }
+      // if (data->has_col2im && tflite::IsDynamicTensor(col2im)) {
+      //   TF_LITE_ENSURE_OK(context,
+      //                     ResizeCol2ImTensor(context, output_shape_tensor,
+      //                                        weights, input, col2im));
+      // }
 
-      if (tflite::IsDynamicTensor(scratch_buffer)) {
-        TF_LITE_ENSURE_OK(context, ResizeTensor(context, output_shape_tensor,
-                                                scratch_buffer));
-      }
+      // if (tflite::IsDynamicTensor(scratch_buffer)) {
+      //   TF_LITE_ENSURE_OK(context, ResizeTensor(context, output_shape_tensor,
+      //                                           scratch_buffer));
+      // }
 
       // Get height and width of the output image.
       const int o_width = SizeOfDimension(output, 2);
@@ -466,38 +481,39 @@ public:
       const int scratch_rows = scratch_shape.Dims(0) * scratch_shape.Dims(3);
 
       // Accelerator config
-      struct mm2im_params par = mm2im_params[i];
-      int rounded_depth = roundUp(par.ic, 16);
-      int8_t *acc_input = new int8_t[rounded_depth * par.cols]();
-      int *acc_dst = new int[par.ic * par.ih * par.f * par.ks * par.ks]();
+      struct mm2im_params *par = &mm2im_params[i];
+      int rounded_depth = roundUp(par->ic, 16);
+      int8_t *acc_input = new int8_t[rounded_depth * par->cols]();
+      int *acc_dst = new int[par->ic * par->ih * par->f * par->ks * par->ks]();
 
-      preload_inputs(input_data, par.depth, par.cols, acc_input);
+      preload_inputs(input_data, par->depth, par->cols, acc_input);
       int32_t *acc_loaded_wgts =
           reinterpret_cast<int32_t *>(&acc_weights[i][0]);
       int32_t *acc_loaded_inps = reinterpret_cast<int32_t *>(acc_input);
 
       struct acc_container drv;
+      drv.acc = acc;
       drv.mdma = mdma;
-      // drv.profile = profile;
+      drv.profile = profile;
 
       drv.lhs_offset = 0;
-      drv.ih = par.ih;
-      drv.iw = par.iw;
-      drv.ic = par.ic;
-      drv.f = par.f;
-      drv.ks = par.ks;
-      drv.o1 = par.o1;
-      drv.o2 = par.o2;
-      drv.o3 = par.o3;
-      drv.sx = par.sx;
-      drv.sy = par.sy;
-      drv.pt = par.pt;
-      drv.pl = par.pl;
-      drv.pb = par.pb;
-      drv.pr = par.pr;
-      drv.rows = par.rows;
-      drv.cols = par.cols;
-      drv.depth = par.depth;
+      drv.ih = par->ih;
+      drv.iw = par->iw;
+      drv.ic = par->ic;
+      drv.f = par->f;
+      drv.ks = par->ks;
+      drv.o1 = par->o1;
+      drv.o2 = par->o2;
+      drv.o3 = par->o3;
+      drv.sx = par->sx;
+      drv.sy = par->sy;
+      drv.pt = par->pt;
+      drv.pl = par->pl;
+      drv.pb = par->pb;
+      drv.pr = par->pr;
+      drv.rows = par->rows;
+      drv.cols = par->cols;
+      drv.depth = par->depth;
       drv.loaded_weights = acc_loaded_wgts;
       drv.loaded_inputs = acc_loaded_inps;
       drv.weights = &swapped_weights[i][0];
@@ -508,15 +524,15 @@ public:
       else drv.bias = fake_bias;
       drv.crf = &crf[i][0];
       drv.crx = &crx_8[i][0];
-      drv.ra = par.ra;
+      drv.ra = par->ra;
 
-      drv.mm2im_map = par.mm2im_map;
-      drv.col_dexs = par.col_dexs;
-      drv.out_dexs = par.out_dexs;
-      drv.o1_lengths = &par.o1_lengths[0];
-      drv.o1_starts = &par.o1_starts[0];
-      drv.o1_ends = &par.o1_ends[0];
-      drv.o1_map = par.o1_map;
+      drv.mm2im_map = &par->mm2im_map;
+      drv.col_dexs = &par->col_dexs;
+      drv.out_dexs = &par->out_dexs;
+      drv.o1_lengths = &par->o1_lengths[0];
+      drv.o1_starts = &par->o1_starts[0];
+      drv.o1_ends = &par->o1_ends[0];
+      drv.o1_map = &par->o1_map;
 
       // drv.output_data = acc_dst; // output_data
       drv.output_data = output_data;
@@ -532,26 +548,27 @@ public:
                              input_data, dst_params, col2im_data, gemm_params,
                              cpu_backend_context);
 
-      saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
-                        "_del_wgt.csv",
-                    hwoi_ordered_filter_data, lhs_params.rows, lhs_params.cols);
+      // saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
+      //                   "_del_wgt.csv",
+      //               hwoi_ordered_filter_data, lhs_params.rows,
+      //               lhs_params.cols);
 
-      saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
-                        "_del_inp.csv",
-                    input_data, rhs_params.rows, rhs_params.cols);
+      // saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
+      //                   "_del_inp.csv",
+      //               input_data, rhs_params.rows, rhs_params.cols);
 
-      saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
-                        "_del_gemm_cpu.csv",
-                    col2im_data, dst_params.cols, dst_params.rows);
+      // saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
+      //                   "_del_gemm_cpu.csv",
+      //               col2im_data, dst_params.cols, dst_params.rows);
 
       optimized_ops::Col2im(
           col2im_data, output_depth, output_height, output_width, filter_height,
           filter_width, padding_top, padding_left, padding_bottom,
           padding_right, stride_height, stride_width, scratch_data_p);
 
-      saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
-                        "_del_col2im_cpu.csv",
-                    scratch_data_p, scratch_cols, scratch_rows);
+      // saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
+      //                   "_del_col2im_cpu.csv",
+      //               scratch_data_p, scratch_cols, scratch_rows);
 
       if (has_bias)
         optimized_ops::BiasAdd(scratch_data_p, bias_data, batch_size,
@@ -579,6 +596,10 @@ public:
                     output_data, scratch_cols, scratch_rows);
 
       dparams.layer++;
+      dparams.delegated_nodes--;
+    }
+    if (dparams.delegated_nodes == 0) {
+      profile->saveCSVRecords(".data/mm2im_sim");
     }
     return kTfLiteOk;
   }
@@ -635,7 +656,7 @@ public:
       auto &tensor2 = context->tensors[node->inputs->data[3]];
       if (tensor2.type != kTfLiteInt32) return false;
     }
-    
+
     auto &tensor0 = context->tensors[node->inputs->data[1]];
     int filter_dim = tensor0.dims->data[0];
     if (filter_dim < PE_COUNT) return false;
@@ -688,6 +709,15 @@ TfLiteMM2IMSimDelegateCreate(const MM2IMSimDelegateOptions *options) {
   return tflite::TfLiteDelegateFactory::CreateSimpleDelegate(
       std::move(mm2imsim), kTfLiteDelegateFlagsAllowDynamicTensors);
 }
+
+// TfLiteDelegate *
+// TfLiteMM2IMSimDelegateCreate(const MM2IMSimDelegateOptions *options) {
+//   std::unique_ptr<tflite::mm2imsim_test::MM2IMSimDelegate> mm2imsim(
+//       new tflite::mm2imsim_test::MM2IMSimDelegate(
+//           options ? *options : TfLiteMM2IMSimDelegateOptionsDefault()));
+//   return tflite::TfLiteDelegateFactory::CreateSimpleDelegate(
+//       std::move(mm2imsim));
+// }
 
 // Destroys a delegate created with `TfLiteMM2IMSimDelegateCreate` call.
 void TfLiteMM2IMSimDelegateDelete(TfLiteDelegate *delegate) {

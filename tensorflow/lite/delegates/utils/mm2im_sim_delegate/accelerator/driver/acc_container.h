@@ -47,14 +47,18 @@ struct acc_container {
   const int8_t *inputs;
 
   // mm2im map
-  vector<vector<int>> mm2im_map;
-  vector<vector<vector<int>>> o1_map;
+  vector<vector<int>> *mm2im_map;
+  vector<vector<vector<int>>> *o1_map;
+  // vector<vector<int>> mm2im_map;
+  // vector<vector<vector<int>>> o1_map;
   int *o1_lengths;
   int *o1_starts;
   int *o1_ends;
 
-  vector<vector<int>> col_dexs;
-  vector<vector<int>> out_dexs;
+  // vector<vector<int>> col_dexs;
+  // vector<vector<int>> out_dexs;
+  vector<vector<int>> *col_dexs;
+  vector<vector<int>> *out_dexs;
 
   // Output Pipeline Metadata
   int32_t *acc_wt_sum;
@@ -88,6 +92,37 @@ struct acc_container {
   struct gemm_details t;
   bool verb;
   acc_container() {}
+
+  void validate() {
+    int padded_depth = roundUp(depth, 16);
+    int padded_out_width = o2 + pl + pr;
+    int noOfStepsX = nofSteps(padded_out_width, sx, ks);
+    int max_input_rows_per_o1 = noOfStepsX * ceiling(ks, sy);
+
+    int PE_COUNT_val = o3;
+    int PE_WGTCOLBUF_SIZE_val = ks * ks * padded_depth / UF;
+    int PE_WGTCOLSUMBUF_SIZE_val = ks * ks;
+    int PE_INPROWBUF_SIZE_val = padded_depth / UF;
+    int PE_OUTBUF_SIZE_val = ks * ks * max_input_rows_per_o1;
+    int PE_POUTDEXBUF_SIZE_val = ks * ks;
+    int PE_ACC_BUF_SIZE_val = o1 * o2;
+    assert(PE_COUNT_val >= PE_COUNT);
+    assert(PE_WGTCOLBUF_SIZE_val <= PE_WGTCOLBUF_SIZE);
+    assert(PE_WGTCOLSUMBUF_SIZE_val <= PE_WGTCOLSUMBUF_SIZE);
+    assert(PE_INPROWBUF_SIZE_val <= PE_INPROWBUF_SIZE);
+    assert(PE_OUTBUF_SIZE_val <= PE_OUTBUF_SIZE);
+    assert(PE_POUTDEXBUF_SIZE_val <= PE_POUTDEXBUF_SIZE);
+    assert(PE_ACC_BUF_SIZE_val <= PE_ACC_BUF_SIZE);
+    // cerr << "=====================" << endl;
+    // cerr << "PE_COUNT_val: " << PE_COUNT_val << endl;
+    // cerr << "PE_WGTCOLBUF_SIZE_val: " << PE_WGTCOLBUF_SIZE_val << endl;
+    // cerr << "PE_WGTCOLSUMBUF_SIZE_val: " << PE_WGTCOLSUMBUF_SIZE_val << endl;
+    // cerr << "PE_INPROWBUF_SIZE_val: " << PE_INPROWBUF_SIZE_val << endl;
+    // cerr << "PE_OUTBUF_SIZE_val: " << PE_OUTBUF_SIZE_val << endl;
+    // cerr << "PE_POUTDEXBUF_SIZE_val: " << PE_POUTDEXBUF_SIZE_val << endl;
+    // cerr << "PE_ACC_BUF_SIZE_val: " << PE_ACC_BUF_SIZE_val << endl;
+    // cerr << "=====================" << endl;
+  }
 };
 
 void preload_weights(int8_t *wgt, int depth, int rows, int *wt_sum,

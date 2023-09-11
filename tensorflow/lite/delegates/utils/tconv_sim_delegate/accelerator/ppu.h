@@ -3,6 +3,8 @@
 #include <iostream>
 #include <string>
 
+int ppucall = 0;
+
 // int ACCNAME::Quantised_Multiplier(int x, int qm, sc_int<8> shift) {
 //   int32_t reduced_multiplier =
 //       (qm < 0x7FFF0000) ? ((qm + (1 << 15)) >> 16) : 0x7FFF;
@@ -51,8 +53,8 @@ int ACCNAME::Quantised_Multiplier(int x, int qm, sc_int<8> shift) {
   }
   // sc_int<64> val = x * pl;
   sc_int<64> val = x * (1 << pl);
-  if (val > MAX) val = MAX;  // ALU MIN
-  if (val < MIN) val = MIN;  // ALU MAX
+  if (val > MAX) val = MAX; // ALU MIN
+  if (val < MIN) val = MIN; // ALU MAX
   sc_int<64> val_2 = val * qm;
   sc_int<32> temp_1;
   temp_1 = (val_2 + POS) / DIVMAX;
@@ -68,14 +70,15 @@ int ACCNAME::Quantised_Multiplier(int x, int qm, sc_int<8> shift) {
   return result_32;
 }
 
-void ACCNAME::PPU(int* x, sc_int<32>* g1, sc_int<32>* r1) {
+void ACCNAME::PPU(int *x, sc_int<32> *g1, sc_int<32> *r1) {
+  ppucall++;
   for (int i = 0; i < 4; i++) {
 #pragma HLS unroll
     for (int j = 0; j < 4; j++) {
 #pragma HLS unroll
       int accum = g1[j * 4 + i] + x[j];
       r1[j * 4 + i] = accum;
-      cerr << (int)g1[j * 4 + i] << "+" << x[j] << "=" << accum << endl;
+      // cerr << (int)g1[j * 4 + i] << "+" << x[j] << "=" << accum << endl;
     }
   }
 
@@ -123,14 +126,13 @@ void ACCNAME::BiasAddQauntize() {
       for (int r = 0; r < out_r; r++) {
         int qm_ret = ra + Quantised_Multiplier(dst[out_c * r + c] + bias[c],
                                                crf1[c], crx[c].range(7, 0));
-        if (qm_ret > MAX8)
-          qm_ret = MAX8;
-        else if (qm_ret < MIN8)
-          qm_ret = MIN8;
+        if (qm_ret > MAX8) qm_ret = MAX8;
+        else if (qm_ret < MIN8) qm_ret = MIN8;
         dst[out_c * r + c] = qm_ret;
       }
     }
     bias_quantize.write(0);
+    cerr << "PPU call: " << ppucall << endl;
     wait();
   }
 }

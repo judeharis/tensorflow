@@ -1,5 +1,6 @@
 
-#include "axi_api_v2.h"
+#include "../sysc_integrator/sysc_types.h"
+#include "axi_api_v3.h"
 
 // TODO Implement SystemC Signal Read/Write
 // ================================================================================
@@ -31,14 +32,18 @@ unsigned int acc_regmap::readToControlReg(string reg_name) { return 0; }
 // ================================================================================
 // Stream DMA API
 // ================================================================================
-int stream_dma::s_id = 0;
 
-stream_dma::stream_dma(unsigned int _dma_addr, unsigned int _input,
-                       unsigned int _input_size, unsigned int _output,
-                       unsigned int _output_size)
-    : id(s_id++) {
-  string name("DMA" + to_string(id));
-  dmad = new AXIS_ENGINE(&name[0]);
+template <int B>
+int streams_dma<B>::s_id = 0;
+int sr_id = 0;
+
+template <int B>
+streams_dma<B>::streams_dma(unsigned int _dma_addr, unsigned int _input,
+                            unsigned int _input_size, unsigned int _output,
+                            unsigned int _output_size)
+    : id(sr_id++) {
+  string name("SDMA" + to_string(id));
+  dmad = new AXIS_ENGINE<B>(&name[0]);
   dmad->id = id;
   dmad->input_len = 0;
   dmad->input_offset = 0;
@@ -47,9 +52,10 @@ stream_dma::stream_dma(unsigned int _dma_addr, unsigned int _input,
   dma_init(_dma_addr, _input, _input_size, _output, _output_size);
 }
 
-stream_dma::stream_dma() : id(s_id++) {
-  string name("DMA" + to_string(id));
-  dmad = new AXIS_ENGINE(&name[0]);
+template <int B>
+streams_dma<B>::streams_dma() : id(sr_id++) {
+  string name("MSDMA" + to_string(id));
+  dmad = new AXIS_ENGINE<B>(&name[0]);
   dmad->input_len = 0;
   dmad->input_offset = 0;
   dmad->output_len = 0;
@@ -57,11 +63,12 @@ stream_dma::stream_dma() : id(s_id++) {
   dmad->id = id;
 };
 
-void stream_dma::dma_init(unsigned int _dma_addr, unsigned int _input,
-                          unsigned int _input_size, unsigned int _output,
-                          unsigned int _output_size) {
-  input = (int*)malloc(_input_size * sizeof(int));
-  output = (int*)malloc(_output_size * sizeof(int));
+template <int B>
+void streams_dma<B>::dma_init(unsigned int _dma_addr, unsigned int _input,
+                              unsigned int _input_size, unsigned int _output,
+                              unsigned int _output_size) {
+  input = (int *)malloc(_input_size * sizeof(int));
+  output = (int *)malloc(_output_size * sizeof(int));
 
   // Initialize with zeros
   for (int64_t i = 0; i < _input_size; i++) {
@@ -71,68 +78,93 @@ void stream_dma::dma_init(unsigned int _dma_addr, unsigned int _input,
   for (int64_t i = 0; i < _output_size; i++) {
     *(output + i) = 0;
   }
-
-  // AXIS_ENGINE _dmad("DMA");
-  // _dmad.DMA_input_buffer = (int*)input;
-  // _dmad.DMA_output_buffer = (int*)output;
-  // dmad = &_dmad;
-  // rdmad.DMA_input_buffer = (int*)input;
-  // rdmad.DMA_output_buffer = (int*)output;
-  // dmad = &rdmad;
   input_size = _input_size;
   output_size = _output_size;
-  dmad->DMA_input_buffer = (int*)input;
-  dmad->DMA_output_buffer = (int*)output;
+  dmad->DMA_input_buffer = (int *)input;
+  dmad->DMA_output_buffer = (int *)output;
 }
 
-void stream_dma::writeMappedReg(uint32_t offset, unsigned int val) {}
+template <int B>
+void streams_dma<B>::writeMappedReg(uint32_t offset, unsigned int val) {}
 
-unsigned int stream_dma::readMappedReg(uint32_t offset) { return 0; }
+template <int B>
+unsigned int streams_dma<B>::readMappedReg(uint32_t offset) {
+  return 0;
+}
 
-void stream_dma::dma_mm2s_sync() {}
+template <int B>
+void streams_dma<B>::dma_mm2s_sync() {}
 
-void stream_dma::dma_s2mm_sync() {}
+template <int B>
+void streams_dma<B>::dma_s2mm_sync() {}
 
-void stream_dma::dma_change_start(int offset) { dmad->input_offset = offset; }
+template <int B>
+void streams_dma<B>::dma_change_start(int offset) {
+  dmad->input_offset = offset;
+}
 
-void stream_dma::dma_change_end(int offset) { dmad->output_offset = offset; }
+template <int B>
+void streams_dma<B>::dma_change_end(int offset) {
+  dmad->output_offset = offset;
+}
 
-void stream_dma::initDMA(unsigned int src, unsigned int dst) {}
+template <int B>
+void streams_dma<B>::initDMA(unsigned int src, unsigned int dst) {}
 
-void stream_dma::dma_free() {
+template <int B>
+void streams_dma<B>::dma_free() {
   free(input);
   free(output);
 }
 
-int* stream_dma::dma_get_inbuffer() { return input; }
-
-int* stream_dma::dma_get_outbuffer() { return output; }
-
-void stream_dma::dma_start_send(int length) {
-  dmad->input_len = length;
-  dmad->send = true;
-  data_transfered+= length;
+template <int B>
+int *streams_dma<B>::dma_get_inbuffer() {
+  return input;
 }
 
-void stream_dma::dma_wait_send() { sc_start(); }
+template <int B>
+int *streams_dma<B>::dma_get_outbuffer() {
+  return output;
+}
 
-int stream_dma::dma_check_send() { return 0; }
+template <int B>
+void streams_dma<B>::dma_start_send(int length) {
+  dmad->input_len = length;
+  dmad->send = true;
+}
 
-void stream_dma::dma_start_recv(int length) {
+template <int B>
+void streams_dma<B>::dma_wait_send() {
+  sc_start();
+}
+
+template <int B>
+int streams_dma<B>::dma_check_send() {
+  return 0;
+}
+
+template <int B>
+void streams_dma<B>::dma_start_recv(int length) {
   dmad->output_len = length;
   dmad->recv = true;
 }
 
-void stream_dma::dma_wait_recv() { sc_start(); }
+template <int B>
+void streams_dma<B>::dma_wait_recv() {
+  sc_start();
+}
 
-int stream_dma::dma_check_recv() { return 0; }
+template <int B>
+int streams_dma<B>::dma_check_recv() {
+  return 0;
+}
 
 // =========================== Multi DMAs
-multi_dma::multi_dma(int _dma_count, unsigned int* _dma_addrs,
-                     unsigned int* _dma_addrs_in, unsigned int* _dma_addrs_out,
+multi_dma::multi_dma(int _dma_count, unsigned int *_dma_addrs,
+                     unsigned int *_dma_addrs_in, unsigned int *_dma_addrs_out,
                      unsigned int _buffer_size) {
   dma_count = _dma_count;
-  dmas = new stream_dma[dma_count];
+  dmas = new streams_dma<32>[dma_count];
   dma_addrs = _dma_addrs;
   dma_addrs_in = _dma_addrs_in;
   dma_addrs_out = _dma_addrs_out;
@@ -208,3 +240,8 @@ void multi_dma::multi_dma_wait_recv() {
 void multi_dma::multi_dma_wait_recv_4() {}
 
 int multi_dma::multi_dma_check_recv() { return 0; }
+
+template struct streams_dma<32>;
+template struct streams_dma<64>;
+template class AXIS_ENGINE<32>;
+template class AXIS_ENGINE<64>;

@@ -30,10 +30,6 @@
 #define dma_out3 0x1c800000
 #define DMA_BL 4194304
 
-// #define dma_in0 0x16000000
-// #define dma_in1 0x18000000
-// #define dma_in2 0x1a000000
-// #define dma_in3 0x1c000000
 namespace tflite_secda_vm {
 
 struct Load_LHS_Data_Task : Task {
@@ -291,7 +287,7 @@ void Load_Weight_Data(acc_container &drv, int free_buf, int8_t *results,
     in0[inl0++] = *(int *)(ex);
   }
   drv.w_c += data_length / 4;
-  in0[inl0++] = -1;
+  // in0[inl0++] = -1;
 
   int8_t *res_pointer = results + c + r * output_stride;
   drv.st_params[free_buf].dst = reinterpret_cast<int *>(res_pointer);
@@ -305,6 +301,15 @@ void Load_Weight_Data(acc_container &drv, int free_buf, int8_t *results,
   alloc_dbuf(drv.dfs[2], free_buf, drv.dsr.dID, inl2);
   alloc_dbuf(drv.dfs[3], free_buf, drv.dsr.dID, inl3);
   drv.dsr.dID++;
+}
+
+void Start_Schedule(acc_container &drv) {
+  drv.mdma->multi_dma_change_start_4(0);
+  int *in0 = drv.mdma->dmas[0].dma_get_inbuffer();
+  int inl0 = 0;
+  in0[inl0++] = -1;
+  drv.mdma->dmas[0].dma_start_send(inl0);
+  drv.mdma->multi_dma_wait_send();
 }
 
 void Store_Results(acc_container &drv) {
@@ -422,8 +427,9 @@ void Load_Weight_Compute_Store(acc_container &drv, int8_t *results,
     free_buf = check_for_free_dbuf(drv.dfs[0]);
     Load_Weight_Data(drv, free_buf, results, output_stride, c, rcols_step, r,
                      rrows_step, rdepth_step, rows_step, cols_step);
-    drv.Set_Results();
     drv.Start_Transfer();
+    drv.Set_Results();
+    Start_Schedule(drv);
     drv.lhs_start = false;
   } else {
     bool gemm_done = drv.Check_Done();
@@ -433,24 +439,35 @@ void Load_Weight_Compute_Store(acc_container &drv, int8_t *results,
                        rrows_step, rdepth_step, rows_step, cols_step);
       if (gemm_done) {
         Store_Results(drv);
-        drv.Set_Results();
         drv.Start_Transfer();
-      }
+        drv.Set_Results();
+        Start_Schedule(drv);
+        drv.Start_Transfer();
+      } else drv.Start_Transfer();
     } else {
+      drv.Start_Transfer();
       if (!gemm_done) drv.Recieve_Results();
       Store_Results(drv);
-      if (drv.dsr.dID == drv.dsr.sID) {
+      if (drv.dsr.sID > drv.dsr.rID) {
+        drv.Set_Results();
+        Start_Schedule(drv);
         free_buf = check_for_free_dbuf(drv.dfs[0]);
         Load_Weight_Data(drv, free_buf, results, output_stride, c, rcols_step,
                          r, rrows_step, rdepth_step, rows_step, cols_step);
-        drv.Set_Results();
-        drv.Start_Transfer();
       } else {
-        drv.Set_Results();
-        drv.Start_Transfer();
-        free_buf = check_for_free_dbuf(drv.dfs[0]);
-        Load_Weight_Data(drv, free_buf, results, output_stride, c, rcols_step,
-                         r, rrows_step, rdepth_step, rows_step, cols_step);
+        if (drv.dsr.dID > drv.dsr.sID) {
+          drv.Start_Transfer();
+          free_buf = check_for_free_dbuf(drv.dfs[0]);
+          Load_Weight_Data(drv, free_buf, results, output_stride, c, rcols_step,
+                           r, rrows_step, rdepth_step, rows_step, cols_step);
+        } else {
+          free_buf = check_for_free_dbuf(drv.dfs[0]);
+          Load_Weight_Data(drv, free_buf, results, output_stride, c, rcols_step,
+                           r, rrows_step, rdepth_step, rows_step, cols_step);
+          drv.Start_Transfer();
+          drv.Set_Results();
+          Start_Schedule(drv);
+        }
       }
     }
   }
@@ -461,11 +478,11 @@ void TileGEMM(acc_container &drv, int output_stride, int depth, int rdepth,
   prf_start(1);
   drv.t.layer_weight_tile = 0;
   drv.t.layer_input_tile = 0;
-  int acc_weight_buffer_size = 2048 * 16;
+  int acc_weight_buffer_size = 1024 * 16;
   int acc_input_buffer_size = 8192 * 16;
   int max_cols = acc_weight_buffer_size / rdepth;
   max_cols = max_cols - (max_cols % 4);
-  int col_inc = std::min(std::min(rcols, max_cols), 2048);
+  int col_inc = std::min(std::min(rcols, max_cols), 1024);
   int max_rows = acc_input_buffer_size / rdepth;
   max_rows = max_rows - (max_rows % 4);
   int row_inc = std::min(std::min(rrows, max_rows), 2048);
@@ -483,14 +500,15 @@ void TileGEMM(acc_container &drv, int output_stride, int depth, int rdepth,
                                 rrows_step, rdepth, rows_step, cols_step);
       drv.t.layer_weight_tile++;
     }
-
     while (drv.dsr.dID != drv.dsr.rID) {
+      drv.Start_Transfer();
       drv.Recieve_Results();
-      if (drv.dsr.dID != drv.dsr.sID) {
-        drv.Set_Results();
-        drv.Start_Transfer();
-      }
+      drv.Start_Transfer();
       Store_Results(drv);
+      if (drv.dsr.sID > drv.dsr.rID) {
+        drv.Set_Results();
+        Start_Schedule(drv);
+      }
     }
     drv.mdma->multi_dma_change_start_4(0);
     drv.t.layer_input_tile++;

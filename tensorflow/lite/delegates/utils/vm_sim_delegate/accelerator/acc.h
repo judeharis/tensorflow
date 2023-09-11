@@ -9,7 +9,7 @@
 
 #define STOPPER -1
 
-#define __SYNTHESIS__
+// #define __SYNTHESIS__
 
 #ifndef __SYNTHESIS__
 #include "tensorflow/lite/delegates/utils/secda_tflite/sysc_integrator/sysc_types.h"
@@ -27,7 +27,7 @@ typedef struct _SDATA {
 #define DWAIT(x)
 #endif
 
-#define IN_BUF_LEN 2048
+#define IN_BUF_LEN 1024
 #define WE_BUF_LEN 2048
 #define GWE_BUF_LEN 8192
 #define SUMS_BUF_LEN 512
@@ -66,6 +66,12 @@ SC_MODULE(ACCNAME) {
   sc_signal<int> rlen;
   sc_signal<int> lhs_block_max;
   sc_signal<int> rhs_block_max;
+
+  sc_signal<int> lhs_read_len;
+  sc_signal<int> lhs_sum_len;
+  sc_signal<bool> lhs_loaded;
+  sc_signal<bool> ping;
+  sc_signal<bool> use_ping;
 
 #ifndef __SYNTHESIS__
   sc_signal<bool, SC_MANY_WRITERS> d_in1;
@@ -179,6 +185,30 @@ SC_MODULE(ACCNAME) {
   ACC_DTYPE<32> lhsdata3d[IN_BUF_LEN];
   ACC_DTYPE<32> lhsdata4d[IN_BUF_LEN];
 
+  // Global 1 Inputs
+  ACC_DTYPE<32> glhsdata1a[IN_BUF_LEN];
+  ACC_DTYPE<32> glhsdata2a[IN_BUF_LEN];
+  ACC_DTYPE<32> glhsdata3a[IN_BUF_LEN];
+  ACC_DTYPE<32> glhsdata4a[IN_BUF_LEN];
+
+  // GEMM 2 Inputs
+  ACC_DTYPE<32> glhsdata1b[IN_BUF_LEN];
+  ACC_DTYPE<32> glhsdata2b[IN_BUF_LEN];
+  ACC_DTYPE<32> glhsdata3b[IN_BUF_LEN];
+  ACC_DTYPE<32> glhsdata4b[IN_BUF_LEN];
+
+  // GEMM 3 Inputs
+  ACC_DTYPE<32> glhsdata1c[IN_BUF_LEN];
+  ACC_DTYPE<32> glhsdata2c[IN_BUF_LEN];
+  ACC_DTYPE<32> glhsdata3c[IN_BUF_LEN];
+  ACC_DTYPE<32> glhsdata4c[IN_BUF_LEN];
+
+  // GEMM 4 Inputs
+  ACC_DTYPE<32> glhsdata1d[IN_BUF_LEN];
+  ACC_DTYPE<32> glhsdata2d[IN_BUF_LEN];
+  ACC_DTYPE<32> glhsdata3d[IN_BUF_LEN];
+  ACC_DTYPE<32> glhsdata4d[IN_BUF_LEN];
+
   // Global Weights
   ACC_DTYPE<32> rhsdata1[GWE_BUF_LEN];
   ACC_DTYPE<32> rhsdata2[GWE_BUF_LEN];
@@ -224,6 +254,16 @@ SC_MODULE(ACCNAME) {
   ACC_DTYPE<32> crf4[SUMS_BUF_LEN];
   ACC_DTYPE<32> crx[SUMS_BUF_LEN];
   int ra = 0;
+
+  ACC_DTYPE<32> blhs_sum1[SUMS_BUF_LEN];
+  ACC_DTYPE<32> blhs_sum2[SUMS_BUF_LEN];
+  ACC_DTYPE<32> blhs_sum3[SUMS_BUF_LEN];
+  ACC_DTYPE<32> blhs_sum4[SUMS_BUF_LEN];
+  ACC_DTYPE<32> bcrf1[SUMS_BUF_LEN];
+  ACC_DTYPE<32> bcrf2[SUMS_BUF_LEN];
+  ACC_DTYPE<32> bcrf3[SUMS_BUF_LEN];
+  ACC_DTYPE<32> bcrf4[SUMS_BUF_LEN];
+  ACC_DTYPE<32> bcrx[SUMS_BUF_LEN];
 
   sc_fifo<int> WRQ1;
   sc_fifo<int> WRQ2;
@@ -344,11 +384,45 @@ SC_MODULE(ACCNAME) {
 
   void load_weights(int, int);
 
+  void load_lhs();
+
   void schedule_gemm_unit(int, int, int, int);
 
   int SHR(int, int);
 
+  // hedl
+
+  void func_HalfAdder(sc_uint<1> a, sc_uint<1> b, sc_uint<1> * sum,
+                      sc_uint<1> * Cout);
+  void func_FullAdder(sc_uint<1> a, sc_uint<1> b, sc_uint<1> Cin,
+                      sc_uint<1> * sum, sc_uint<1> * Cout);
+  void func_ppu(sc_uint<1> Ci, sc_uint<1> Di, sc_uint<1> Cin, sc_uint<1> Sin,
+                sc_uint<1> * Co, sc_uint<1> * Do, sc_uint<1> * Cout,
+                sc_uint<1> * Sout);
+  void func_cdppu(sc_uint<1> ai, sc_uint<1> bi, sc_uint<1> Sin, sc_uint<1> * ao,
+                  sc_uint<1> * bo, sc_uint<1> * Sout);
+  void func_ppuh(sc_uint<1> ai, sc_uint<1> bi, sc_uint<1> Sin, sc_uint<1> * ao,
+                 sc_uint<1> * bo, sc_uint<1> * Cout, sc_uint<1> * Sout);
+  void func_ppuf(sc_uint<1> ai, sc_uint<1> bi, sc_uint<1> aj, sc_uint<1> bj,
+                 sc_uint<1> Sin, sc_uint<1> * ao, sc_uint<1> * bo,
+                 sc_uint<1> * ajo, sc_uint<1> * bjo, sc_uint<1> * Cout,
+                 sc_uint<1> * Sout);
+  void func_sppu(sc_uint<1> Ci, sc_uint<1> Di, sc_uint<1> Cin, sc_uint<1> Sin,
+                 sc_uint<1> * Co, sc_uint<1> * Do, sc_uint<1> * Cout,
+                 sc_uint<1> * Sout);
+  sc_uint<12> func_sgroupAX_4(sc_uint<8> c, sc_uint<4> d);
+  sc_uint<12> func_groupB(sc_uint<8> c, sc_uint<4> d);
+  sc_uint<12> func_cla(sc_uint<12> a, sc_uint<12> b);
+
+  // hedl end
+
+  // void VM_PE(ACC_DTYPE<32> *, ACC_DTYPE<32> *, ACC_DTYPE<32> *, ACC_DTYPE<32>
+  // *,
+  //            ACC_DTYPE<32> *, ACC_DTYPE<32> *, ACC_DTYPE<32> *, ACC_DTYPE<32>
+  //            *, ACC_DTYPE<32>[][4], int, int, int);
+
   void VM_PE(ACC_DTYPE<32> *, ACC_DTYPE<32> *, ACC_DTYPE<32> *, ACC_DTYPE<32> *,
+             ACC_DTYPE<32> *, ACC_DTYPE<32> *, ACC_DTYPE<32> *, ACC_DTYPE<32> *,
              ACC_DTYPE<32> *, ACC_DTYPE<32> *, ACC_DTYPE<32> *, ACC_DTYPE<32> *,
              ACC_DTYPE<32>[][4], int, int, int);
 

@@ -38,3 +38,31 @@ cc_library(
 
     ],
 )
+
+cc_library(
+    name = "secda_tflitev3",
+    copts = common_copts,
+    deps = [
+        "@systemc//:systemc",
+        "//tensorflow/lite/delegates/utils/secda_tflite/sysc_profiler:profiler",
+        "//tensorflow/lite/delegates/utils/secda_tflite/ap_sysc:ap_sysc",
+        "//tensorflow/lite/delegates/utils/secda_tflite/sysc_integrator:systemc_integrator",
+        "//tensorflow/lite/delegates/utils/secda_tflite/threading_utils:threading_utils",
+        "//tensorflow/lite/delegates/utils/secda_tflite/axi_support:axi_supportv3",
+
+    ],
+)
+
+cc_library(
+    name = "secda_tflite_simv3",
+    copts = common_copts,
+    deps = [
+        "@systemc//:systemc",
+        "//tensorflow/lite/delegates/utils/secda_tflite/sysc_profiler:profiler",
+        "//tensorflow/lite/delegates/utils/secda_tflite/ap_sysc:ap_sysc",
+        "//tensorflow/lite/delegates/utils/secda_tflite/sysc_integrator:systemc_integrator",
+        "//tensorflow/lite/delegates/utils/secda_tflite/threading_utils:threading_utils",
+        "//tensorflow/lite/delegates/utils/secda_tflite/axi_support:axi_support_syscv3",
+
+    ],
+)

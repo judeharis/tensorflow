@@ -44,7 +44,7 @@ public:
       dparams.init = true;
 
       std::cout << "===========================" << std::endl;
-      std::cout << "MM2IM Accelerator with driver v1" << std::endl;
+      std::cout << "MM2IM Accelerator with driver v1.5" << std::endl;
       std::cout << std::endl;
       std::cout << "===========================" << std::endl;
     }
@@ -120,6 +120,43 @@ public:
       GetInputSafe(context, inputs_[i][2], &input);
       GetInputSafe(context, inputs_[i][3], &bias);
 
+      int stride_x = params->stride_width;
+      int stride_y = params->stride_height;
+      int filters = weights->dims->data[0];
+      int kernel_size = weights->dims->data[1];
+      int in1 = input->dims->data[1];
+      int in2 = input->dims->data[2];
+      int in3 = weights->dims->data[3];
+      string padding = params->padding == kTfLitePaddingSame ? "same" : "valid";
+      int out1, out2, out3, rows, cols, depth;
+      int pt, pb, pl, pr;
+
+      calParams(stride_x, stride_y, filters, kernel_size, in1, in2, in3,
+                padding, rows, cols, depth, out1, out2, out3, pt, pb, pl, pr);
+
+      // Input Params
+      int ra = 26;
+      int rhs_offset = 0;
+      int lhs_offset = 0;
+      int output_height = out1;
+      int output_width = out2;
+      int output_depth = out3;
+      int filter_height = kernel_size;
+      int filter_width = kernel_size;
+      int padding_top = pt;
+      int padding_left = pl;
+      int padding_bottom = pb;
+      int padding_right = pr;
+      int stride_height = stride_x;
+      int stride_width = stride_y;
+      int rounded_depth = roundUp(in3, 16);
+
+      TfLiteIntArray *oshape = TfLiteIntArrayCreate(output->dims->size);
+      oshape->data[0] = 1;
+      oshape->data[1] = out1;
+      oshape->data[2] = out2;
+      oshape->data[3] = out3;
+
       if (SizeOfDimension(input, 3) != SizeOfDimension(weights, 3))
         return kTfLiteError;
 
@@ -140,14 +177,16 @@ public:
             GetTemporarySafe(context, node, user_data->col2im_index, &col2im));
       }
 
-      if (!IsConstantTensor(output_shape)) {
+      if (!IsConstantTensor(output_shape) && false) {
         // Defer resizing until Eval().
         SetTensorToDynamic(output);
         if (data->has_col2im) {
           SetTensorToDynamic(col2im);
         }
       } else {
-        TF_LITE_ENSURE_STATUS(ResizeTensor(context, output_shape, output));
+        // TF_LITE_ENSURE_STATUS(ResizeTensor(context, output_shape, output));
+        // TF_LITE_ENSURE_STATUS(ResizeTensor2(context, output, output));
+        TF_LITE_ENSURE_STATUS(ResizeTensor3(context, oshape, output));
         if (data->has_col2im) {
           TF_LITE_ENSURE_STATUS(ResizeCol2ImTensor(context, output_shape,
                                                    weights, input, col2im));
@@ -159,8 +198,11 @@ public:
         TfLiteTensor *temp_out_tensor = &context->tensors[outputs_[i][0]];
         temp_out_tensor->type = kTfLiteInt8;
         temp_out_tensor->allocation_type = kTfLiteDynamic;
-        TF_LITE_ENSURE_STATUS(
-            ResizeTensor(context, output_shape, temp_out_tensor));
+        // TF_LITE_ENSURE_STATUS(
+        //     ResizeTensor(context, output_shape, temp_out_tensor));
+        TF_LITE_ENSURE_STATUS(ResizeTensor2(context, output,
+        temp_out_tensor));
+        // TF_LITE_ENSURE_STATUS(ResizeTensor3(context, oshape, temp_out_tensor));
       }
 
       if (data->weights_are_transposed) {
@@ -187,11 +229,14 @@ public:
 
       scratch_buffer->type = kTfLiteInt32;
       scratch_buffer->allocation_type = kTfLiteDynamic;
-      if (!IsConstantTensor(output_shape)) {
+      if (!IsConstantTensor(output_shape) && false) {
         SetTensorToDynamic(scratch_buffer);
       } else {
-        TF_LITE_ENSURE_STATUS(
-            ResizeTensor(context, output_shape, scratch_buffer));
+        // TF_LITE_ENSURE_STATUS(
+        //     ResizeTensor(context, output_shape, scratch_buffer));
+        TF_LITE_ENSURE_STATUS(ResizeTensor2(context, output,
+        scratch_buffer));
+        // TF_LITE_ENSURE_STATUS(ResizeTensor3(context, oshape, scratch_buffer));
       }
 
       TF_LITE_ENSURE_EQ(context, weights->quantization.type,
@@ -229,38 +274,6 @@ public:
                         GetTemporarySafe(context, node,
                                          user_data->transposed_weights_index,
                                          &transposed_weights));
-      int *dims = transposed_weights->dims->data;
-
-      int stride_x = params->stride_width;
-      int stride_y = params->stride_height;
-      int filters = transposed_weights->dims->data[2];
-      int kernel_size = transposed_weights->dims->data[0];
-      int in1 = input->dims->data[1];
-      int in2 = input->dims->data[2];
-      int in3 = transposed_weights->dims->data[3];
-      string padding = params->padding == kTfLitePaddingSame ? "same" : "valid";
-      int out1, out2, out3, rows, cols, depth;
-      int pt, pb, pl, pr;
-
-      calParams(stride_x, stride_y, filters, kernel_size, in1, in2, in3,
-                padding, rows, cols, depth, out1, out2, out3, pt, pb, pl, pr);
-
-      // Input Params
-      int ra = 26;
-      int rhs_offset = 0;
-      int lhs_offset = 0;
-      int output_height = out1;
-      int output_width = out2;
-      int output_depth = out3;
-      int filter_height = kernel_size;
-      int filter_width = kernel_size;
-      int padding_top = pt;
-      int padding_left = pl;
-      int padding_bottom = pb;
-      int padding_right = pr;
-      int stride_height = stride_x;
-      int stride_width = stride_y;
-      int rounded_depth = roundUp(in3, 16);
 
       acc_weights[i].resize(rounded_depth * rows);
       acc_inputs[i].resize(rounded_depth * cols);
@@ -300,6 +313,7 @@ public:
     prf_start(0);
     int node_count = inputs_.size();
     for (int i = 0; i < node_count; i++) {
+
       auto *params = tparams[i];
       OpData *data = opdatas[i];
       const TfLiteTensor *input;
@@ -330,20 +344,21 @@ public:
       GetOutputSafe(context, outputs_[i][0], &output);
 
       // Resize any deferred dynamic tensors
-      if (tflite::IsDynamicTensor(output)) {
-        TF_LITE_ENSURE_OK(context,
-                          ResizeTensor(context, output_shape_tensor, output));
-      }
-      if (data->has_col2im && tflite::IsDynamicTensor(col2im)) {
-        TF_LITE_ENSURE_OK(context,
-                          ResizeCol2ImTensor(context, output_shape_tensor,
-                                             weights, input, col2im));
-      }
+      // if (tflite::IsDynamicTensor(output)) {
+      //   TF_LITE_ENSURE_OK(context,
+      //                     ResizeTensor(context, output_shape_tensor,
+      //                     output));
+      // }
+      // if (data->has_col2im && tflite::IsDynamicTensor(col2im)) {
+      //   TF_LITE_ENSURE_OK(context,
+      //                     ResizeCol2ImTensor(context, output_shape_tensor,
+      //                                        weights, input, col2im));
+      // }
 
-      if (tflite::IsDynamicTensor(scratch_buffer)) {
-        TF_LITE_ENSURE_OK(context, ResizeTensor(context, output_shape_tensor,
-                                                scratch_buffer));
-      }
+      // if (tflite::IsDynamicTensor(scratch_buffer)) {
+      //   TF_LITE_ENSURE_OK(context, ResizeTensor(context, output_shape_tensor,
+      //                                           scratch_buffer));
+      // }
 
       // Get height and width of the output image.
       const int o_width = SizeOfDimension(output, 2);
@@ -458,14 +473,10 @@ public:
 
       // Accelerator config
       prf_start(1);
-      struct mm2im_params par = mm2im_params[i];
-      int rounded_depth = roundUp(par.ic, 16);
-      // int8_t *acc_input = new int8_t[rounded_depth * par.cols]();
-      int8_t acc_input[rounded_depth * par.cols] = {};
-
-      // int *acc_dst = new int[par.ic * par.ih * par.f * par.ks * par.ks]();
-
-      preload_inputs(input_data, par.depth, par.cols, acc_input);
+      struct mm2im_params *par = &mm2im_params[i];
+      int rounded_depth = roundUp(par->ic, 16);
+      int8_t *acc_input = &acc_inputs[i][0];
+      preload_inputs(input_data, par->depth, par->cols, acc_input);
 
       int32_t *acc_loaded_wgts =
           reinterpret_cast<int32_t *>(&acc_weights[i][0]);
@@ -476,23 +487,23 @@ public:
       // drv.profile = profile;
 
       drv.lhs_offset = 0;
-      drv.ih = par.ih;
-      drv.iw = par.iw;
-      drv.ic = par.ic;
-      drv.f = par.f;
-      drv.ks = par.ks;
-      drv.o1 = par.o1;
-      drv.o2 = par.o2;
-      drv.o3 = par.o3;
-      drv.sx = par.sx;
-      drv.sy = par.sy;
-      drv.pt = par.pt;
-      drv.pl = par.pl;
-      drv.pb = par.pb;
-      drv.pr = par.pr;
-      drv.rows = par.rows;
-      drv.cols = par.cols;
-      drv.depth = par.depth;
+      drv.ih = par->ih;
+      drv.iw = par->iw;
+      drv.ic = par->ic;
+      drv.f = par->f;
+      drv.ks = par->ks;
+      drv.o1 = par->o1;
+      drv.o2 = par->o2;
+      drv.o3 = par->o3;
+      drv.sx = par->sx;
+      drv.sy = par->sy;
+      drv.pt = par->pt;
+      drv.pl = par->pl;
+      drv.pb = par->pb;
+      drv.pr = par->pr;
+      drv.rows = par->rows;
+      drv.cols = par->cols;
+      drv.depth = par->depth;
       drv.loaded_weights = acc_loaded_wgts;
       drv.loaded_inputs = acc_loaded_inps;
       drv.weights = &swapped_weights[i][0];
@@ -503,15 +514,15 @@ public:
       else drv.bias = fake_bias;
       drv.crf = &crf[i][0];
       drv.crx = &crx_8[i][0];
-      drv.ra = par.ra;
+      drv.ra = par->ra;
 
-      drv.mm2im_map = par.mm2im_map;
-      drv.col_dexs = par.col_dexs;
-      drv.out_dexs = par.out_dexs;
-      drv.o1_lengths = &par.o1_lengths[0];
-      drv.o1_starts = &par.o1_starts[0];
-      drv.o1_ends = &par.o1_ends[0];
-      drv.o1_map = par.o1_map;
+      drv.mm2im_map = &par->mm2im_map;
+      drv.col_dexs = &par->col_dexs;
+      drv.out_dexs = &par->out_dexs;
+      drv.o1_lengths = &par->o1_lengths[0];
+      drv.o1_starts = &par->o1_starts[0];
+      drv.o1_ends = &par->o1_ends[0];
+      drv.o1_map = &par->o1_map;
 
       // drv.output_data = acc_dst; // output_data
       drv.output_data = output_data;
@@ -521,6 +532,7 @@ public:
       drv.lhs_offset = 0;
       drv.t.layer = dparams.layer;
       drv.verb = true;
+      prf_end(1, p_t.del_inp);
 
       // DirectMM2IM(hwoi_ordered_filter_data, input_data, output_data);
 
@@ -566,7 +578,7 @@ public:
       // saveMatrixCSV("aData/mm2im/" + std::to_string(associated_nodes[i]) +
       //                   "_del_out_cpu.csv",
       //               output_data, scratch_cols, scratch_rows);
-      prf_end(1, p_t.del_inp);
+
       drv.p_t = p_t;
       mm2im_driver::Entry(drv);
       p_t = drv.p_t;
@@ -584,7 +596,7 @@ public:
     }
 
     prf_end(0, p_t.tconv_total);
-    if (dparams.delegated_nodes == 0) p_t.print();
+    // if (dparams.delegated_nodes == 0) p_t.print();
     return kTfLiteOk;
   }
 
@@ -696,5 +708,14 @@ TfLiteMM2IMFPGADelegateCreate(const MM2IMFPGADelegateOptions *options) {
 
 // Destroys a delegate created with `TfLiteMM2IMFPGADelegateCreate` call.
 void TfLiteMM2IMFPGADelegateDelete(TfLiteDelegate *delegate) {
+  if (!dparams.unmap) {
+    mdma.multi_free_dmas();
+    std::cout << "===========================" << std::endl;
+    std::cout << "Unmapped DMA I/O Buffers" << std::endl;
+    std::cout << "===========================" << std::endl;
+    p_t.print();
+
+    dparams.unmap = true;
+  }
   tflite::TfLiteDelegateFactory::DeleteSimpleDelegate(delegate);
 }

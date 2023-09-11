@@ -4,15 +4,16 @@
 
 #include "acc_config.h"
 
+#define varsn(x) vars.vars_##x
+
 SC_MODULE(PE) {
   sc_in<bool> clock;
   sc_in<bool> reset;
 
   sc_fifo_in<int> col_dexs_fifo_in;
   sc_fifo_in<int> dex_fifo_in;
-  sc_fifo_in<char> wgt_fifo_in;
-  sc_fifo_in<char> inp_fifo_in;
-  // sc_fifo_out<int> out_fifo_out;
+  sc_fifo_in<bUF> wgt_fifo_in;
+  sc_fifo_in<bUF> inp_fifo_in;
   sc_fifo_out<DATA> out_fifo_out;
   sc_fifo_in<int> temp_fifo_in;
   sc_fifo_out<int> temp_fifo_out;
@@ -38,8 +39,12 @@ SC_MODULE(PE) {
   sc_out<bool> out_done;
   sc_out<bool> send_done;
 
-  sc_out<int> computeS;
-  sc_out<int> sendS;
+  // sc_out<int> computeS;
+  // sc_out<int> sendS;
+
+  sc_out_sig computeS;
+  sc_out_sig sendS;
+
   int compute_count = 0;
   int outcount = 0;
 
@@ -82,6 +87,9 @@ SC_MODULE(PE) {
 
     // wgt_cols_buf needs to support ks * ks * depth / UF
     acc_dt wgt_cols_buf[PE_WGTCOLBUF_SIZE][UF];
+// #pragma HLS ARRAY_PARTITION variable = wgt_cols_buf complete dim = 2
+// #pragma HLS ARRAY_PARTITION variable = wgt_cols_buf cyclic factor = 2 dim = 2
+#pragma HLS ARRAY_PARTITION variable = wgt_cols_buf cyclic factor = 8 dim = 2
 
     // wgt_col_sum needs to support ks * ks
     int wgt_col_sum[PE_WGTCOLSUMBUF_SIZE];
@@ -90,6 +98,7 @@ SC_MODULE(PE) {
     // x rows of weights (x * depth) (x = ks * ks)
     // inp_row_buf needs to support depth / UF
     acc_dt inp_row_buf[PE_INPROWBUF_SIZE][UF];
+#pragma HLS ARRAY_PARTITION variable = inp_row_buf complete dim = 2
 
     // Outbuf needs to support ir * ks * ks gemm outputs where ir is the number
     // of input rows
@@ -101,11 +110,11 @@ SC_MODULE(PE) {
     // pout_dex is the indexes of the output needed to be computed using current
     // input row
     int pout_dex[PE_POUTDEXBUF_SIZE];
+    int aocol_s[PE_POUTDEXBUF_SIZE];
 
     // temy inp and wgt buffers, supports UF unrolling
     acc_dt inp_temp[UF];
     // acc_dt wgt_ud[UF];
-
 #pragma HLS ARRAY_PARTITION variable = inp_temp complete
     // #pragma HLS ARRAY_PARTITION variable = wgt_ud complete
 
@@ -118,17 +127,24 @@ SC_MODULE(PE) {
       computeS.write(1);
       wgt_loaded.write(false);
       DWAIT();
-      while (!online.read()) wait();
+      while (!online.read()) {
+        wait();
+      }
 
       // load weights
       int i = 0;
       computeS.write(2);
       for (int c = 0; c < cols_per_filter; c++) {
         wgt_col_sum[c] = col_dexs_fifo_in.read();
+        DWAIT(2);
         for (int d = 0; d < depth; d++) {
-          for (int u = 0; u < UF; u++) {
-            wgt_cols_buf[i][u] = wgt_fifo_in.read();
-          }
+          // for (int u = 0; u < UF; u++) {
+          //   wgt_cols_buf[i][u] = wgt_fifo_in.read();
+          //   DWAIT(2);
+          // }
+          bUF data = wgt_fifo_in.read();
+          data.retreive(wgt_cols_buf, i);
+          DWAIT();
           i++;
         }
       }
@@ -149,49 +165,70 @@ SC_MODULE(PE) {
         }
         if (!online) break;
 
+        computeS.write(6);
         // loads inputs
         for (int d = 0; d < depth; d++) {
-          for (int u = 0; u < UF; u++) {
-            inp_row_buf[d][u] = inp_fifo_in.read();
-          }
+#pragma HLS PIPELINE II = 1
+          bUF data = inp_fifo_in.read();
+          data.retreive(inp_row_buf, d);
+          DWAIT();
         }
+        DWAIT(3);
 
-        computeS.write(6);
+        // computeS.write(61);
+        DWAIT();
         pouts_needed = col_size.read();
         int pouts_count = pouts_needed;
-        for (int i = 0; i < pouts_needed; i++)
+        DWAIT();
+        for (int i = 0; i < pouts_needed; i++) {
+#pragma HLS PIPELINE II = 1
           pout_dex[i] = col_dexs_fifo_in.read();
+          aocol_s[i] = pout_dex[i] * depth;
+          // DWAIT(7);
+          DWAIT();
+        }
+        DWAIT(8);
 
-        computeS.write(7);
+        // computeS.write(7);
         for (int d = 0; d < depth; d++) {
           // load input
           for (int u = 0; u < UF; u++) {
+#pragma HLS UNROLL
             inp_temp[u] = inp_row_buf[d][u];
           }
+          DWAIT(2);
           for (int i = 0; i < pouts_needed; i++) {
+#pragma HLS loop_tripcount min = 20 max = 20 avg = 20
+#pragma HLS PIPELINE II = 1
             int ocol = pout_dex[i];
-            int ocol_s = ocol * depth;
+            int ocol_s = aocol_s[i];
             int sum = 0;
             for (int u = 0; u < UF; u++) {
+#pragma HLS UNROLL
               acc_dt wt1 = wgt_cols_buf[ocol_s + d][u];
               sum += wt1 * inp_temp[u];
             }
             out_buf[i] += sum;
-            // save to temp output
+            DWAIT();
           }
+          DWAIT(9);
         }
-
-        computeS.write(8);
+        // computeS.write(71);
+        DWAIT();
         for (int i = 0; i < pouts_needed; i++) {
+#pragma HLS PIPELINE II = 1
           int ocol = pout_dex[i];
           int output = out_buf[i] + wgt_col_sum[ocol];
           temp_fifo_out.write(output);
+          DWAIT(6);
         }
         wait();
         for (int i = 0; i < pouts_needed; i++) {
           out_buf[i] = 0;
+          DWAIT();
         }
 
+        computeS.write(8);
         compute_done.write(true);
         while (!reset_compute) {
           computeS.write(11);
@@ -224,12 +261,12 @@ SC_MODULE(PE) {
     wait();
     while (1) {
       while (!out.read() && !send.read()) {
-        // sendS.write(1);
+        sendS.write(1);
         DWAIT();
       }
-      // sendS.write(2);
+      sendS.write(2);
       if (send) {
-        // sendS.write(3);
+        sendS.write(3);
         start_addr = start_addr_p.read();
         send_len = send_len_p.read();
         bias = bias_data.read();
@@ -237,8 +274,11 @@ SC_MODULE(PE) {
         crx = crx_data.read();
         ra = ra_data.read();
         // sendS.write(31);
-        sendS.write(send_len);
+        // sendS.write(send_len);
+
+        DWAIT(23);
         for (int i = 0; i < send_len; i++) {
+#pragma HLS PIPELINE II = 1
           int dex = (start_addr + i) % PE_ACC_BUF_SIZE;
           int qm_ret = ra + Quantised_Multiplier(acc_store[dex] + bias, crf,
                                                  crx.range(7, 0));
@@ -250,30 +290,36 @@ SC_MODULE(PE) {
           if (i + 1 == send_len) {
             out_fifo_out.write(last);
           }
-          sendS.write(32);
+          // sendS.write(32);
+          DWAIT(2);
         }
+        DWAIT();
+
         for (int i = 0; i < send_len; i++) {
           int dex = (start_addr + i) % PE_ACC_BUF_SIZE;
           acc_store[dex] = 0;
+          DWAIT(4);
         }
         // sendS.write(33);
         send_done.write(true);
       }
 
       if (out) {
-        // sendS.write(4);
+        sendS.write(4);
         pouts_count = col_size.read();
         for (int i = 0; i < pouts_count; i++) {
           int dex = dex_fifo_in.read() % PE_ACC_BUF_SIZE;
           int out = temp_fifo_in.read();
           acc_store[dex] += out;
+          DWAIT(6);
         }
         out_done.write(true);
       }
 
+      sendS.write(5);
       wait();
       while (out || send) {
-        // sendS.write(5);
+        sendS.write(6);
         DWAIT();
       }
       out_done.write(false);
@@ -292,7 +338,6 @@ SC_MODULE(PE) {
     this->out_fifo_out(vars.out_fifo);
     this->temp_fifo_in(vars.temp_fifo);
     this->temp_fifo_out(vars.temp_fifo);
-
     this->online(vars.online);
     this->compute(vars.compute);
     this->reset_compute(vars.reset_compute);
@@ -303,7 +348,6 @@ SC_MODULE(PE) {
     this->crf_data(vars.crf_data);
     this->crx_data(vars.crx_data);
     this->ra_data(vars.ra_data);
-
     this->send(vars.send);
     this->out(vars.out);
     this->cols_per_filter(vars.cols_per_filter);
@@ -312,7 +356,6 @@ SC_MODULE(PE) {
     this->wgt_loaded(vars.wgt_loaded);
     this->out_done(vars.out_done);
     this->send_done(vars.send_done);
-
     this->computeS(vars.computeS);
     this->sendS(vars.sendS);
   }
@@ -327,37 +370,6 @@ SC_MODULE(PE) {
     reset_signal_is(reset, true);
   }
 };
-
-// struct var_array {
-//   PE_vars vars_0;
-//   PE_vars vars_1;
-//   PE_vars vars_2;
-//   PE X1;
-//   PE X2;
-//   PE X3;
-
-// #ifndef __SYNTHESIS__
-//   var_array()
-//       : vars_0(16, 0), vars_1(16, 1), vars_2(16, 2), X1("X1"), X2("X2"),
-//         X3("X3") {}
-// #else
-//   var_array()
-//       : vars_0(16), vars_1(16), vars_2(16), X1("X1"), X2("X2"), X3("X3") {}
-// #endif
-//   PE_vars &operator[](int index) {
-//     if (index == 0) return vars_0;
-//     else if (index == 1) return vars_1;
-//     else if (index == 2) return vars_2;
-
-//     return vars_0;
-//   }
-
-//   void init(sc_in<bool> &clock, sc_in<bool> &reset) {
-//     X1.init(clock, reset, vars_0);
-//     X2.init(clock, reset, vars_1);
-//     X3.init(clock, reset, vars_2);
-//   }
-// };
 
 // create var_array with 8 PEs
 struct var_array {
@@ -399,8 +411,31 @@ struct var_array {
     else if (index == 5) return vars_5;
     else if (index == 6) return vars_6;
     else if (index == 7) return vars_7;
+    else return vars_0;
+  }
 
-    return vars_0;
+  void inp_write(bUF data, int index) {
+    if (index == 0) return vars_0.inp_fifo.write(data);
+    else if (index == 1) return vars_1.inp_fifo.write(data);
+    else if (index == 2) return vars_2.inp_fifo.write(data);
+    else if (index == 3) return vars_3.inp_fifo.write(data);
+    else if (index == 4) return vars_4.inp_fifo.write(data);
+    else if (index == 5) return vars_5.inp_fifo.write(data);
+    else if (index == 6) return vars_6.inp_fifo.write(data);
+    else if (index == 7) return vars_7.inp_fifo.write(data);
+    else return vars_0.inp_fifo.write(data);
+  }
+
+  void wgt_write(bUF data, int index) {
+    if (index == 0) return vars_0.wgt_fifo.write(data);
+    else if (index == 1) return vars_1.wgt_fifo.write(data);
+    else if (index == 2) return vars_2.wgt_fifo.write(data);
+    else if (index == 3) return vars_3.wgt_fifo.write(data);
+    else if (index == 4) return vars_4.wgt_fifo.write(data);
+    else if (index == 5) return vars_5.wgt_fifo.write(data);
+    else if (index == 6) return vars_6.wgt_fifo.write(data);
+    else if (index == 7) return vars_7.wgt_fifo.write(data);
+    else return vars_0.wgt_fifo.write(data);
   }
 
   DATA get(int index) {
@@ -428,33 +463,3 @@ struct var_array {
 };
 
 #endif // PE_MODULE_H
-
-// while (out_data_stored)
-//   wait();
-// computeS.write(9);
-// for (int i = 0; i < pouts_needed; i++) {
-//   int ocol = pout_dex[i];
-//   out_buf[i] += wgt_col_sum[ocol];
-// }
-// compute_data_stored.write(true);
-// computeS.write(10);
-// while (!out_data_stored)
-//   wait();
-// compute_data_stored.write(false);
-
-// while (!compute_data_stored)
-//   wait();
-// sendS.write(42);
-// wait();
-// for (int i = 0; i < pouts_count; i++) {
-//   int dex = dex_fifo_in.read() % PE_OUT_BUF_LEN;
-//   acc_store[dex] += out_buf[i];
-//   out_buf[i] = 0;
-// }
-// wait();
-// sendS.write(43);
-// out_data_stored.write(true);
-// while (compute_data_stored)
-//   wait();
-// sendS.write(44);
-// out_data_stored.write(false);

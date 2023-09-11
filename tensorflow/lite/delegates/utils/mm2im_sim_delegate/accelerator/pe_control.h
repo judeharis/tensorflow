@@ -9,6 +9,19 @@ void ACCNAME::start_compute(int col_indice_len) {
   }
 }
 
+
+
+bool ACCNAME::compute_done() {
+#pragma HLS inline OFF
+  bool loop = false;
+  for (int i = 0; i < PE_COUNT; i++) {
+#pragma HLS unroll
+    loop = loop || !vars[i].compute_done || !vars[i].out_done;
+  }
+  DWAIT(2);
+  return loop;
+}
+
 void ACCNAME::stop_compute() {
   for (int i = 0; i < PE_COUNT; i++) {
 #pragma HLS unroll
@@ -18,9 +31,19 @@ void ACCNAME::stop_compute() {
   }
 }
 
+bool ACCNAME::compute_resetted() {
+#pragma HLS inline OFF
+  bool loop = false;
+  for (int i = 0; i < PE_COUNT; i++) {
+#pragma HLS unroll
+    loop = loop || vars[i].compute_done || vars[i].out_done;
+  }
+  DWAIT(2);
+  return loop;
+}
+
 void ACCNAME::init_PE_signals() {
 #pragma HLS inline OFF
-
   for (int i = 0; i < PE_COUNT; i++) {
 #pragma HLS unroll
     vars[i].online.write(false);
@@ -38,6 +61,7 @@ void ACCNAME::init_PE_signals() {
     vars[i].cols_per_filter.write(cols_per_filter);
     vars[i].depth.write(depth);
   }
+  DWAIT();
 }
 
 bool ACCNAME::wgt_loaded() {
@@ -48,30 +72,10 @@ bool ACCNAME::wgt_loaded() {
     loop = loop && vars[i].wgt_loaded;
   }
   return loop;
+  DWAIT(2);
 }
 
-bool ACCNAME::compute_done() {
-#pragma HLS inline OFF
-  bool loop = false;
-  for (int i = 0; i < PE_COUNT; i++) {
-#pragma HLS unroll
-    if (!vars[i].compute_done || !vars[i].out_done) {
-      loop = true;
-      break;
-    }
-  }
-  return loop;
-}
 
-bool ACCNAME::compute_resetted() {
-#pragma HLS inline OFF
-  bool loop = false;
-  for (int i = 0; i < PE_COUNT; i++) {
-#pragma HLS unroll
-    loop = loop || vars[i].compute_done || vars[i].out_done;
-  }
-  return loop;
-}
 
 bool ACCNAME::store_done() {
 #pragma HLS inline OFF
@@ -80,6 +84,7 @@ bool ACCNAME::store_done() {
 #pragma HLS unroll
     if (!vars[i].send_done) loop = true;
   }
+  DWAIT();
   return loop;
 }
 
@@ -91,6 +96,7 @@ void ACCNAME::activate_PEs() {
     vars[i].depth.write(depth);
     vars[i].online.write(true);
   }
+  DWAIT();
 }
 
 void ACCNAME::deactivate_PEs() {
@@ -99,6 +105,7 @@ void ACCNAME::deactivate_PEs() {
 #pragma HLS unroll
     vars[i].online.write(false);
   }
+  DWAIT();
 }
 
 bool ACCNAME::out_fifo_filled() {

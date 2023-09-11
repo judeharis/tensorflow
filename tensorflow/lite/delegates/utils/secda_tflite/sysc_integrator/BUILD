@@ -19,6 +19,7 @@ cc_library(
         "systemc_integrate.h",
         "axi4mm_engine.sc.h",
         "axi4s_engine.sc.h",
+        "axi4s_engine_generic.sc.h",
         "sysc_types.h",
         ],
     copts = common_copts,

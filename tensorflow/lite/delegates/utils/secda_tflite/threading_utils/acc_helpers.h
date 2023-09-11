@@ -12,6 +12,7 @@
 
 #include "multi_threading.h"
 
+using namespace std;
 struct times {
   std::chrono::duration<long long int, std::ratio<1, 1000000000>> t;
   std::string name;
@@ -31,7 +32,7 @@ struct del_params {
   int delegated_nodes;
   int layer;
   int start_count;
-  int* acc;
+  int *acc;
 
   struct MultiThreadContext mt_context;
   struct times total;
@@ -49,15 +50,24 @@ struct del_params {
 struct DSR {
   // dID is the ID of datablock that is last loaded into the buffer
   // sID is the ID of the datablock that is last sent to the accelerator
+  // cID is the ID of the datablock that is last compute to the accelerator
   // rID is the ID of the datablock that is last received from the accelerator
   int dID = 0;
   int sID = 0;
+  int cID = 0;
   int rID = 0;
 
   void reset() {
     dID = 0;
     sID = 0;
+    cID = 0;
     rID = 0;
+  };
+
+  void print() {
+    // cout << "dID: " << dID << " sID: " << sID << " cID: " << cID
+    //      << " rID: " << rID << endl;
+    // cout << dID << "," << sID << "," << cID << "," << rID << endl;
   };
 };
 
@@ -69,7 +79,7 @@ struct dma_buffer {
 };
 
 struct dma_buffer_set {
-  struct dma_buffer* dbuf_set;
+  struct dma_buffer *dbuf_set;
   int count;
   int buf_size;
   unsigned int base_address;
@@ -79,40 +89,39 @@ struct dma_buffer_set {
     buf_size = _size;
     base_address = _base_address;
     dbuf_set = new dma_buffer[count];
-    for (int i = 0; i < count; i++) dbuf_set[i].offset = buf_size * i;
+    // ADDED 64 bytes to offset to send custom create at 0x0
+    for (int i = 0; i < count; i++) dbuf_set[i].offset = 64 + buf_size * i;
   }
-  void free() {
-    delete[] dbuf_set;
-  }
+  void free() { delete[] dbuf_set; }
 };
 
-void alloc_dbuf(dma_buffer_set& dfs, int bufdex, int newID, int len) {
+void alloc_dbuf(dma_buffer_set &dfs, int bufdex, int newID, int len) {
   dfs.dbuf_set[bufdex].len = len;
   dfs.dbuf_set[bufdex].in_use = true;
   dfs.dbuf_set[bufdex].id = newID;
 }
 
-void dealloc_dbuf(dma_buffer_set& dfs, int bufdex) {
+void dealloc_dbuf(dma_buffer_set &dfs, int bufdex) {
   dfs.dbuf_set[bufdex].len = 0;
   dfs.dbuf_set[bufdex].in_use = false;
   dfs.dbuf_set[bufdex].id = -1;
 }
 
-int check_for_free_dbuf(dma_buffer_set& dfs) {
+int check_for_free_dbuf(dma_buffer_set &dfs) {
   for (int i = 0; i < dfs.count; i++) {
     if (!dfs.dbuf_set[i].in_use) return i;
   }
   return -1;
 }
 
-int find_dbuf(dma_buffer_set& dfs, int ID) {
+int find_dbuf(dma_buffer_set &dfs, int ID) {
   for (int i = 0; i < dfs.count; i++) {
     if (dfs.dbuf_set[i].id == ID) return i;
   }
   return -1;
 }
 
-int dbufs_in_use(dma_buffer_set& dfs) {
+int dbufs_in_use(dma_buffer_set &dfs) {
   int count = 0;
   for (int i = 0; i < dfs.count; i++) {
     if (dfs.dbuf_set[i].in_use) count++;

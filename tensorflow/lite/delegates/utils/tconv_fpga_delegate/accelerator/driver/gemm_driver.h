@@ -34,12 +34,13 @@
 #define dma_out3 0x1c800000
 #define DMA_BL 4194304
 
+int wgt_data_sent = 0;
 // GEMM_Driver for VM acccelerator
 namespace tflite_vm_tconv_fpga {
 
 void Col2im_Mapping(int depth, int height, int width, int filter_h,
                     int filter_w, int pad_t, int pad_l, int pad_b, int pad_r,
-                    int stride_h, int stride_w, uint32_t* index_map) {
+                    int stride_h, int stride_w, uint32_t *index_map) {
   int height_col = (height + pad_t + pad_b - filter_h) / stride_h + 1;
   int width_col = (width + pad_l + pad_r - filter_w) / stride_w + 1;
   int h_pad = -pad_t;
@@ -74,24 +75,22 @@ void Col2im_Mapping(int depth, int height, int width, int filter_h,
   }
 }
 
-void pad_dexmap(int rows, int cols, int rrow, int ccols, uint32_t* map,
-                uint32_t* pmap) {
+void pad_dexmap(int rows, int cols, int rrow, int ccols, uint32_t *map,
+                uint32_t *pmap) {
   for (int i = 0; i < rrow; i++) {
     for (int j = 0; j < ccols; j++) {
-      if (i >= rows || j >= cols)
-        pmap[i * ccols + j] = 32767;
-      else
-        pmap[i * ccols + j] = map[i * cols + j];
+      if (i >= rows || j >= cols) pmap[i * ccols + j] = 32767;
+      else pmap[i * ccols + j] = map[i * cols + j];
     }
   }
 }
 
-void Load_Input_Data(acc_container& drv, int start_row, int rows_step,
+void Load_Input_Data(acc_container &drv, int start_row, int rows_step,
                      int depth, int rdepth) {
-  int* in0 = drv.mdma->dmas[0].dma_get_inbuffer();
-  int* in1 = drv.mdma->dmas[1].dma_get_inbuffer();
-  int* in2 = drv.mdma->dmas[2].dma_get_inbuffer();
-  int* in3 = drv.mdma->dmas[3].dma_get_inbuffer();
+  int *in0 = drv.mdma->dmas[0].dma_get_inbuffer();
+  int *in1 = drv.mdma->dmas[1].dma_get_inbuffer();
+  int *in2 = drv.mdma->dmas[2].dma_get_inbuffer();
+  int *in3 = drv.mdma->dmas[3].dma_get_inbuffer();
 
   int inl0 = 0;
   int inl1 = 0;
@@ -125,13 +124,13 @@ void Load_Input_Data(acc_container& drv, int start_row, int rows_step,
   drv.mdma->multi_dma_wait_send();
 }
 
-void Load_Weight_Data(acc_container& drv, int32_t* gemm_dst, int output_stride,
+void Load_Weight_Data(acc_container &drv, int32_t *gemm_dst, int output_stride,
                       int c, int rcols_step, int r, int rrows_step,
                       int rdepth_step, int rows_step, int cols_step) {
-  int* in0 = drv.mdma->dmas[0].dma_get_inbuffer();
-  int* in1 = drv.mdma->dmas[1].dma_get_inbuffer();
-  int* in2 = drv.mdma->dmas[2].dma_get_inbuffer();
-  int* in3 = drv.mdma->dmas[3].dma_get_inbuffer();
+  int *in0 = drv.mdma->dmas[0].dma_get_inbuffer();
+  int *in1 = drv.mdma->dmas[1].dma_get_inbuffer();
+  int *in2 = drv.mdma->dmas[2].dma_get_inbuffer();
+  int *in3 = drv.mdma->dmas[3].dma_get_inbuffer();
 
   int inl0 = 0;
   int inl1 = 0;
@@ -172,10 +171,10 @@ void Load_Weight_Data(acc_container& drv, int32_t* gemm_dst, int output_stride,
   int crf_c = c;
   int crx_c = c;
   int start_dex = (c / 4);
-  int* wsums1 = reinterpret_cast<int*>(&drv.wt_sum1[start_dex]);
-  int* wsums2 = reinterpret_cast<int*>(&drv.wt_sum2[start_dex]);
-  int* wsums3 = reinterpret_cast<int*>(&drv.wt_sum3[start_dex]);
-  int* wsums4 = reinterpret_cast<int*>(&drv.wt_sum4[start_dex]);
+  int *wsums1 = reinterpret_cast<int *>(&drv.wt_sum1[start_dex]);
+  int *wsums2 = reinterpret_cast<int *>(&drv.wt_sum2[start_dex]);
+  int *wsums3 = reinterpret_cast<int *>(&drv.wt_sum3[start_dex]);
+  int *wsums4 = reinterpret_cast<int *>(&drv.wt_sum4[start_dex]);
 
   for (int i = 0; i < wt_sums_len; i++) {
     in0[inl0++] = (wsums1[i] * drv.rhs_offset);
@@ -195,8 +194,8 @@ void Load_Weight_Data(acc_container& drv, int32_t* gemm_dst, int output_stride,
   }
 
   in0[inl0++] = -1;
-  int32_t* res_pointer = gemm_dst + c + r * output_stride;
-  drv.st_params[0].dst = reinterpret_cast<int*>(res_pointer);
+  int32_t *res_pointer = gemm_dst + c + r * output_stride;
+  drv.st_params[0].dst = reinterpret_cast<int *>(res_pointer);
   drv.st_params[0].dcs = output_stride;
   drv.st_params[0].cols = rcols_step;
   drv.st_params[0].rows = rrows_step;
@@ -207,10 +206,12 @@ void Load_Weight_Data(acc_container& drv, int32_t* gemm_dst, int output_stride,
   drv.mdma->dmas[2].dma_start_send(inl2);
   drv.mdma->dmas[3].dma_start_send(inl3);
   drv.mdma->multi_dma_wait_send();
+  wgt_data_sent+= inl0 + inl1 + inl2 + inl3;
 }
 
-void Store_Results_COL2IM(acc_container& drv, int8_t* dst) {
-  int* in0 = drv.mdma->dmas[0].dma_get_inbuffer();
+void Store_Results_COL2IM(acc_container &drv, int8_t *dst) {
+  prf_start(1);
+  int *in0 = drv.mdma->dmas[0].dma_get_inbuffer();
   int inl0 = 0;
   int out_int8_len = drv.output_depth * drv.output_height * drv.output_width;
   int out_int8_lenr = roundDown(out_int8_len, 4);
@@ -231,15 +232,15 @@ void Store_Results_COL2IM(acc_container& drv, int8_t* dst) {
   drv.mdma->dmas[0].dma_wait_send();
   drv.mdma->multi_dma_start_recv();
   drv.mdma->multi_dma_wait_recv();
-
-  int* o0 = drv.mdma->dmas[0].dma_get_outbuffer();
-  int* o1 = drv.mdma->dmas[1].dma_get_outbuffer();
-  int* o2 = drv.mdma->dmas[2].dma_get_outbuffer();
-  int* o3 = drv.mdma->dmas[3].dma_get_outbuffer();
-  int32_t* bo0 = reinterpret_cast<int32_t*>(o0);
-  int32_t* bo1 = reinterpret_cast<int32_t*>(o1);
-  int32_t* bo2 = reinterpret_cast<int32_t*>(o2);
-  int32_t* bo3 = reinterpret_cast<int32_t*>(o3);
+  prf_end(1, drv.t2.store);
+  int *o0 = drv.mdma->dmas[0].dma_get_outbuffer();
+  int *o1 = drv.mdma->dmas[1].dma_get_outbuffer();
+  int *o2 = drv.mdma->dmas[2].dma_get_outbuffer();
+  int *o3 = drv.mdma->dmas[3].dma_get_outbuffer();
+  int32_t *bo0 = reinterpret_cast<int32_t *>(o0);
+  int32_t *bo1 = reinterpret_cast<int32_t *>(o1);
+  int32_t *bo2 = reinterpret_cast<int32_t *>(o2);
+  int32_t *bo3 = reinterpret_cast<int32_t *>(o3);
 
   int i = 0;
   int out_dex = 0;
@@ -255,21 +256,25 @@ void Store_Results_COL2IM(acc_container& drv, int8_t* dst) {
   }
 }
 
-void Load_Weight_Compute_Store(acc_container& drv, int32_t* gemm_dst,
+void Load_Weight_Compute_Store(acc_container &drv, int32_t *gemm_dst,
                                int output_stride, int c, int rcols_step, int r,
                                int rrows_step, int rdepth_step, int rows_step,
                                int cols_step) {
+  prf_start(0);
   Load_Weight_Data(drv, gemm_dst, output_stride, c, rcols_step, r, rrows_step,
                    rdepth_step, rows_step, cols_step);
-
+  prf_end(0, drv.t2.load_wgt);
+  prf_start(1);
   drv.mdma->multi_dma_start_recv();
   drv.mdma->multi_dma_wait_recv();
+  prf_end(1, drv.t2.compute);
   // Store_Results(drv);
 }
 
-void TileGEMM(acc_container& drv, int output_stride, int depth, int rdepth,
-              int rows, int rrows, int cols, int rcols, int32_t* gemm_dst,
-              int8_t* dst) {
+void TileGEMM(acc_container &drv, int output_stride, int depth, int rdepth,
+              int rows, int rrows, int cols, int rcols, int32_t *gemm_dst,
+              int8_t *dst) {
+  prf_start(1);
   drv.t.layer_weight_tile = 0;
   drv.t.layer_input_tile = 0;
   int acc_weight_buffer_size = 2048 * 16;
@@ -285,7 +290,9 @@ void TileGEMM(acc_container& drv, int output_stride, int depth, int rdepth,
     int rrows_step = std::min(row_inc, rrows - r);
     int rows_step = std::min(row_inc, rows - r);
     drv.w_c = 0;
+    prf_start(0);
     Load_Input_Data(drv, r, rrows_step, depth, rdepth);
+    prf_end(0, drv.t2.load_inp);
     for (int d = 0; d < rdepth; d += rdepth) {
       int rdepth_step = std::min(rdepth, rdepth - d);
       for (int c = 0; c < rcols; c += col_inc) {
@@ -300,9 +307,11 @@ void TileGEMM(acc_container& drv, int output_stride, int depth, int rdepth,
     drv.t.layer_input_tile++;
   }
   Store_Results_COL2IM(drv, dst);
+  prf_end(1, drv.t2.tvm_acc);
+  cerr << "wgt_data_sent: " << (wgt_data_sent*4) << endl;
 }
 
-void Entry(acc_container& drv, int32_t* gemm_dst, int8_t* dst) {
+void Entry(acc_container &drv, int32_t *gemm_dst, int8_t *dst) {
   int rows = drv.rows;
   int cols = drv.cols;
   int depth = drv.depth;
@@ -346,7 +355,7 @@ void Entry(acc_container& drv, int32_t* gemm_dst, int8_t* dst) {
   mkdir("aData", 0777);
   ofstream myfile;
   myfile.open("aData/out_vm_" + std::to_string(drv.t.layer) + "_1.csv");
-  int32_t* res_pointer = dst_params.data;
+  int32_t *res_pointer = dst_params.data;
   int index = 0;
   for (int c = 0; c < cols; c++) {
     myfile << endl;
@@ -359,5 +368,5 @@ void Entry(acc_container& drv, int32_t* gemm_dst, int8_t* dst) {
 #endif
 }
 
-}  // namespace tflite_vm_tconv_fpga
-#endif  // GEMM_DRIVER
+} // namespace tflite_vm_tconv_fpga
+#endif // GEMM_DRIVER

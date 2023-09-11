@@ -1,5 +1,6 @@
 #include "acc.sc.h"
 #include "acc_config.h"
+#include "counter.h"
 #include "data_in.h"
 #include "in.h"
 #include "out.h"

@@ -87,13 +87,13 @@ struct tconv_params {
       if (dex_map[j] != -1) im2col[dex_map[j]].push_back(j);
     }
 
-    for (int j = 0; j < im2col.size(); j++) {
-      cerr << "[";
-      for (int i = 0; i < im2col[j].size(); i++) {
-        cerr << im2col[j][i] << " ";
-      }
-      cerr << "]" << endl;
-    }
+    // for (int j = 0; j < im2col.size(); j++) {
+    //   cerr << "[";
+    //   for (int i = 0; i < im2col[j].size(); i++) {
+    //     cerr << im2col[j][i] << " ";
+    //   }
+    //   cerr << "]" << endl;
+    // }
 
     // GEMM + COL2IM
     for (int k = 0; k < output_size; k++) {
@@ -101,7 +101,7 @@ struct tconv_params {
       for (int j = 0; j < im2col[k].size(); j++) {
         int orow = im2col[k][j] % rows;
         int ocol = im2col[k][j] / rows;
-        cout << "Wrow:" << orow << " Icol:" << ocol << endl;
+        // cout << "Wrow:" << orow << " Icol:" << ocol << endl;
         for (int d = 0; d < depth; d++) {
           int weight_index = orow * depth + d;
           int input_index = ocol * depth + d;
@@ -112,7 +112,7 @@ struct tconv_params {
         int offset  = wt_sum[orow]*128;
         sum += offset;
       }
-      cout << "------------------" << endl;
+      // cout << "------------------" << endl;
       output_data[k] = sum;
     }
     int q = 0;

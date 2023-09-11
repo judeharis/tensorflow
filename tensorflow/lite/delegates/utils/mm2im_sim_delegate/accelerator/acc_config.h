@@ -4,7 +4,6 @@
 #include <systemc.h>
 
 #ifndef __SYNTHESIS__
-
 #include "tensorflow/lite/delegates/utils/secda_tflite/axi_support/axi_api_v2.h"
 #include "tensorflow/lite/delegates/utils/secda_tflite/sysc_integrator/sysc_types.h"
 #include "tensorflow/lite/delegates/utils/secda_tflite/sysc_profiler/profiler.h"
@@ -40,33 +39,19 @@ typedef sc_int<8> acc_dt;
 #define ACC_DTYPE sc_int
 #define ACC_C_DTYPE int
 
+#define MAX 2147483647
+#define MIN -2147483648
+#define POS 1073741824
+#define NEG -1073741823
+#define DIVMAX 2147483648
+#define MAX8 127
+#define MIN8 -128
+
 // HERE
 
 #define INP_BUF_LEN 2048
 #define WGT_BUF_LEN 2048 * 4
 #define UF 16
-
-// // Number of PEs
-// #define PE_COUNT 3
-
-// // needs to support ks * ks * depth / UF
-// #define PE_WGTCOLBUF_SIZE 128
-
-// // wgt_col_sum needs to support ks * ks
-// #define PE_WGTCOLSUMBUF_SIZE 128
-
-// // inp_row_buf needs to support depth / UF
-// #define PE_INPROWBUF_SIZE 128
-
-// // support ir * ks * ks gemm outputs where ir is the number
-// // of input rows
-// #define PE_OUTBUF_SIZE 128
-
-// // max value is ks * ks
-// #define PE_POUTDEXBUF_SIZE 128
-
-// // Max number of MM2IM outputs storable per PE, should allow OH * OW
-// #define PE_ACC_BUF_SIZE 2048
 
 // Number of PEs
 #define PE_COUNT 8
@@ -90,13 +75,9 @@ typedef sc_int<8> acc_dt;
 // Max number of MM2IM outputs storable per PE, should allow OH * OW
 #define PE_ACC_BUF_SIZE 256
 
-#define MAX 2147483647
-#define MIN -2147483648
-#define POS 1073741824
-#define NEG -1073741823
-#define DIVMAX 2147483648
-#define MAX8 127
-#define MIN8 -128
+#define G_WGTSUMBUF_SIZE 200
+
+#define G_COLINDICES_SIZE 50
 
 // TO HERE
 
@@ -156,6 +137,69 @@ struct inp_packet {
   }
 };
 
+typedef struct _DATA_PACKED {
+  sc_uint<32> data = 0;
+  int c = 0;
+  _DATA_PACKED() {}
+
+  void insert(sc_uint<8> _data) {
+    data.range(c + 7, c) = _data;
+    c += 8;
+    c = c % 32;
+  }
+
+} DATA_PACKED;
+
+typedef struct byteToUF {
+  sc_bigint<8 * UF> data;
+
+  void insert(int8_t array[][UF], int index) {
+    for (int i = 0; i < UF; i++) {
+#pragma HLS unroll
+      data.range(((i + 1) * 8) - 1, i * 8) = array[index][i];
+    }
+  }
+  void insert(sc_int<8> array[][UF], int index) {
+    for (int i = 0; i < UF; i++) {
+#pragma HLS unroll
+      data.range(((i + 1) * 8) - 1, i * 8) = array[index][i];
+    }
+  }
+  void retreive(int8_t array[][UF], int index) {
+    for (int i = 0; i < UF; i++) {
+#pragma HLS unroll
+      array[index][i] = data.range(((i + 1) * 8) - 1, i * 8).to_int();
+    }
+  }
+  void retreive(sc_int<8> array[][UF], int index) {
+    for (int i = 0; i < UF; i++) {
+#pragma HLS unroll
+      array[index][i] = data.range(((i + 1) * 8) - 1, i * 8).to_int();
+    }
+  }
+
+  void operator=(byteToUF _data) { data = _data.data; }
+  inline friend ostream &operator<<(ostream &os, const byteToUF &v) {
+    cout << "data&colon; " << v.data;
+    return os;
+  }
+} bUF;
+
+struct sc_out_sig {
+  sc_out<int> oS;
+  sc_signal<int> iS;
+  void write(int x) {
+    oS.write(x);
+    iS.write(x);
+  }
+  int read() { return iS.read(); }
+  void operator=(int x) { write(x); }
+  void bind(sc_signal<int> &sig) { oS.bind(sig); }
+  void operator()(sc_signal<int> &sig) { bind(sig); }
+  void bind(sc_out<int> &sig) { oS.bind(sig); }
+  void operator()(sc_out<int> &sig) { bind(sig); }
+};
+
 struct PE_vars {
 
 #ifndef __SYNTHESIS__
@@ -201,16 +245,13 @@ struct PE_vars {
 
   sc_fifo<int> col_dexs_fifo;
   sc_fifo<int> dex_fifo;
-  sc_fifo<char> wgt_fifo;
-  sc_fifo<char> inp_fifo;
-  // sc_fifo<int> out_fifo;
+  sc_fifo<bUF> wgt_fifo;
+  sc_fifo<bUF> inp_fifo;
   sc_fifo<DATA> out_fifo;
   sc_fifo<int> temp_fifo;
 
   sc_out<int> computeS;
   sc_out<int> sendS;
-
-  // static int sid;
 
 #ifndef __SYNTHESIS__
   PE_vars(int size, int sid)
@@ -239,9 +280,7 @@ struct PE_vars {
         col_dexs_fifo(size), dex_fifo(size), wgt_fifo(size), inp_fifo(size),
         out_fifo(size), temp_fifo(size),
         computeS((std::string("computeS") + std::to_string(sid)).c_str()),
-        sendS((std::string("sendS") + std::to_string(sid)).c_str()) {
-    // sid++;
-  }
+        sendS((std::string("sendS") + std::to_string(sid)).c_str()) {}
 #else
   PE_vars(int size)
       : online("online"), compute("compute"), reset_compute("reset_compute"),
@@ -253,17 +292,10 @@ struct PE_vars {
         out_done("out_done"), send_done("send_done"), col_dexs_fifo(size),
         dex_fifo(size), wgt_fifo(size), inp_fifo(size), out_fifo(size),
         temp_fifo(size), computeS("computeS"), sendS("sendS") {
-    // sid++;
+#pragma HLS resource variable = wgt_fifo core = FIFO_SRL
+#pragma HLS resource variable = inp_fifo core = FIFO_SRL
   }
 #endif
 };
-
-// int PE_vars::sid = 0;
-
-// struct var_array {
-//   PE_vars v[PE_COUNT];
-//   var_array(int size) {}
-//   PE_vars &operator[](int i) { return v[i]; }
-// };
 
 #endif // ACC_CONFIG_H2

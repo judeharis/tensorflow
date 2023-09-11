@@ -69,6 +69,7 @@ void ACCNAME::Worker1() {
       we[0][13] = sWs14.read();
       we[0][14] = sWs15.read();
       we[0][15] = sWs16.read();
+      wait();
 
       for (int i = 0; i < 10; i++) {
 #pragma HLS unroll

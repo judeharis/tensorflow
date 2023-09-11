@@ -28,6 +28,36 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "axi_support_syscv3",
+    srcs = [
+        "axi_api_sysc_v3.cc",
+    ],
+    hdrs = [
+        "axi_api_v3.h"
+    ],
+    copts = common_copts,
+    deps = [
+        "@systemc//:systemc",
+        "//tensorflow/lite/delegates/utils/secda_tflite/sysc_integrator:systemc_integrator",
+    ],
+)
+
+
+
+cc_library(
+    name = "axi_supportv3",
+    srcs = [
+        "axi_api_v3.cc",
+    ],
+    hdrs = [
+        "axi_api_v3.h"
+    ],
+    copts = common_copts,
+    deps = [
+        "//tensorflow/lite/delegates/utils/secda_tflite/sysc_integrator:systemc_integrator",
+    ],
+)
 
 cc_library(
     name = "axi_support",

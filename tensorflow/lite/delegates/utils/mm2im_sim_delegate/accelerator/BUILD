@@ -25,6 +25,7 @@ cc_library(
         "pe_control.h",
         "pe_module.h",
         "scheduler.h",
+        "counter.h",
     ],
     copts = common_copts,
     deps = [

@@ -56,3 +56,7 @@ aData
 *.code-workspace
 # /*
 tensorflow/lite/delegates/utils/sa_sim_delegate/accelerator/post1_old.h
+tensorflow/lite/examples/systemCProject
+tensorflow/lite/delegates/utils/secda_tflite/axi_support_alt
+tensorflow/lite/delegates/utils/secda_vm_delegate_working
+tensorflow/lite/delegates/utils/vm_sim_delegate_working
