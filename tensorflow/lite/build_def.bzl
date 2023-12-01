@@ -43,7 +43,7 @@ def tflite_copts():
     }) + select({
         clean_dep("//tensorflow:windows"): [],
         "//conditions:default": [
-            "-fno-exceptions",  # Exceptions are unused in TFLite.
+            # "-fno-exceptions",  # Exceptions are unused in TFLite. # Jude: I need exceptions for Ramulator
         ],
     })
 

@@ -1,5 +1,1 @@
-BasedOnStyle: LLVM
-AlwaysBreakTemplateDeclarations: Yes
-AllowShortIfStatementsOnASingleLine: AllIfsAndElse
-AllowShortCaseLabelsOnASingleLine: True
-AllowShortLoopsOnASingleLine: True
+../../../../../src/utils/.clang-format

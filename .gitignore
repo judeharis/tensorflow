@@ -52,6 +52,7 @@ xcuserdata
 models
 blog*
 aData
+.data/
 *.csv
 *.code-workspace
 # /*
