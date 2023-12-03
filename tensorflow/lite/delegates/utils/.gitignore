@@ -1,5 +1,1 @@
-versions
-*.bat
-
-old_delegates
-tconv_sim_delegate_gemm_only
+../../../../../src/utils/.gitignore
