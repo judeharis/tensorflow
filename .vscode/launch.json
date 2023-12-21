@@ -154,7 +154,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/bert_sim_delegate/eval_model_plus_bert_sim_delegate",
             "args": [
-                "-mmodels/dense_simple_v8.tflite",
+                "-mmodels/mobilebert_quant.tflite",
                 "-lmodels/labels2.txt",
                 "-imodels/grace_hopper.bmp",
                 "-v 1",
@@ -242,7 +242,7 @@
                 "--use_gpu=false",
                 "--num_threads=1",
                 "--enable_op_profiling=true",
-                "--graph=./models/conv2d_simple_v1.tflite",
+                "--graph=./models/mobilenetv1.tflite",
                 "--num_runs=1",
                 "--warmup_runs=0",
                 "--warmup_min_secs=0",
@@ -274,7 +274,7 @@
                 "--use_gpu=false",
                 "--num_threads=1",
                 "--enable_op_profiling=true",
-                "--graph=./models/conv2d_simple_v1.tflite",
+                "--graph=./models/mobilenetv1.tflite",
                 "--num_runs=1",
                 "--warmup_runs=0",
                 "--warmup_min_secs=0",
@@ -335,13 +335,13 @@
             "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/tconv_sim_delegate/benchmark_model_plus_tconv_sim_delegate",
             "args": [
                 "--enable_op_profiling=true",
-                "--graph=./models/new_cycle_disc_x.tflite",
+                "--graph=./models/dcgan_gen.tflite",
                 "--num_runs=2",
                 "--warmup_runs=0",
                 "--warmup_min_secs=0",
                 "--use_tconv_sim_delegate=false",
                 "--print_postinvoke_state=true",
-                "--profiling_output_csv_file=new_cycle_disc_x.csv"
+                "--profiling_output_csv_file=dcgan_gen.csv"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -365,9 +365,9 @@
             "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/mm2im_sim_delegate/benchmark_model_plus_mm2im_sim_delegate",
             "args": [
                 // "--enable_op_profiling=true",
-                // "--graph=./models/dcgan_gen.tflite",
+                "--graph=./models/dcgan_gen.tflite",
                 // "--graph=./models/test_models/tconv_pmodels/tconv_1_1_64_5_7_7_128.tflite",
-                "--graph=./models/test_models/tconv_pmodels/tconv_1_1_16_3_7_7_32.tflite",
+                // "--graph=./models/test_models/tconv_pmodels/tconv_1_1_16_3_7_7_32.tflite",
                 // "--graph=./models/test_models/tconv_pmodels/tconv_1_1_16_5_7_7_256.tflite",
                 // "--graph=./models/test_models/tconv_pmodels/tconv_1_1_32_5_7_7_256.tflite",
                 // "--graph=./models/test_models/tconv_pmodels/tconv_1_1_64_5_7_7_256.tflite",
@@ -466,7 +466,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_sim_delegate/inference_diff_plus_vm_sim_delegate",
             "args": [
-                "--model_file=./models/conv2d_simple_v1.tflite",
+                "--model_file=./models/mobilenetv1.tflite",
                 "--num_runs=1",
                 "--use_vm_sim_delegate=true",
             ],
