@@ -91,7 +91,7 @@
     {
       "label": "eval_model",
       "type": "shell",
-      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build -c opt //tensorflow/lite/examples/eval_model:eval_model -c dbg",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build -c opt //tensorflow/lite/examples/secda_apps/eval_model:eval_model -c dbg",
       "group": {
         "kind": "build",
         "isDefault": true

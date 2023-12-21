@@ -30,7 +30,7 @@
             "name": "eval_model",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/examples/eval_model/eval_model",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/examples/secda_apps/eval_model/eval_model",
             "args": [
                 "-mmodels/mobilenetv1.tflite",
                 "-lmodels/labels.txt",
