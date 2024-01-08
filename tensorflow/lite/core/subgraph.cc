@@ -1278,48 +1278,23 @@ TfLiteStatus Subgraph::Invoke() {
                            "failed to invoke");
     }
 
-    // if (registration.builtin_code == 3) {
-    //   using namespace std;
-    //   TfLiteTensor* output;
-    //   TF_LITE_ENSURE_OK(&context_, GetOutputSafe(&context_, &node, 0,
-    //   &output));
-    //   {
-    //     int rows = output->dims->data[3];
-    //     int cols = output->dims->data[1] * output->dims->data[2] *
-    //                output->dims->data[0];
-    //     ofstream myfile;
-    //     // myfile.open("aData/" + mname + mo + "/out_" +
-    //     //             std::to_string(node_index) + ".csv");
-    //     myfile.open("aData/conv/" + std::to_string(node_index) +
-    //                 "_del_out_cpu.csv");
-    //     int8_t* res_pointer = output->data.int8;
-    //     int index = 0;
-    //     for (int c = 0; c < cols; c++) {
-    //       myfile << endl;
-    //       for (int r = 0; r < rows; r++) {
-    //         myfile << (int)res_pointer[index] << ",";
-    //         index++;
-    //       }
-    //     }
-    //     myfile.close();
-    //   }
-    // }
+ 
 
-    // if (registration.builtin_code == 9 && node_index==2026) {
+    // if (registration.builtin_code == 9) {
     //   using namespace std;
     //   TfLiteTensor* output;
     //   TF_LITE_ENSURE_OK(&context_, GetOutputSafe(&context_, &node, 0,
     //   &output));
     //   {
-    //      int dof = 0;
+    //     int dof = 0;
+
     //     if (output->dims->data[0] == 1 && output->dims->size == 3) dof++;
-    //     int rows = output->dims->data[dof + 1];
-    //     int cols = output->dims->data[dof + 0];
-    //     // int rows = output->dims->data[1];
-    //     // int cols = output->dims->data[0];
+    //     // int rows = output->dims->data[dof + 1];
+    //     // int cols = output->dims->data[dof + 0];
+    //     int rows = output->dims->data[1];
+    //     int cols = output->dims->data[0];
     //     ofstream myfile;
-    //     myfile.open("a_Bert/" + mname + mo + "/out_" +
-    //                 std::to_string(node_index) + ".csv");
+    //     myfile.open("./aData/" + std::to_string(node_index) + "out_cpu.csv");
     //     int8_t* res_pointer = output->data.int8;
     //     int index = 0;
     //     for (int c = 0; c < cols; c++) {

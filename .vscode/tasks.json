@@ -142,7 +142,6 @@
         "isDefault": true
       }
     },
-
     {
       "label": "benchmark_model_plus_secda_del",
       "type": "shell",
@@ -174,6 +173,15 @@
       "label": "eval_model_plus_vm_sim_del",
       "type": "shell",
       "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build tensorflow/lite/delegates/utils/secda_delegates/vm_sim_delegate:eval_model_plus_vm_sim_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "eval_model_plus_vm_del",
+      "type": "shell",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build tensorflow/lite/delegates/utils/secda_delegates/vm_delegate:eval_model_plus_vm_delegate -c dbg --cxxopt='-DSYSC' --cxxopt='-DACC_PROFILE' --verbose_failures",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -233,7 +241,6 @@
         "isDefault": true
       }
     },
-
     {
       "label": "benchmark_model_plus_sa_sim_delegate",
       "type": "shell",
@@ -243,7 +250,6 @@
         "isDefault": true
       }
     },
-
     {
       "label": "systemCProject",
       "type": "shell",
@@ -271,8 +277,6 @@
         "isDefault": true
       }
     },
-
-
     // New tasks
     {
       "label": "eval_model_plus_vm_sim_del",
@@ -283,7 +287,6 @@
         "isDefault": true
       }
     },
-
     {
       "label": "inference_diff_plus_vm_sim_delegate",
       "type": "shell",
