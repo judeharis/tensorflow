@@ -242,6 +242,15 @@
       }
     },
     {
+      "label": "benchmark_model_plus_mm2im_delegate",
+      "type": "shell",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build -c opt tensorflow/lite/delegates/utils/secda_delegates/mm2im_delegate:benchmark_model_plus_mm2im_delegate -c dbg --cxxopt='-DSYSC'",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
       "label": "benchmark_model_plus_sa_sim_delegate",
       "type": "shell",
       "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build -c opt tensorflow/lite/delegates/utils/secda_delegates/sa_sim_delegate:benchmark_model_plus_sa_sim_delegate -c dbg --cxxopt='-DSYSC'",
@@ -291,6 +300,33 @@
       "label": "inference_diff_plus_vm_sim_delegate",
       "type": "shell",
       "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build tensorflow/lite/delegates/utils/secda_delegates/vm_sim_delegate:inference_diff_plus_vm_sim_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "inference_diff_plus_mm2im_delegate",
+      "type": "shell",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build tensorflow/lite/delegates/utils/secda_delegates/mm2im_delegate:inference_diff_plus_mm2im_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "inference_diff_plus_mm2im_sim_delegate",
+      "type": "shell",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build tensorflow/lite/delegates/utils/secda_delegates/mm2im_sim_delegate:inference_diff_plus_mm2im_sim_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "inference_diff",
+      "type": "shell",
+      "command": "bazel build //tensorflow/lite/tools/evaluation/tasks/inference_diff:run_eval -c dbg --cxxopt='-DSYSC' --verbose_failures",
       "group": {
         "kind": "build",
         "isDefault": true

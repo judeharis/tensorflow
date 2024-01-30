@@ -318,12 +318,12 @@ TfLiteStatus BenchmarkModel::Run() {
   std::cout << "===========================" << std::endl;
 
   // append average time to file
-  std::ofstream offile("runs.csv", std::ios::app);
-  offile << "model, threads, overall, conv" << std::endl;
-  offile << params_.Get<std::string>("graph") << ", "
-         << params_.Get<std::int32_t>("num_threads") << ", "
-         << (run_time / (params_.Get<int32_t>("num_runs") * 1000)) << ", ";
-  offile.close();
+  // std::ofstream offile("runs.csv", std::ios::app);
+  // offile << "model, threads, overall, conv" << std::endl;
+  // offile << params_.Get<std::string>("graph") << ", "
+  //        << params_.Get<std::int32_t>("num_threads") << ", "
+  //        << (run_time / (params_.Get<int32_t>("num_runs") * 1000)) << ", ";
+  // offile.close();
 
   listeners_.OnBenchmarkEnd({model_size_mb, startup_latency_us, input_bytes,
                              warmup_time_us, inference_time_us, init_mem_usage,
