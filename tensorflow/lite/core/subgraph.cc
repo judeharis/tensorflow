@@ -1309,7 +1309,8 @@ TfLiteStatus Subgraph::Invoke() {
     // if (registration.builtin_code == kTfLiteBuiltinTransposeConv) {
     //   using namespace std;
     //   TfLiteTensor* output;
-    //   TF_LITE_ENSURE_OK(&context_, GetOutputSafe(&context_, &node, 0, &output));
+    //   TF_LITE_ENSURE_OK(&context_, GetOutputSafe(&context_, &node, 0,
+    //   &output));
     //   {
     //     int cols = output->dims->data[1] * output->dims->data[2];
     //     int rows = output->dims->data[3];
@@ -1321,6 +1322,33 @@ TfLiteStatus Subgraph::Invoke() {
     //     for (int c = 0; c < cols; c++) {
     //       myfile << endl;
     //       for (int r = 0; r < rows; r++) {
+    //         myfile << (int)res_pointer[index] << ",";
+    //         index++;
+    //       }
+    //     }
+    //     myfile.close();
+    //   }
+    // }
+
+    // // do the same for Add layer
+    // if (registration.builtin_code == kTfLiteBuiltinAdd) {
+    //   using namespace std;
+    //   TfLiteTensor* output;
+    //   TF_LITE_ENSURE_OK(&context_, GetOutputSafe(&context_, &node, 0, &output));
+    //   {
+    //     // for number of dims > 2, we need to flatten the output
+    //     int length = 1;
+    //     for (int i = 0; i < output->dims->size; i++) {
+    //       length *= output->dims->data[i];
+    //     }
+    //     ofstream myfile;
+    //     myfile.open("./aData/add/" + std::to_string(node_index) +
+    //                 "_out_cpu.csv");
+    //     int8_t* res_pointer = output->data.int8;
+    //     int index = 0;
+    //     for (int c = 0; c < length; c++) {
+    //       myfile << endl;
+    //       for (int r = 0; r < 1; r++) {
     //         myfile << (int)res_pointer[index] << ",";
     //         index++;
     //       }
