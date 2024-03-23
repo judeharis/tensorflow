@@ -894,6 +894,17 @@ def _tf_repositories():
         urls = tf_mirror_urls("https://github.com/google/highway/archive/refs/tags/1.0.7.zip"),
     )
 
+    tf_http_archive(
+        name = "systemc",
+        # build_file = "//third_party/systemc:systemc.BUILD",
+        build_file = "//third_party:systemc.BUILD",
+        sha256 = "5781b9a351e5afedabc37d145e5f7edec08f3fd5de00ffeb8fa1f3086b1f7b3f",
+        urls = [
+            "http://mirror.tensorflow.org/www.accellera.org/images/downloads/standards/systemc/systemc-2.3.3.tar.gz",
+            "https://www.accellera.org/images/downloads/standards/systemc/systemc-2.3.3.tar.gz",
+        ],
+    )
+
     # used for adding androidx.annotation dependencies in tflite android jni.
     maven_install(
         artifacts = [

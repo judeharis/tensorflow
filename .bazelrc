@@ -74,6 +74,10 @@
 
 # Default build options. These are applied first and unconditionally.
 
+# common --enable_bzlmod
+# common --lockfile_mode=off
+# common --registry=file:///mnt/Crucial/WorkspaceB/bazel-central-registry/
+
 # For projects which use TensorFlow as part of a Bazel build process, putting
 # nothing in a bazelrc will default to a monolithic build. The following line
 # opts in to modular op registration support by default.
