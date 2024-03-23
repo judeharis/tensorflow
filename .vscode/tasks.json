@@ -260,6 +260,17 @@
       }
     },
     {
+      "label": "benchmark_model_plus_bert_sim_del",
+      "type": "shell",
+      // "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build -c opt --config=monolithic tensorflow/lite/delegates/utils/secda_delegates/bert_sim_delegate:benchmark_model_plus_bert_sim_delegate -c dbg --cxxopt='-DSYSC'",
+            "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build -c opt --config=monolithic tensorflow/lite/tools/benchmark:benchmark_model_plus_flex",
+
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
       "label": "systemCProject",
       "type": "shell",
       "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemCProject:test_systemc -c dbg",
@@ -308,7 +319,7 @@
     {
       "label": "inference_diff_plus_mm2im_delegate",
       "type": "shell",
-      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build tensorflow/lite/delegates/utils/secda_delegates/mm2im_delegate:inference_diff_plus_mm2im_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build tensorflow/lite/delegates/utils/secda_delegates/mm2im_delegate:inference_diff_plus_mm2im_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures --subcommands",
       "group": {
         "kind": "build",
         "isDefault": true

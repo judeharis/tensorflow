@@ -87,5 +87,6 @@
         "charconv": "cpp",
         "locale": "cpp"
     },
-    "C_Cpp.dimInactiveRegions": false
+    "C_Cpp.dimInactiveRegions": false,
+    "C_Cpp.default.compilerPath": "/usr/bin/clang++-14"
 }
