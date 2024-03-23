@@ -1,0 +1,638 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+      // {
+      //     "preLaunchTask": "systemCProject",
+      //     "name": "systemCProject",
+      //     "type": "cppdbg",
+      //     "request": "launch",
+      //     "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/examples/systemCProject/test_systemc",
+      //     "args": [],
+      //     "stopAtEntry": false,
+      //     "cwd": "${workspaceFolder}",
+      //     "environment": [],
+      //     "externalConsole": false,
+      //     "MIMode": "gdb",
+      //     "setupCommands": [
+      //         {
+      //             "description": "Enable pretty-printing for gdb",
+      //             "text": "-enable-pretty-printing",
+      //             "ignoreFailures": true
+      //         }
+      //     ]
+      // },
+    //   {
+    //       "preLaunchTask": "eval_model",
+    //       "name": "eval_model",
+    //       "type": "cppdbg",
+    //       "request": "launch",
+    //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/examples/secda_apps/eval_model/eval_model",
+    //       "args": [
+    //           "-mmodels/mobilenetv1.tflite",
+    //           // "-lmodels/labels.txt",
+    //           "-lmodels/labels2.txt",
+    //           "-imodels/grace_hopper.bmp",
+    //           "-t 1",
+    //       ],
+    //       "stopAtEntry": false,
+    //       "cwd": "${workspaceFolder}",
+    //       "environment": [],
+    //       "externalConsole": false,
+    //       "MIMode": "gdb",
+    //       "setupCommands": [
+    //           {
+    //               "description": "Enable pretty-printing for gdb",
+    //               "text": "-enable-pretty-printing",
+    //               "ignoreFailures": true
+    //           }
+    //       ]
+    //   },
+      // conv2d_simple_v1
+      // conv2d_simple_v2
+      // conv2d_simple_v3
+      // conv2d_simple_v4
+      // efficientnet_lite
+      // inceptionv3
+      // mobilenetv1
+    //   {
+    //       "preLaunchTask": "eval_model_plus_sa_sim_del",
+    //       "name": "eval_model_plus_sa_sim_del",
+    //       "type": "cppdbg",
+    //       "request": "launch",
+    //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/sa_sim_delegate/eval_model_plus_sa_sim_delegate",
+    //       "args": [
+    //           "-mmodels/mobilenetv1.tflite",
+    //           // "-mmodels/resnet18v1.tflite",
+    //           // "-mmodels/distilgpt2-64.tflite",
+    //           // "-mmodels//test_models/conv2d_22_28_32.tflite",
+    //           "-lmodels/labels2.txt",
+    //           "-imodels/grace_hopper.bmp",
+    //           "-v 1",
+    //           "-t 1",
+    //           "--use_sa_sim_delegate=true",
+    //       ],
+    //       "stopAtEntry": false,
+    //       "cwd": "${workspaceFolder}",
+    //       "environment": [],
+    //       "externalConsole": false,
+    //       "MIMode": "gdb",
+    //       "setupCommands": [
+    //           {
+    //               "description": "Enable pretty-printing for gdb",
+    //               "text": "-enable-pretty-printing",
+    //               "ignoreFailures": true
+    //           }
+    //       ]
+    //   },
+    //   {
+    //       "preLaunchTask": "eval_model_plus_vm_sim_del",
+    //       "name": "eval_model_plus_vm_sim_del",
+    //       "type": "cppdbg",
+    //       "request": "launch",
+    //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_sim_delegate/eval_model_plus_vm_sim_delegate",
+    //       "args": [
+    //           "-mmodels/mobilenetv1.tflite",
+    //           // "-mmodels/resnet18v1.tflite",
+    //           // "-mmodels/test_models/conv2d_128_128_128.tflite",
+    //           "-lmodels/labels2.txt",
+    //           "-imodels/grace_hopper.bmp",
+    //           "-v 1",
+    //           "-t 1",
+    //           "--use_vm_sim_delegate=true",
+    //           "--use_simmode=true",
+    //       ],
+    //       "stopAtEntry": false,
+    //       "cwd": "${workspaceFolder}",
+    //       "environment": [],
+    //       "externalConsole": false,
+    //       "MIMode": "gdb",
+    //       "setupCommands": [
+    //           {
+    //               "description": "Enable pretty-printing for gdb",
+    //               "text": "-enable-pretty-printing",
+    //               "ignoreFailures": true
+    //           }
+    //       ]
+    //   },
+    //   {
+    //       "preLaunchTask": "eval_model_plus_vm_del",
+    //       "name": "eval_model_plus_vm_del",
+    //       "type": "cppdbg",
+    //       "request": "launch",
+    //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/eval_model_plus_vm_delegate",
+    //       "args": [
+    //           "-mmodels/mobilenetv1.tflite",
+    //           // "-mmodels/resnet18v1.tflite",
+    //           "-lmodels/labels2.txt",
+    //           "-imodels/grace_hopper.bmp",
+    //           "-v 1",
+    //           "-t 1",
+    //           "--use_vm_delegate=true",
+    //           "--use_simmode=false",
+    //       ],
+    //       "stopAtEntry": false,
+    //       "cwd": "${workspaceFolder}",
+    //       "environment": [],
+    //       "externalConsole": false,
+    //       "MIMode": "gdb",
+    //       "setupCommands": [
+    //           {
+    //               "description": "Enable pretty-printing for gdb",
+    //               "text": "-enable-pretty-printing",
+    //               "ignoreFailures": true
+    //           }
+    //       ]
+    //   },
+    //   {
+    //       "preLaunchTask": "eval_model_plus_vm_sim_del",
+    //       "name": "eval_model_plus_vm_sim_del2",
+    //       "type": "cppdbg",
+    //       "request": "launch",
+    //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_sim_delegate/eval_model_plus_vm_sim_delegate",
+    //       "args": [
+    //           "-mmodels/dcgan_gen.tflite",
+    //           "-lmodels/labels2.txt",
+    //           "-imodels/grace_hopper.bmp",
+    //           "-v 1",
+    //           "-t 1",
+    //           "--use_vm_sim_delegate=false",
+    //           "--use_simmode=true",
+    //       ],
+    //       "stopAtEntry": false,
+    //       "cwd": "${workspaceFolder}",
+    //       "environment": [],
+    //       "externalConsole": false,
+    //       "MIMode": "gdb",
+    //       "setupCommands": [
+    //           {
+    //               "description": "Enable pretty-printing for gdb",
+    //               "text": "-enable-pretty-printing",
+    //               "ignoreFailures": true
+    //           }
+    //       ]
+    //   },
+    //   {
+    //       "preLaunchTask": "eval_model_plus_bert_sim_del",
+    //       "name": "eval_model_plus_bert_sim_del",
+    //       "type": "cppdbg",
+    //       "request": "launch",
+    //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/bert_sim_delegate/eval_model_plus_bert_sim_delegate",
+    //       "args": [
+    //           "-mmodels/mobilebert_quant.tflite",
+    //           "-lmodels/labels2.txt",
+    //           "-imodels/grace_hopper.bmp",
+    //           "-v 1",
+    //           "-t 1",
+    //           "--use_bert_sim_delegate=true",
+    //       ],
+    //       "stopAtEntry": false,
+    //       "cwd": "${workspaceFolder}",
+    //       "environment": [],
+    //       "externalConsole": false,
+    //       "MIMode": "gdb",
+    //       "setupCommands": [
+    //           {
+    //               "description": "Enable pretty-printing for gdb",
+    //               "text": "-enable-pretty-printing",
+    //               "ignoreFailures": true
+    //           }
+    //       ]
+    //   },
+    //   {
+    //       "preLaunchTask": "eval_model_plus_vta_sim_del",
+    //       "name": "eval_model_plus_vta_sim_del",
+    //       "type": "cppdbg",
+    //       "request": "launch",
+    //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vta_sim_delegate/eval_model_plus_vta_sim_delegate",
+    //       "args": [
+    //           "-mmodels/mobilenetv1.tflite",
+    //           "-lmodels/labels.txt",
+    //           "-imodels/grace_hopper.bmp",
+    //           // "-v 1",
+    //           "-t 1",
+    //           "--use_vta_sim_delegate=true",
+    //       ],
+    //       "stopAtEntry": false,
+    //       "cwd": "${workspaceFolder}",
+    //       "environment": [],
+    //       "externalConsole": false,
+    //       "MIMode": "gdb",
+    //       "setupCommands": [
+    //           {
+    //               "description": "Enable pretty-printing for gdb",
+    //               "text": "-enable-pretty-printing",
+    //               "ignoreFailures": true
+    //           }
+    //       ]
+    //   },
+    //   {
+    //       "preLaunchTask": "Build Benchmark Model (Debug)",
+    //       "name": "bm",
+    //       "type": "cppdbg",
+    //       "request": "launch",
+    //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/tools/benchmark/benchmark_model",
+    //       "args": [
+    //           "--use_gpu=false",
+    //           "--num_threads=1",
+    //           "--enable_op_profiling=true",
+    //           "--graph=./models/mobilebert_quant.tflite",
+    //           "--num_runs=1",
+    //           "--warmup_runs=0",
+    //           "--profiling_output_csv_file=./a_Bert/mobile_bert/benchmark.csv"
+    //       ],
+    //       "stopAtEntry": false,
+    //       "cwd": "${workspaceFolder}",
+    //       "environment": [],
+    //       "externalConsole": false,
+    //       "MIMode": "gdb",
+    //       "setupCommands": [
+    //           {
+    //               "description": "Enable pretty-printing for gdb",
+    //               "text": "-enable-pretty-printing",
+    //               "ignoreFailures": true
+    //           }
+    //       ]
+    //   },
+    //   {
+    //       "preLaunchTask": "benchmark_model_plus_sa_sim_delegate",
+    //       "name": "bm_plus_sa_sim_del",
+    //       "type": "cppdbg",
+    //       "request": "launch",
+    //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_sim_delegate/benchmark_model_plus_sa_sim_delegate",
+    //       "args": [
+    //           "--use_gpu=false",
+    //           "--num_threads=1",
+    //           "--enable_op_profiling=true",
+    //           "--graph=./models/mobilenetv1.tflite",
+    //           "--num_runs=1",
+    //           "--warmup_runs=0",
+    //           "--warmup_min_secs=0",
+    //           "--use_sa_sim_delegate=true",
+    //           "--print_postinvoke_state=true",
+    //           // "--profiling_output_csv_file=A_cycle_gan_g.csv"
+    //       ],
+    //       "stopAtEntry": false,
+    //       "cwd": "${workspaceFolder}",
+    //       "environment": [],
+    //       "externalConsole": false,
+    //       "MIMode": "gdb",
+    //       "setupCommands": [
+    //           {
+    //               "description": "Enable pretty-printing for gdb",
+    //               "text": "-enable-pretty-printing",
+    //               "ignoreFailures": true
+    //           }
+    //       ]
+    //   },
+    //   {
+    //       "preLaunchTask": "benchmark_model_plus_vm_sim_delegate",
+    //       "name": "bm_plus_vm_sim_del",
+    //       "type": "cppdbg",
+    //       "request": "launch",
+    //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_sim_delegate/benchmark_model_plus_vm_sim_delegate",
+    //       "args": [
+    //           "--use_gpu=false",
+    //           "--num_threads=1",
+    //           "--enable_op_profiling=true",
+    //           "--graph=./models/mobilenetv1.tflite",
+    //           "--num_runs=1",
+    //           "--warmup_runs=0",
+    //           "--warmup_min_secs=0",
+    //           "--use_vm_sim_delegate=true",
+    //           "--print_postinvoke_state=true",
+    //           // "--profiling_output_csv_file=A_cycle_gan_g.csv"
+    //       ],
+    //       "stopAtEntry": false,
+    //       "cwd": "${workspaceFolder}",
+    //       "environment": [],
+    //       "externalConsole": false,
+    //       "MIMode": "gdb",
+    //       "setupCommands": [
+    //           {
+    //               "description": "Enable pretty-printing for gdb",
+    //               "text": "-enable-pretty-printing",
+    //               "ignoreFailures": true
+    //           }
+    //       ]
+    //   },
+    //   {
+    //       "preLaunchTask": "benchmark_model_plus_bert_sim_del",
+    //       "name": "bm_plus_bert_sim_del",
+    //       "type": "cppdbg",
+    //       "request": "launch",
+    //       // "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/bert_sim_delegate/benchmark_model_plus_bert_sim_delegate",
+    //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/tools/benchmark/benchmark_model_plus_flex",
+
+    //       "args": [
+    //           "--use_gpu=false",
+    //           "--num_threads=1",
+    //           "--enable_op_profiling=true",
+    //           "--graph=./models/mobilevit_xxs_int8_2.8.0.tflite",
+    //           "--num_runs=1",
+    //           "--warmup_runs=0",
+    //           "--profiling_output_csv_file=./a_Bert/mobile_bert/benchmark.csv",
+    //           // "--input_layer=input_ids,input_mask,segment_ids",
+    //           // "--input_layer_shape=1,384:1,384:1,384",
+    //           // "--input_layer_value_files=input_ids:./i/i1,input_mask:./i/i2,segment_ids:./i/i3",
+    //           "--use_bert_sim_delegate=true",
+    //       ],
+    //       "stopAtEntry": false,
+    //       "cwd": "${workspaceFolder}",
+    //       "environment": [],
+    //       "externalConsole": false,
+    //       "MIMode": "gdb",
+    //       "setupCommands": [
+    //           {
+    //               "description": "Enable pretty-printing for gdb",
+    //               "text": "-enable-pretty-printing",
+    //               "ignoreFailures": true
+    //           }
+    //       ]
+    //   },
+    //   {
+    //       "preLaunchTask": "benchmark_model_plus_tconv_sim_delegate",
+    //       "name": "bm_plus_tconv_sim_del",
+    //       "type": "cppdbg",
+    //       "request": "launch",
+    //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/tconv_sim_delegate/benchmark_model_plus_tconv_sim_delegate",
+    //       "args": [
+    //           "--enable_op_profiling=true",
+    //           "--graph=./models/dcgan_gen.tflite",
+    //           "--num_runs=2",
+    //           "--warmup_runs=0",
+    //           "--warmup_min_secs=0",
+    //           "--use_tconv_sim_delegate=false",
+    //           "--print_postinvoke_state=true",
+    //           "--profiling_output_csv_file=dcgan_gen.csv"
+    //       ],
+    //       "stopAtEntry": false,
+    //       "cwd": "${workspaceFolder}",
+    //       "environment": [],
+    //       "externalConsole": false,
+    //       "MIMode": "gdb",
+    //       "setupCommands": [
+    //           {
+    //               "description": "Enable pretty-printing for gdb",
+    //               "text": "-enable-pretty-printing",
+    //               "ignoreFailures": true
+    //           }
+    //       ]
+    //   },
+    //   {
+    //       "preLaunchTask": "benchmark_model_plus_mm2im_sim_delegate",
+    //       "name": "bm_plus_mm2im_sim_del",
+    //       "type": "cppdbg",
+    //       "request": "launch",
+    //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/mm2im_sim_delegate/benchmark_model_plus_mm2im_sim_delegate",
+    //       "args": [
+    //           // "--enable_op_profiling=true",
+    //           "--graph=./models/dcgan_gen.tflite",
+    //           // "--graph=./models/test_models/tconv_pmodels/tconv_1_1_64_5_7_7_128.tflite",
+    //           // "--graph=./models/test_models/tconv_pmodels/tconv_1_1_16_3_7_7_32.tflite",
+    //           // "--graph=./models/test_models/tconv_pmodels/tconv_1_1_16_5_7_7_256.tflite",
+    //           // "--graph=./models/test_models/tconv_pmodels/tconv_1_1_32_5_7_7_256.tflite",
+    //           // "--graph=./models/test_models/tconv_pmodels/tconv_1_1_64_5_7_7_256.tflite",
+    //           // "--graph=./models/test_models/tconv_pmodels/tconv_1_1_128_5_7_7_256.tflite",
+    //           // "--graph=./models/test_models/tconv_pmodels/tconv_2_2_1_5_2_2_1.tflite",
+    //           // "--graph=./models/test_models/tconv_pmodels/tconv_1_1_64_5_7_7_128.tflite",
+    //           // "--graph=./models/test_models/tconv_pmodels/tconv_2_2_64_5_7_7_128.tflite",
+    //           // "--graph=./models/test_models/tconv_7_7_16.tflite",
+    //           // "--graph=./models/test_models/tconv_2_2_1.tflite",
+    //           // "--graph=./models/test_models/tconv_4_4_3.tflite",
+    //           // "--graph=./models/test_models/tconv_4_4_4.tflite",
+    //           // "--graph=./models/test_models/tconv_4_4_16.tflite",
+    //           // "--graph=./models/pix2pix_g.tflite",
+    //           // "--graph=./models/tconv_simple_5_3_4.tflite",
+    //           // "--graph=./models/test_models/tconv_8_8_16.tflite",
+    //           "--num_runs=1",
+    //           "--warmup_runs=0",
+    //           "--warmup_min_secs=0",
+    //           "--use_mm2im_sim_delegate=false",
+    //       ],
+    //       "stopAtEntry": false,
+    //       "cwd": "${workspaceFolder}",
+    //       "environment": [],
+    //       "externalConsole": false,
+    //       "MIMode": "gdb",
+    //       "setupCommands": [
+    //           {
+    //               "description": "Enable pretty-printing for gdb",
+    //               "text": "-enable-pretty-printing",
+    //               "ignoreFailures": true
+    //           }
+    //       ]
+    //   },
+    //   {
+    //       "preLaunchTask": "benchmark_model_plus_mm2im_delegate",
+    //       "name": "bm_plus_mm2im_del",
+    //       "type": "cppdbg",
+    //       "request": "launch",
+    //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/mm2im_delegate/benchmark_model_plus_mm2im_delegate",
+    //       "args": [
+    //           // "--enable_op_profiling=true",
+    //           // "--graph=./models/dcgan_gen.tflite",
+    //           // "--graph=./models/dcgan_gen.tflite",
+    //           "--graph=./models/test_models/tconv_pmodels/tconv_1_1_64_5_7_7_128.tflite",
+    //           "--num_runs=1",
+    //           "--warmup_runs=0",
+    //           "--warmup_min_secs=0",
+    //           "--use_mm2im_delegate=true",
+    //       ],
+    //       "stopAtEntry": false,
+    //       "cwd": "${workspaceFolder}",
+    //       "environment": [],
+    //       "externalConsole": false,
+    //       "MIMode": "gdb",
+    //       "setupCommands": [
+    //           {
+    //               "description": "Enable pretty-printing for gdb",
+    //               "text": "-enable-pretty-printing",
+    //               "ignoreFailures": true
+    //           }
+    //       ]
+    //   },
+    //   {
+    //       "preLaunchTask": "benchmark_model_plus_ramulator_add_sim_delegate",
+    //       "name": "bm_plus_ramulator_add_del",
+    //       "type": "cppdbg",
+    //       "request": "launch",
+    //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/secda_delegates/ramulator_add_sim_delegate/benchmark_model_plus_ramulator_add_delegate",
+    //       "args": [
+    //           // "--enable_op_profiling=true",
+    //           "--graph=./models/add_simple.tflite",
+    //           "--num_runs=1",
+    //           "--warmup_runs=0",
+    //           "--warmup_min_secs=0",
+    //           "--use_ramulator_add_sim_delegate=true",
+    //           "--use_simmode=true",
+    //       ],
+    //       "stopAtEntry": false,
+    //       "cwd": "${workspaceFolder}",
+    //       "environment": [],
+    //       "externalConsole": false,
+    //       "MIMode": "gdb",
+    //       "setupCommands": [
+    //           {
+    //               "description": "Enable pretty-printing for gdb",
+    //               "text": "-enable-pretty-printing",
+    //               "ignoreFailures": true
+    //           }
+    //       ]
+    //   },
+    //   {
+    //       "preLaunchTask": "benchmark_model_plus_toy_del",
+    //       "name": "bm_plus_toy_del",
+    //       "type": "cppdbg",
+    //       "request": "launch",
+    //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/toy_accelerator/sim_delegate/benchmark_model_plus_toy_delegate",
+    //       "args": [
+    //           "--use_gpu=false",
+    //           "--num_threads=1",
+    //           "--enable_op_profiling=true",
+    //           "--graph=./models/add_simple.tflite",
+    //           "--num_runs=1",
+    //           "--warmup_runs=0",
+    //           "--use_toy_delegate=true",
+    //       ],
+    //       "stopAtEntry": false,
+    //       "cwd": "${workspaceFolder}",
+    //       "environment": [],
+    //       "externalConsole": false,
+    //       "MIMode": "gdb",
+    //       "setupCommands": [
+    //           {
+    //               "description": "Enable pretty-printing for gdb",
+    //               "text": "-enable-pretty-printing",
+    //               "ignoreFailures": true
+    //           }
+    //       ]
+    //   },
+    //   {
+    //       "preLaunchTask": "inference_diff_plus_vm_sim_delegate",
+    //       "name": "id_plus_vm_sim_del",
+    //       "type": "cppdbg",
+    //       "request": "launch",
+    //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_sim_delegate/inference_diff_plus_vm_sim_delegate",
+    //       "args": [
+    //           "--model_file=./models/mobilenetv1.tflite",
+    //           "--num_runs=1",
+    //           "--use_vm_sim_delegate=true",
+    //       ],
+    //       "stopAtEntry": false,
+    //       "cwd": "${workspaceFolder}",
+    //       "environment": [],
+    //       "externalConsole": false,
+    //       "MIMode": "gdb",
+    //       "setupCommands": [
+    //           {
+    //               "description": "Enable pretty-printing for gdb",
+    //               "text": "-enable-pretty-printing",
+    //               "ignoreFailures": true
+    //           }
+    //       ]
+    //   },
+    //   {
+    //       "preLaunchTask": "inference_diff_plus_vm_sim_delegate",
+    //       "name": "id_plus_vm_sim_del2",
+    //       "type": "cppdbg",
+    //       "request": "launch",
+    //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_sim_delegate/inference_diff_plus_vm_sim_delegate",
+    //       "args": [
+    //           "--model_file=./models/dcgan_gen.tflite",
+    //           "--num_runs=1",
+    //           "--use_vm_sim_delegate=false",
+    //       ],
+    //       "stopAtEntry": false,
+    //       "cwd": "${workspaceFolder}",
+    //       "environment": [],
+    //       "externalConsole": false,
+    //       "MIMode": "gdb",
+    //       "setupCommands": [
+    //           {
+    //               "description": "Enable pretty-printing for gdb",
+    //               "text": "-enable-pretty-printing",
+    //               "ignoreFailures": true
+    //           }
+    //       ]
+    //   },
+    //   {
+    //       "preLaunchTask": "inference_diff_plus_mm2im_delegate",
+    //       "name": "id_plus_mm2im_del",
+    //       "type": "cppdbg",
+    //       "request": "launch",
+    //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/mm2im_delegate/inference_diff_plus_mm2im_delegate",
+    //       "args": [
+    //           "--model_file=./models/test_models/tconv_pmodels/tconv_2_2_128_5_16_16_256.tflite",
+    //           // "--model_file=./models/test_models/tconv_pmodels/tconv_2_2_512_5_4_4_1024.tflite",
+    //           // "--model_file=./models/test_models/tconv_pmodels/tconv_1_1_16_3_7_7_32.tflite",
+    //           // "--model_file=./models/test_models/tconv_pmodels/tconv_2_2_64_7_11_11_256.tflite",
+    //           "--num_runs=1",
+    //           "--use_mm2im_delegate=true",
+    //       ],
+    //       "stopAtEntry": false,
+    //       "cwd": "${workspaceFolder}",
+    //       "environment": [],
+    //       "externalConsole": false,
+    //       "MIMode": "gdb",
+    //       "setupCommands": [
+    //           {
+    //               "description": "Enable pretty-printing for gdb",
+    //               "text": "-enable-pretty-printing",
+    //               "ignoreFailures": true
+    //           }
+    //       ]
+    //   },
+    //   {
+    //       "preLaunchTask": "inference_diff_plus_mm2im_sim_delegate",
+    //       "name": "id_plus_mm2im_sim_del",
+    //       "type": "cppdbg",
+    //       "request": "launch",
+    //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/mm2im_sim_delegate/inference_diff_plus_mm2im_sim_delegate",
+    //       "args": [
+    //           "--model_file=./models/test_models/tconv_pmodels/tconv_1_1_16_3_7_7_32.tflite",
+    //           "--num_runs=1",
+    //           "--use_mm2im_sim_delegate=true",
+    //       ],
+    //       "stopAtEntry": false,
+    //       "cwd": "${workspaceFolder}",
+    //       "environment": [],
+    //       "externalConsole": false,
+    //       "MIMode": "gdb",
+    //       "setupCommands": [
+    //           {
+    //               "description": "Enable pretty-printing for gdb",
+    //               "text": "-enable-pretty-printing",
+    //               "ignoreFailures": true
+    //           }
+    //       ]
+    //   },
+
+      {
+          "preLaunchTask": "inference_diff_plus_add_delegate",
+          "name": "id_plus_add_del",
+          "type": "cppdbg",
+          "request": "launch",
+          "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/add_delegate/inference_diff_plus_add_delegate",
+          "args": [
+              "--model_file=./models/add_simple.tflite",
+              "--num_runs=1",
+              "--use_add_delegate=true",
+          ],
+          "stopAtEntry": false,
+          "cwd": "${workspaceFolder}",
+          "environment": [],
+          "externalConsole": false,
+          "MIMode": "gdb",
+          "setupCommands": [
+              {
+                  "description": "Enable pretty-printing for gdb",
+                  "text": "-enable-pretty-printing",
+                  "ignoreFailures": true
+              }
+          ]
+      },
+  ]
+}

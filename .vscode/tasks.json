@@ -1,0 +1,16 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "inference_diff_plus_add_delegate",
+      "type": "shell",
+      "command": "bazel6 build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc --spawn_strategy=standalone && bazel6 build tensorflow/lite/delegates/utils/secda_delegates/add_delegate:inference_diff_plus_add_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+  ]
+}
