@@ -87,7 +87,7 @@ std::optional<EvaluationStageMetrics> InferenceDiff::RunImpl() {
   inference_params->set_num_threads(num_interpreter_threads_);
   // This ensures that latency measurement isn't hampered by the time spent in
   // generating random data.
-  inference_params->set_invocations_per_run(3);
+  inference_params->set_invocations_per_run(1);
   inference_params->set_delegate(ParseStringToDelegateType(delegate_));
   if (!delegate_.empty() &&
       inference_params->delegate() == TfliteInferenceParams::NONE) {

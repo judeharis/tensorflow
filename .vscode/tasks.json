@@ -3,14 +3,57 @@
   // for the documentation about the tasks.json format
   "version": "2.0.0",
   "tasks": [
+
     {
-      "label": "inference_diff_plus_add_delegate",
+      "label": "inference_diff_plus_vm_delegate",
       "type": "shell",
-      "command": "bazel6 build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc --spawn_strategy=standalone && bazel6 build tensorflow/lite/delegates/utils/secda_delegates/add_delegate:inference_diff_plus_add_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures",
+      "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/vm_delegate:inference_diff_plus_vm_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures",
+      "dependsOn": ["sysc"],
       "group": {
         "kind": "build",
         "isDefault": true
       }
     },
+
+    {
+      "label": "inference_diff_plus_mm2im_delegate",
+      "type": "shell",
+      "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/mm2im_delegate:inference_diff_plus_mm2im_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures --subcommands",
+      "dependsOn": ["sysc"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "inference_diff_plus_add_delegate",
+      "type": "shell",
+      "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/add_delegate:inference_diff_plus_add_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures",
+      "dependsOn": ["sysc"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "inference_diff",
+      "type": "shell",
+      "command": "bazel6 build //tensorflow/lite/tools/evaluation/tasks/inference_diff:run_eval -c dbg --cxxopt='-DSYSC' --verbose_failures",
+      "dependsOn": ["sysc"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "sysc",
+      "type": "shell",
+      "command": "bazel6 build //tensorflow/lite/examples/systemc:hello_systemc --spawn_strategy=standalone",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+
   ]
 }

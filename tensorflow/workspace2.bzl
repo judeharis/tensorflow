@@ -57,6 +57,10 @@ load("//tensorflow/tools/toolchains/remote:configure.bzl", "remote_execution_con
 load("//tensorflow/tools/toolchains/clang6:repo.bzl", "clang6_configure")
 load("@rules_jvm_external//:defs.bzl", "maven_install")
 
+def secda_copts():
+  copts = ["-Wno-unknown-pragmas -Wno-error=sign-compare -Wno-unused-variable -std=c++17"]
+  return copts
+
 def _initialize_third_party():
     """ Load third party repositories.  See above load() statements. """
     FP16()

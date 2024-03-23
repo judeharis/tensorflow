@@ -190,6 +190,10 @@ TfLiteStatus TfliteInferenceStage::Run() {
   // Invoke.
   auto& params = config_.specification().tflite_inference_params();
   for (int i = 0; i < params.invocations_per_run(); ++i) {
+    for (int i = 0; i < interpreter_->inputs().size(); ++i) {
+      TfLiteTensor* tensor = interpreter_->tensor(interpreter_->inputs()[i]);
+      tensor->data.raw = static_cast<char*>(inputs_->at(i));
+    }
     int64_t start_us = profiling::time::NowMicros();
     if (interpreter_->Invoke() != kTfLiteOk) {
       LOG(ERROR) << "TFLite interpreter failed to invoke at run " << i;
@@ -197,7 +201,7 @@ TfLiteStatus TfliteInferenceStage::Run() {
     }
     latency_stats_.UpdateStat(profiling::time::NowMicros() - start_us);
   }
-
+  UpdateModelInfo();
   return kTfLiteOk;
 }
 
