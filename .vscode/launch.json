@@ -600,8 +600,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/mm2im_delegate/inference_diff_plus_mm2im_delegate",
             "args": [
-                  "--model_file=./models/test_models/tconv_pmodels/tconv_2_2_128_5_16_16_256.tflite",
-                // "--model_file=./models/test_models/tconv_pmodels/tconv_2_2_512_5_4_4_1024.tflite",
+                //   "--model_file=./models/test_models/tconv_pmodels/tconv_2_2_128_5_16_16_256.tflite",
+                "--model_file=./models/test_models/tconv_pmodels/tconv_2_2_512_5_4_4_1024.tflite",
                 // "--model_file=./models/test_models/tconv_pmodels/tconv_1_1_16_3_7_7_32.tflite",
                 // "--model_file=./models/test_models/tconv_pmodels/tconv_2_2_64_7_11_11_256.tflite",
                 "--num_runs=1",

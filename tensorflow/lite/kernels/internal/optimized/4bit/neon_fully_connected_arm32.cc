@@ -37,8 +37,9 @@ namespace optimized_4bit {
 #define INNER_LOOP_POSTAMBLE "7"
 #define END "8"
 
+// Jude: Added #
 #define KERNEL_4x1                       \
-  "mov r8, #0xf\n"                       \  // Jude: Added #
+  "mov r8, #0xf\n"                       \  
   "vdup.8 d28, r8\n"                     \
   "mov r0, %[element_ptr]\n"             \
   "mov r6, %[lhs_val]\n"                 \
