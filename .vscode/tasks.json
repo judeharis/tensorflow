@@ -3,23 +3,64 @@
   // for the documentation about the tasks.json format
   "version": "2.0.0",
   "tasks": [
-
     {
-      "label": "inference_diff_plus_vm_delegate",
+      "label": "benchmark_model_plus_bert_sim_delegate",
       "type": "shell",
-      "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/vm_delegate:inference_diff_plus_vm_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures",
-      "dependsOn": ["sysc"],
+      "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/bert_sim_delegate:benchmark_model_plus_bert_sim_delegate -c dbg --cxxopt='-DSYSC' --define tflite_with_xnnpack=false --verbose_failures",
+      "dependsOn": [
+        "sysc"
+      ],
       "group": {
         "kind": "build",
         "isDefault": true
       }
     },
-
+    // =========================================
+    // Inference Diff
+    // =========================================
+    {
+      "label": "inference_diff_plus_sa_delegate",
+      "type": "shell",
+      "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/sa_delegate:inference_diff_plus_sa_delegate -c dbg --cxxopt='-DSYSC' --define tflite_with_xnnpack=false --verbose_failures",
+      "dependsOn": [
+        "sysc"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "inference_diff_plus_bert_sim_delegate",
+      "type": "shell",
+      "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/bert_sim_delegate:inference_diff_plus_bert_sim_delegate -c dbg --cxxopt='-DSYSC' --define tflite_with_xnnpack=false --verbose_failures",
+      "dependsOn": [
+        "sysc"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "inference_diff_plus_vm_delegate",
+      "type": "shell",
+      "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/vm_delegate:inference_diff_plus_vm_delegate -c dbg --cxxopt='-DSYSC'  --define tflite_with_xnnpack=false --verbose_failures",
+      "dependsOn": [
+        "sysc"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
     {
       "label": "inference_diff_plus_mm2im_delegate",
       "type": "shell",
-      "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/mm2im_delegate:inference_diff_plus_mm2im_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures --subcommands",
-      "dependsOn": ["sysc"],
+      "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/mm2im_delegate:inference_diff_plus_mm2im_delegate -c dbg --cxxopt='-DTF_LITE_DISABLE_X86_NEON' --cxxopt='-DSYSC' --verbose_failures --define tflite_with_xnnpack=false ",
+      "dependsOn": [
+        "sysc"
+      ],
       "group": {
         "kind": "build",
         "isDefault": true
@@ -28,8 +69,10 @@
     {
       "label": "inference_diff_plus_add_delegate",
       "type": "shell",
-      "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/add_delegate:inference_diff_plus_add_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures",
-      "dependsOn": ["sysc"],
+      "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/add_delegate:inference_diff_plus_add_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures --define tflite_with_xnnpack=false ",
+      "dependsOn": [
+        "sysc"
+      ],
       "group": {
         "kind": "build",
         "isDefault": true
@@ -38,8 +81,10 @@
     {
       "label": "inference_diff",
       "type": "shell",
-      "command": "bazel6 build //tensorflow/lite/tools/evaluation/tasks/inference_diff:run_eval -c dbg --cxxopt='-DSYSC' --verbose_failures",
-      "dependsOn": ["sysc"],
+      "command": "bazel6 build //tensorflow/lite/tools/evaluation/tasks/inference_diff:run_eval -c dbg --cxxopt='-DSYSC' --verbose_failures --define tflite_with_xnnpack=false",
+      "dependsOn": [
+        "sysc"
+      ],
       "group": {
         "kind": "build",
         "isDefault": true
@@ -48,12 +93,11 @@
     {
       "label": "sysc",
       "type": "shell",
-      "command": "bazel6 build //tensorflow/lite/examples/systemc:hello_systemc --spawn_strategy=standalone",
+      "command": "bazel6 build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc --spawn_strategy=standalone --define tflite_with_xnnpack=false ",
       "group": {
         "kind": "build",
         "isDefault": true
       }
     },
-
   ]
 }

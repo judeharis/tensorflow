@@ -28,7 +28,6 @@ limitations under the License.
 #include <unordered_set>
 #include <utility>
 #include <vector>
-#include <iostream>
 
 #include "tensorflow/lite/allocation.h"
 #include "tensorflow/lite/builtin_ops.h"
@@ -55,6 +54,11 @@ limitations under the License.
 #ifdef TF_LITE_TENSORFLOW_PROFILER
 #include "tensorflow/lite/tensorflow_profiler_logger.h"
 #endif  // TF_LITE_TENSORFLOW_PROFILER
+
+#include <fstream>
+#include <iostream> // Jude: Added
+
+#include "tensorflow/lite/kernels/kernel_util.h"
 
 namespace tflite {
 
@@ -1686,12 +1690,62 @@ TfLiteStatus Subgraph::InvokeImpl() {
 
     EnsureTensorsVectorCapacity();
     tensor_resized_since_op_invoke_ = false;
-    std::cout << "node_index: " << node_index << std::endl;
+    // std::cout << "node_index: " << node_index << std::endl;
     if (auto s = OpInvoke(registration, &node); s != kTfLiteOk) {
       auto err = ReportOpError(&context_, node, registration, node_index,
                                "failed to invoke");
       return s == kTfLiteCancelled ? s : err;
     }
+     // Jude: Added
+    // if (registration.builtin_code == 3) {
+    //   using namespace std;
+    //   TfLiteTensor* output;
+    //   TF_LITE_ENSURE_OK(&context_, GetOutputSafe(&context_, &node, 0,
+    //   &output));
+    //   {
+    //     int dof = 0;
+
+    //     if (output->dims->data[0] == 1 && output->dims->size == 3) dof++;
+    //     int cols = output->dims->data[1] * output->dims->data[2];
+    //     int rows = output->dims->data[3];
+    //     ofstream myfile;
+    //     myfile.open("./aData/conv/" + std::to_string(node_index) +
+    //                 "_out_cpu.csv");
+    //     int8_t* res_pointer = output->data.int8;
+    //     int index = 0;
+    //     for (int c = 0; c < cols; c++) {
+    //       myfile << endl;
+    //       for (int r = 0; r < rows; r++) {
+    //         myfile << (int)res_pointer[index] << ",";
+    //         index++;
+    //       }
+    //     }
+    //     myfile.close();
+    //   }
+    // }
+
+    // if (registration.builtin_code == 9) {
+    //   using namespace std;
+    //   TfLiteTensor* output;
+    //   TF_LITE_ENSURE_OK(&context_, GetOutputSafe(&context_, &node, 0, &output));
+    //   {
+    //     int cols = output->dims->data[0];
+    //     int rows = output->dims->data[1];
+    //     ofstream myfile;
+    //     myfile.open("./aData/fc/" + std::to_string(node_index) +
+    //                 "_out_cpu.csv");
+    //     int8_t* res_pointer = output->data.int8;
+    //     int index = 0;
+    //     for (int c = 0; c < cols; c++) {
+    //       myfile << endl;
+    //       for (int r = 0; r < rows; r++) {
+    //         myfile << (int)res_pointer[index] << ",";
+    //         index++;
+    //       }
+    //     }
+    //     myfile.close();
+    //   }
+    // }
 
     // Force execution prep for downstream ops if the latest op triggered the
     // resize of a dynamic tensor.

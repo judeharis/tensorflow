@@ -24,6 +24,11 @@ limitations under the License.
 #include "tensorflow/lite/kernels/internal/optimized/im2col_utils.h"
 #include "tensorflow/lite/kernels/internal/types.h"
 
+// Jude: Added
+// #include <fstream>
+// #include <iostream>
+// int node_index = 0;
+
 namespace tflite {
 namespace optimized_integer_ops {
 
@@ -83,6 +88,23 @@ inline void ConvPerChannel(
 
   const int gemm_input_rows = gemm_input_shape->Dims(3);
   const int gemm_input_cols = FlatSizeSkipDim(*gemm_input_shape, 3);
+
+  // Jude: Added
+  // using namespace std;
+  // ofstream myfile;
+  // myfile.open("aData/conv/" + std::to_string(node_index++) +
+  //             "_inp_cpu.csv");
+  // auto res_pointer = gemm_input_data;
+  // int index = 0;
+  // for (int c = 0; c < gemm_input_cols; c++) {
+  //   myfile << endl;
+  //   for (int r = 0; r < gemm_input_rows; r++) {
+  //     myfile << (int)res_pointer[index] << ",";
+  //     index++;
+  //   }
+  // }
+  // myfile.close();
+
   const int filter_rows = filter_shape.Dims(0);
   const int filter_cols = FlatSizeSkipDim(filter_shape, 0);
   const int output_rows = output_shape.Dims(3);

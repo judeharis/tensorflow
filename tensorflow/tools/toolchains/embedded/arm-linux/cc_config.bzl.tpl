@@ -14,7 +14,6 @@ load("@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
     "with_feature_set",
 )
 load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
-
 def _impl(ctx):
     if (ctx.attr.cpu == "aarch64"):
         toolchain_identifier = "aarch64-none-linux-gnu"
@@ -344,13 +343,13 @@ def _impl(ctx):
                         flag_group(
                             flags = [
                                 "-isystem",
-                                "%{ARMHF_COMPILER_PATH}%/lib/gcc/arm-none-linux-gnueabihf/11.3.1/include",
+                                "%{ARMHF_COMPILER_PATH}%/lib/gcc/arm-linux-gnueabihf/8.3.0/include", # Jude: Edited
                                 "-isystem",
-                                "%{ARMHF_COMPILER_PATH}%/lib/gcc/arm-none-linux-gnueabihf/11.3.1/include-fixed",
+                                "%{ARMHF_COMPILER_PATH}%/lib/gcc/arm-linux-gnueabihf/8.3.0/include-fixed", # Jude: Edited
                                 "-isystem",
-                                "%{ARMHF_COMPILER_PATH}%/arm-none-linux-gnueabihf/include/c++/11.3.1/",
+                                "%{ARMHF_COMPILER_PATH}%/arm-linux-gnueabihf/include/c++/8.3.0/", # Jude: Edited
                                 "-isystem",
-                                "%{ARMHF_COMPILER_PATH}%/arm-none-linux-gnueabihf/libc/usr/include/",
+                                "%{ARMHF_COMPILER_PATH}%/arm-linux-gnueabihf/libc/usr/include/", # Jude: Edited
                                 "-isystem",
                                 "%{PYTHON_INCLUDE_PATH}%",
                                 "-isystem",
@@ -478,10 +477,10 @@ def _impl(ctx):
             ]
     elif (ctx.attr.cpu == "armhf"):
         cxx_builtin_include_directories = [
-                "%{ARMHF_COMPILER_PATH}%/lib/gcc/arm-none-linux-gnueabihf/11.3.1/include",
-                "%{ARMHF_COMPILER_PATH}%/lib/gcc/arm-none-linux-gnueabihf/11.3.1/include-fixed",
-                "%{ARMHF_COMPILER_PATH}%/arm-none-linux-gnueabihf/include/c++/11.3.1/",
-                "%{ARMHF_COMPILER_PATH}%/arm-none-linux-gnueabihf/libc/usr/include/",
+                "%{ARMHF_COMPILER_PATH}%/lib/gcc/arm-linux-gnueabihf/8.3.0/include", # Jude: Edited
+                "%{ARMHF_COMPILER_PATH}%/lib/gcc/arm-linux-gnueabihf/8.3.0/include-fixed", # Jude: Edited
+                "%{ARMHF_COMPILER_PATH}%/arm-linux-gnueabihf/include/c++/8.3.0/", # Jude: Edited
+                "%{ARMHF_COMPILER_PATH}%/arm-linux-gnueabihf/libc/usr/include/", # Jude: Edited
                 "/usr/include",
             ]
     else:
@@ -539,44 +538,44 @@ def _impl(ctx):
         tool_paths = [
             tool_path(
                 name = "ar",
-                path = "%{ARMHF_COMPILER_PATH}%/bin/arm-none-linux-gnueabihf-ar",
+                path = "%{ARMHF_COMPILER_PATH}%/bin/arm-linux-gnueabihf-ar", # Jude: Edited
             ),
             tool_path(name = "compat-ld", path = "/bin/false"),
             tool_path(
                 name = "cpp",
-                path = "%{ARMHF_COMPILER_PATH}%/bin/arm-none-linux-gnueabihf-cpp",
+                path = "%{ARMHF_COMPILER_PATH}%/bin/arm-linux-gnueabihf-cpp", # Jude: Edited
             ),
             tool_path(
                 name = "dwp",
-                path = "%{ARMHF_COMPILER_PATH}%/bin/arm-none-linux-gnueabihf-dwp",
+                path = "%{ARMHF_COMPILER_PATH}%/bin/arm-linux-gnueabihf-dwp", # Jude: Edited
             ),
             tool_path(
                 name = "gcc",
-                path = "%{ARMHF_COMPILER_PATH}%/bin/arm-none-linux-gnueabihf-gcc",
+                path = "%{ARMHF_COMPILER_PATH}%/bin/arm-linux-gnueabihf-gcc", # Jude: Edited
             ),
             tool_path(
                 name = "gcov",
-                path = "%{ARMHF_COMPILER_PATH}%/bin/arm-none-linux-gnueabihf-gcov",
+                path = "%{ARMHF_COMPILER_PATH}%/bin/arm-linux-gnueabihf-gcov", # Jude: Edited
             ),
             tool_path(
                 name = "ld",
-                path = "%{ARMHF_COMPILER_PATH}%/bin/arm-none-linux-gnueabihf-ld",
+                path = "%{ARMHF_COMPILER_PATH}%/bin/arm-linux-gnueabihf-ld", # Jude: Edited
             ),
             tool_path(
                 name = "nm",
-                path = "%{ARMHF_COMPILER_PATH}%/bin/arm-none-linux-gnueabihf-nm",
+                path = "%{ARMHF_COMPILER_PATH}%/bin/arm-linux-gnueabihf-nm", # Jude: Edited
             ),
             tool_path(
                 name = "objcopy",
-                path = "%{ARMHF_COMPILER_PATH}%/bin/arm-none-linux-gnueabihf-objcopy",
+                path = "%{ARMHF_COMPILER_PATH}%/bin/arm-linux-gnueabihf-objcopy", # Jude: Edited
             ),
             tool_path(
                 name = "objdump",
-                path = "%{ARMHF_COMPILER_PATH}%/bin/arm-none-linux-gnueabihf-objdump",
+                path = "%{ARMHF_COMPILER_PATH}%/bin/arm-linux-gnueabihf-objdump", # Jude: Edited
             ),
             tool_path(
                 name = "strip",
-                path = "%{ARMHF_COMPILER_PATH}%/bin/arm-none-linux-gnueabihf-strip",
+                path = "%{ARMHF_COMPILER_PATH}%/bin/arm-linux-gnueabihf-strip", # Jude: Edited
             ),
         ]
     else:

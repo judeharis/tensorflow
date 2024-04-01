@@ -3,65 +3,65 @@ package(default_visibility = ["//visibility:public"])
 filegroup(
     name = "gcc",
     srcs = [
-        "bin/arm-none-linux-gnueabihf-gcc",
+        "bin/arm-linux-gnueabihf-gcc", # Jude: Edited
     ],
 )
 
 filegroup(
     name = "ar",
     srcs = [
-        "bin/arm-none-linux-gnueabihf-ar",
+        "bin/arm-linux-gnueabihf-ar", # Jude: Edited
     ],
 )
 
 filegroup(
     name = "ld",
     srcs = [
-        "bin/arm-none-linux-gnueabihf-ld",
+        "bin/arm-linux-gnueabihf-ld", # Jude: Edited
     ],
 )
 
 filegroup(
     name = "nm",
     srcs = [
-        "bin/arm-none-linux-gnueabihf-nm",
+        "bin/arm-linux-gnueabihf-nm", # Jude: Edited
     ],
 )
 
 filegroup(
     name = "objcopy",
     srcs = [
-        "bin/arm-none-linux-gnueabihf-objcopy",
+        "bin/arm-linux-gnueabihf-objcopy", # Jude: Edited
     ],
 )
 
 filegroup(
     name = "objdump",
     srcs = [
-        "bin/arm-none-linux-gnueabihf-objdump",
+        "bin/arm-linux-gnueabihf-objdump", # Jude: Edited
     ],
 )
 
 filegroup(
     name = "strip",
     srcs = [
-        "bin/arm-none-linux-gnueabihf-strip",
+        "bin/arm-linux-gnueabihf-strip", # Jude: Edited
     ],
 )
 
 filegroup(
     name = "as",
     srcs = [
-        "bin/arm-none-linux-gnueabihf-as",
+        "bin/arm-linux-gnueabihf-as", # Jude: Edited
     ],
 )
 
 filegroup(
     name = "compiler_pieces",
     srcs = glob([
-        "arm-none-linux-gnueabihf/**",
+        "arm-linux-gnueabihf/**", # Jude: Edited
         "libexec/**",
-        "lib/gcc/arm-none-linux-gnueabihf/**",
+        "lib/gcc/arm-linux-gnueabihf/**", # Jude: Edited
         "include/**",
     ]),
 )

@@ -152,9 +152,16 @@ TfLiteStatus PrepareGeneralSubOp(TfLiteContext* context,
   tflite::QuantizeMultiplierSmallerThanOneExp(real_input2_multiplier,
                                               &op_params->input2_multiplier,
                                               &op_params->input2_shift);
-  tflite::QuantizeMultiplierSmallerThanOneExp(real_output_multiplier,
-                                              &op_params->output_multiplier,
-                                              &op_params->output_shift);
+  if (real_output_multiplier > 1.0) {
+     // Jude: Added
+    tflite::QuantizeMultiplierGreaterThanOne(real_output_multiplier,
+                                             &op_params->output_multiplier,
+                                             &op_params->output_shift);
+  } else {
+    tflite::QuantizeMultiplierSmallerThanOneExp(real_output_multiplier,
+                                                &op_params->output_multiplier,
+                                                &op_params->output_shift);
+  }
 
   TF_LITE_ENSURE_STATUS(CalculateActivationRangeQuantized(
       context, params->activation, output, &op_params->output_activation_min,

@@ -221,9 +221,11 @@ Stat<int64_t> BenchmarkModel::Run(int min_num_times, float min_secs,
   double manual_inter_run_gap = 1.0 / run_frequency;
   // float doesn't have sufficient precision for storing this number
   double next_run_finish_time = now_us * 1e-6 + manual_inter_run_gap;
-  for (int run = 0; (run < min_num_times || now_us < min_finish_us) &&
-                    now_us <= max_finish_us;
-       run++) {
+  // Jude: Added
+  // for (int run = 0; (run < min_num_times || now_us < min_finish_us) &&
+  //                   now_us <= max_finish_us;
+  //      run++) {
+  for (int run = 0; run < min_num_times; run++) {
     ResetInputsAndOutputs();
     listeners_.OnSingleRunStart(run_type);
     int64_t start_us = profiling::time::NowMicros();
@@ -314,13 +316,6 @@ TfLiteStatus BenchmarkModel::Run() {
   }
 
   listeners_.OnBenchmarkStart(params_);
-  Stat<int64_t> warmup_time_us =
-      Run(params_.Get<int32_t>("warmup_runs"),
-          params_.Get<float>("warmup_min_secs"), params_.Get<float>("max_secs"),
-          WARMUP, &status);
-  if (status != kTfLiteOk) {
-    return status;
-  }
 
   Stat<int64_t> inference_time_us =
       Run(params_.Get<int32_t>("num_runs"), params_.Get<float>("min_secs"),
@@ -333,6 +328,15 @@ TfLiteStatus BenchmarkModel::Run() {
     peak_memory_reporter->Stop();
     peak_mem_mb = peak_memory_reporter->GetPeakMemUsageInMB();
   }
+  // Jude: Added
+  Stat<int64_t> warmup_time_us = inference_time_us;
+  float run_time = inference_time_us.sum();
+  std::cout << "===========================" << std::endl;
+  std::cout << "average time: "
+            << (run_time / (params_.Get<int32_t>("num_runs") * 1000)) << " ms"
+            << "  std: " << inference_time_us.std_deviation() << std::endl;
+  std::cout << "===========================" << std::endl;
+
 
   listeners_.OnBenchmarkEnd({model_size_mb, startup_latency_us, input_bytes,
                              warmup_time_us, inference_time_us, init_mem_usage,

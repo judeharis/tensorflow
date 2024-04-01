@@ -61,7 +61,18 @@ float CalculateAverageError(T* reference, T* test, int64_t num_elements) {
   for (int i = 0; i < num_elements; i++) {
     float test_value = static_cast<float>(test[i]);
     float reference_value = static_cast<float>(reference[i]);
+     // Jude: Added
+    if (reference_value != test_value) {
+      LOG(INFO) << "Mismatch at index " << i
+                << ": reference = " << reference_value
+                << ", test = " << test_value
+                << " (diff =" << std::abs(test_value - reference_value) << ")"
+                << std::endl;
+    }
     error += std::abs(test_value - reference_value);
+    if ((test_value - reference_value) != 0) {
+      LOG(INFO) << "error: " << error << std::endl;
+    }
   }
   error /= num_elements;
 
@@ -98,12 +109,13 @@ TfLiteStatus InferenceProfilerStage::Init(
   for (int i = 0; i < model_info_->inputs.size(); ++i) {
     const TfLiteType model_input_type = model_info_->inputs[i]->type;
     if (model_input_type == kTfLiteUInt8 || model_input_type == kTfLiteInt8 ||
-        model_input_type == kTfLiteInt64 ||
+        model_input_type == kTfLiteInt32 ||
+        model_input_type == kTfLiteInt64 ||  // Jude: int32
         model_input_type == kTfLiteFloat32 ||
         model_input_type == kTfLiteFloat16) {
     } else {
       LOG(ERROR) << "InferenceProfilerStage only supports "
-                    "float16/float32/int8/uint8/int64 "
+                    "float16/float32/int8/uint8/int32/int64 "  // Jude: int32
                     "input types";
       return kTfLiteError;
     }
@@ -117,6 +129,7 @@ TfLiteStatus InferenceProfilerStage::Init(
     uint8_tensors_.emplace_back();
     int8_tensors_.emplace_back();
     float16_tensors_.emplace_back();
+    int32_tensors_.emplace_back();  // Jude: int32
     int64_tensors_.emplace_back();
   }
   // Preprocess output metadata for calculating diffs later.
@@ -157,6 +170,10 @@ TfLiteStatus InferenceProfilerStage::Run() {
           input_num_elements_[i], std::numeric_limits<int8_t>::min(),
           std::numeric_limits<int8_t>::max(), &int8_tensors_[i]);
       input_ptrs.push_back(int8_tensors_[i].data());
+    } else if (model_input_type == kTfLiteInt32) {  // Jude: weird edge case
+      GenerateRandomGaussianData(input_num_elements_[i], 0, 1,
+                                 &int32_tensors_[i]);
+      input_ptrs.push_back(int32_tensors_[i].data());
     } else if (model_input_type == kTfLiteInt64) {
       GenerateRandomGaussianData(
           input_num_elements_[i], std::numeric_limits<int64_t>::min(),

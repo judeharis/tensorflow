@@ -490,6 +490,7 @@ cc_library(
         "//tensorflow/lite/profiling:root_profiler",
         "//tensorflow/lite/profiling/telemetry",
         "//tensorflow/lite/schema:schema_fbs",
+        "//tensorflow/lite/kernels:kernel_util",
     ] + select({
         "//tensorflow/lite:tflite_use_simple_memory_planner": [
             "//tensorflow/lite:simple_planner",
