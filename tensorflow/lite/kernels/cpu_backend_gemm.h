@@ -156,8 +156,10 @@ void Gemm(const MatrixParams<LhsScalar>& lhs_params, const LhsScalar* lhs_data,
   }
   // If we did not choose to force usage of ruy above, then we may now consider
   // using custom GEMV code for the matrix*vector cases.
-  const bool try_custom_gemv =
-      (dst_params.cols == 1) && false;  // Jude: disabled custom gemv
+  // const bool try_custom_gemv =
+  //     (dst_params.cols == 1) && false;  // Jude: disabled custom gemv
+    const bool try_custom_gemv =
+      (dst_params.cols == 1);  // Jude: disabled custom gemv
   if (try_custom_gemv) {
     // GEMV case: try a custom fast GEMV path. It will return true if it
     // actually handled it.

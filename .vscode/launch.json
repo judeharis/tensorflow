@@ -574,8 +574,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/inference_diff_plus_vm_delegate",
             "args": [
-                "--model_file=./models/resnet18v1.tflite",
-                // "--model_file=./models/mobilenetv2.tflite",
+                // "--model_file=./models/resnet18v1.tflite",
+                "--model_file=./models/mobilenetv2.tflite",
                 //   "--model_file=./models/test_models/conv2d_64_64_64.tflite",
                 "--num_runs=1",
                 "--use_vm_delegate=true",
@@ -600,8 +600,16 @@
             "request": "launch",
             "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/mm2im_delegate/inference_diff_plus_mm2im_delegate",
             "args": [
+                "--model_file=./models/dcgan_gen.tflite",
+                // "--model_file=./models/new_cycle_gan_f.tflite",
+                // "--model_file=./models/pix2pix_g.tflite",
+
+                
+
+                // "--model_file=./models/test_models/tconv_pmodels/tconv_1_1_16_7_7_7_32.tflite",
+
                 //   "--model_file=./models/test_models/tconv_pmodels/tconv_2_2_128_5_16_16_256.tflite",
-                "--model_file=./models/test_models/tconv_pmodels/tconv_2_2_512_5_4_4_1024.tflite",
+                // "--model_file=./models/test_models/tconv_pmodels/tconv_2_2_512_5_4_4_1024.tflite",
                 // "--model_file=./models/test_models/tconv_pmodels/tconv_1_1_16_3_7_7_32.tflite",
                 // "--model_file=./models/test_models/tconv_pmodels/tconv_2_2_64_7_11_11_256.tflite",
                 "--num_runs=1",
@@ -630,6 +638,40 @@
                 "--model_file=./models/add_simple.tflite",
                 "--num_runs=1",
                 "--use_add_delegate=true",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
+
+// =========================================
+// Accuracy Testing
+// =========================================
+        {
+            "preLaunchTask": "eval_model_accuracy",
+            "name": "eval_model_accuracy",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/examples/secda_apps/eval_model_accuracy/eval_model_accuracy",
+            "args": [
+                "-mmodels/mobilenetv2_modified_updated_addSoftMax_pot_wgtchanged_v4_trained_ptqint8_100.tflite",
+                "-laData/testdata/labels_cifar10.txt",
+                "-iaData/testdata/testX_0_cifar10.bmp",
+                "-daData/testdata/cifar10_test",
+                "-haData/testdata/cifar10_test_labels_names.txt",
+                "-oaData/testdata/cifar10_test_accuracy.txt",
+                "-u10000",
+                "-t24",
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

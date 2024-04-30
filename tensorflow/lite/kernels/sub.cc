@@ -152,7 +152,8 @@ TfLiteStatus PrepareGeneralSubOp(TfLiteContext* context,
   tflite::QuantizeMultiplierSmallerThanOneExp(real_input2_multiplier,
                                               &op_params->input2_multiplier,
                                               &op_params->input2_shift);
-  if (real_output_multiplier > 1.0) {
+  // if (real_output_multiplier > 1.0) {
+  if (false) {
      // Jude: Added
     tflite::QuantizeMultiplierGreaterThanOne(real_output_multiplier,
                                              &op_params->output_multiplier,

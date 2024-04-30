@@ -1690,6 +1690,7 @@ TfLiteStatus Subgraph::InvokeImpl() {
 
     EnsureTensorsVectorCapacity();
     tensor_resized_since_op_invoke_ = false;
+    // Jude: Added
     // std::cout << "node_index: " << node_index << std::endl;
     if (auto s = OpInvoke(registration, &node); s != kTfLiteOk) {
       auto err = ReportOpError(&context_, node, registration, node_index,
