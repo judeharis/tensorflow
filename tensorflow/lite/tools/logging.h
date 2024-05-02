@@ -99,10 +99,16 @@ class LoggingWrapper {
 }  // namespace logging
 }  // namespace tflite
 
+// Jude: Added this to disable logging
+#ifdef SECDA_LOGGING_DISABLED
+#define TFLITE_LOG(severity) std::cerr
+#else
 #define TFLITE_LOG(severity)                                  \
   tflite::logging::LoggingWrapper(                            \
       tflite::logging::LoggingWrapper::LogSeverity::severity) \
       .Stream()
+#endif
+
 
 #define TFLITE_MAY_LOG(severity, should_log)                                \
   tflite::logging::LoggingWrapper(                                          \

@@ -366,6 +366,8 @@ BenchmarkParams BenchmarkTfLiteModel::DefaultParams() {
       BenchmarkParam::Create<bool>(kOpProfilingEnabledDefault));
   default_params.AddParam("max_profiling_buffer_entries",
                           BenchmarkParam::Create<int32_t>(1024));
+  // Jude: Added power collection option
+  default_params.AddParam("collect_power", BenchmarkParam::Create<bool>(false));
   default_params.AddParam("allow_dynamic_profiling_buffer_increase",
                           BenchmarkParam::Create<bool>(false));
   default_params.AddParam("profiling_output_csv_file",
@@ -444,6 +446,8 @@ std::vector<Flag> BenchmarkTfLiteModel::GetFlags() {
       CreateFlag<bool>("require_full_delegation", &params_,
                        "require delegate to run the entire graph"),
       CreateFlag<bool>("enable_op_profiling", &params_, "enable op profiling"),
+      // Jude: Added power collection option
+      CreateFlag<bool>("collect_power", &params_, "collect power"),
       CreateFlag<int32_t>("max_profiling_buffer_entries", &params_,
                           "max initial profiling buffer entries"),
       CreateFlag<bool>("allow_dynamic_profiling_buffer_increase", &params_,
@@ -511,6 +515,8 @@ void BenchmarkTfLiteModel::LogParams() {
                       "Require full delegation", verbose);
   LOG_BENCHMARK_PARAM(bool, "enable_op_profiling", "Enable op profiling",
                       verbose);
+  // Jude: Added power collection option
+  LOG_BENCHMARK_PARAM(bool, "collect_power", "Collect power", verbose);
   LOG_BENCHMARK_PARAM(int32_t, "max_profiling_buffer_entries",
                       "Max initial profiling buffer entries", verbose);
   LOG_BENCHMARK_PARAM(bool, "allow_dynamic_profiling_buffer_increase",
