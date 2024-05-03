@@ -509,16 +509,15 @@
                 }
             ]
         },
-
-// =========================================
-// Inference Diff
-// =========================================
+        // =========================================
+        // Inference Diff
+        // =========================================
         {
-            "preLaunchTask": "inference_diff_plus_sa_delegate",
-            "name": "id_plus_sa_del",
+            "preLaunchTask": "inference_diff_plus_sa_delegate_v1",
+            "name": "id_plus_sa_del_v1",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/sa_delegate/inference_diff_plus_sa_delegate",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/sa_delegate/v1/inference_diff_plus_sa_delegate",
             "args": [
                 "--model_file=./models/mobilenetv1.tflite",
                 "--num_runs=1",
@@ -537,7 +536,6 @@
                 }
             ]
         },
-
         {
             "preLaunchTask": "inference_diff_plus_bert_sim_delegate",
             "name": "id_plus_bert_sim_del",
@@ -568,15 +566,15 @@
             ]
         },
         {
-            "preLaunchTask": "inference_diff_plus_vm_delegate",
-            "name": "id_plus_vm_del",
+            "preLaunchTask": "inference_diff_plus_vm_delegate_v4",
+            "name": "id_plus_vm_del_v4",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/inference_diff_plus_vm_delegate",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v4/inference_diff_plus_vm_delegate",
             "args": [
                 // "--model_file=./models/resnet18v1.tflite",
                 // "--model_file=./models/mobilenetv2.tflite",
-                  "--model_file=./models/test_models/conv2d_64_64_64.tflite",
+                "--model_file=./models/test_models/conv2d_64_64_64.tflite",
                 "--num_runs=1",
                 "--use_vm_delegate=true",
             ],
@@ -594,20 +592,40 @@
             ]
         },
         {
-            "preLaunchTask": "inference_diff_plus_mm2im_delegate",
-            "name": "id_plus_mm2im_del",
+            "preLaunchTask": "inference_diff_plus_vm_delegate_v3",
+            "name": "id_plus_vm_del_v3",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/mm2im_delegate/inference_diff_plus_mm2im_delegate",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v3/inference_diff_plus_vm_delegate",
+            "args": [
+                "--model_file=./models/test_models/conv2d_64_64_64.tflite",
+                "--num_runs=1",
+                "--use_vm_delegate=true",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "preLaunchTask": "inference_diff_plus_mm2im_delegate_v4",
+            "name": "id_plus_mm2im_del_v4",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/mm2im_delegate/v4/inference_diff_plus_mm2im_delegate",
             "args": [
                 "--model_file=./models/dcgan_gen.tflite",
                 // "--model_file=./models/new_cycle_gan_f.tflite",
                 // "--model_file=./models/pix2pix_g.tflite",
-
-                
-
                 // "--model_file=./models/test_models/tconv_pmodels/tconv_1_1_16_7_7_7_32.tflite",
-
                 //   "--model_file=./models/test_models/tconv_pmodels/tconv_2_2_128_5_16_16_256.tflite",
                 // "--model_file=./models/test_models/tconv_pmodels/tconv_2_2_512_5_4_4_1024.tflite",
                 // "--model_file=./models/test_models/tconv_pmodels/tconv_1_1_16_3_7_7_32.tflite",
@@ -652,11 +670,9 @@
                 }
             ]
         },
-
-
-// =========================================
-// Accuracy Testing
-// =========================================
+        // =========================================
+        // Accuracy Testing
+        // =========================================
         {
             "preLaunchTask": "eval_model_accuracy",
             "name": "eval_model_accuracy",

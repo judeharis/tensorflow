@@ -342,9 +342,9 @@ TfLiteStatus BenchmarkModel::Run() {
   Stat<int64_t> warmup_time_us = inference_time_us;
   float avg_run_time = (run_time / (params_.Get<int32_t>("num_runs") * 1000));
   if (params_.Get<bool>("collect_power")) {
-    std::cerr << "===========================" << std::endl;
-    std::cerr << "Power Measurement Done" << std::endl;
-    std::cerr << "===========================" << std::endl;
+    std::cout << "===========================" << std::endl;
+    std::cout << "Power Measurement Done" << std::endl;
+    std::cout << "===========================" << std::endl;
   }
   std::string runtime_file = "runtime.txt";
   std::ofstream runtime_out(runtime_file, std::ios::out);
@@ -352,11 +352,11 @@ TfLiteStatus BenchmarkModel::Run() {
   runtime_out.close();
   // Jude: Added Done
 
-  std::cerr << "===========================" << std::endl;
-  std::cerr << "average time: "
+  std::cout << "===========================" << std::endl;
+  std::cout << "average time: "
             << (run_time / (params_.Get<int32_t>("num_runs") * 1000)) << " ms"
             << "  std: " << inference_time_us.std_deviation() << std::endl;
-  std::cerr << "===========================" << std::endl;
+  std::cout << "===========================" << std::endl;
 
   listeners_.OnBenchmarkEnd({model_size_mb, startup_latency_us, input_bytes,
                              warmup_time_us, inference_time_us, init_mem_usage,
