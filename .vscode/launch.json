@@ -573,8 +573,8 @@
             "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v4/inference_diff_plus_vm_delegate",
             "args": [
                 // "--model_file=./models/resnet18v1.tflite",
-                // "--model_file=./models/mobilenetv2.tflite",
-                "--model_file=./models/test_models/conv2d_64_64_64.tflite",
+                "--model_file=./models/mobilenetv2.tflite",
+                // "--model_file=./models/test_models/conv2d_64_64_64.tflite",
                 "--num_runs=1",
                 "--use_vm_delegate=true",
             ],
@@ -598,7 +598,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v3/inference_diff_plus_vm_delegate",
             "args": [
-                "--model_file=./models/test_models/conv2d_64_64_64.tflite",
+                "--model_file=./models/mobilenetv2.tflite",
                 "--num_runs=1",
                 "--use_vm_delegate=true",
             ],

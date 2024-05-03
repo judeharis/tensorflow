@@ -56,7 +56,7 @@ limitations under the License.
 #endif  // TF_LITE_TENSORFLOW_PROFILER
 
 #include <fstream>
-#include <iostream> // Jude: Added
+// #include <iostream>  // Jude: Added
 
 #include "tensorflow/lite/kernels/kernel_util.h"
 
@@ -1697,16 +1697,13 @@ TfLiteStatus Subgraph::InvokeImpl() {
                                "failed to invoke");
       return s == kTfLiteCancelled ? s : err;
     }
-     // Jude: Added
-    // if (registration.builtin_code == 3) {
+    // Jude: Added
+    // if (registration.builtin_code == kTfLiteBuiltinConv2d) {
     //   using namespace std;
     //   TfLiteTensor* output;
     //   TF_LITE_ENSURE_OK(&context_, GetOutputSafe(&context_, &node, 0,
     //   &output));
     //   {
-    //     int dof = 0;
-
-    //     if (output->dims->data[0] == 1 && output->dims->size == 3) dof++;
     //     int cols = output->dims->data[1] * output->dims->data[2];
     //     int rows = output->dims->data[3];
     //     ofstream myfile;
@@ -1725,7 +1722,7 @@ TfLiteStatus Subgraph::InvokeImpl() {
     //   }
     // }
 
-    // if (registration.builtin_code == 9) {
+    // if (registration.builtin_code == kTfLiteBuiltinFullyConnected) {
     //   using namespace std;
     //   TfLiteTensor* output;
     //   TF_LITE_ENSURE_OK(&context_, GetOutputSafe(&context_, &node, 0, &output));
