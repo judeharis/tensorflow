@@ -649,6 +649,30 @@
             "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/mm2im_delegate/v4/inference_diff_plus_mm2im_delegate",
             "args": [
                 "--model_file=./models/dcgan_gen.tflite",
+                "--num_runs=1",
+                "--use_mm2im_delegate=true",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "preLaunchTask": "inference_diff_plus_mm2im_delegate_v5",
+            "name": "id_plus_mm2im_del_v5",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/mm2im_delegate/v5/inference_diff_plus_mm2im_delegate",
+            "args": [
+                "--model_file=./models/dcgan_gen.tflite",
                 // "--model_file=./models/new_cycle_gan_f.tflite",
                 // "--model_file=./models/pix2pix_g.tflite",
                 // "--model_file=./models/test_models/tconv_pmodels/tconv_1_1_16_7_7_7_32.tflite",
