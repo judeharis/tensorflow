@@ -43,6 +43,18 @@
       }
     },
     {
+      "label": "inference_diff_plus_vm_delegate_rpp_v1",
+      "type": "shell",
+      "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/vm_delegate_rpp/v1:inference_diff_plus_vm_delegate_rpp -c dbg --cxxopt='-DSYSC' --cxxopt='-DACC_PROFILE' --cxxopt='-DRUY_OPT_SET=0' --define tflite_with_xnnpack=false --verbose_failures",
+      "dependsOn": [
+        "sysc"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
       "label": "inference_diff_plus_vm_delegate_v4",
       "type": "shell",
       "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v4:inference_diff_plus_vm_delegate -c dbg --cxxopt='-DSYSC' --cxxopt='-DACC_PROFILE' --define tflite_with_xnnpack=false --verbose_failures",

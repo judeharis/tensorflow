@@ -566,6 +566,32 @@
             ]
         },
         {
+            "preLaunchTask": "inference_diff_plus_vm_delegate_rpp_v1",
+            "name": "id_plus_vm_del_rpp_v1",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_delegate_rpp/v1/inference_diff_plus_vm_delegate_rpp",
+            "args": [
+                // "--model_file=./models/resnet18v1.tflite",
+                "--model_file=./models/mobilenetv2.tflite",
+                // "--model_file=./models/test_models/conv2d_64_64_64.tflite",
+                "--num_runs=1",
+                "--use_vm_delegate_rpp=true",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
             "preLaunchTask": "inference_diff_plus_vm_delegate_v4",
             "name": "id_plus_vm_del_v4",
             "type": "cppdbg",
