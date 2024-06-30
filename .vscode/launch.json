@@ -287,37 +287,66 @@
         //           }
         //       ]
         //   },
-        //   {
-        //       "preLaunchTask": "benchmark_model_plus_vm_sim_delegate",
-        //       "name": "bm_plus_vm_sim_del",
-        //       "type": "cppdbg",
-        //       "request": "launch",
-        //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_sim_delegate/benchmark_model_plus_vm_sim_delegate",
-        //       "args": [
-        //           "--use_gpu=false",
-        //           "--num_threads=1",
-        //           "--enable_op_profiling=true",
-        //           "--graph=./models/mobilenetv1.tflite",
-        //           "--num_runs=1",
-        //           "--warmup_runs=0",
-        //           "--warmup_min_secs=0",
-        //           "--use_vm_sim_delegate=true",
-        //           "--print_postinvoke_state=true",
-        //           // "--profiling_output_csv_file=A_cycle_gan_g.csv"
-        //       ],
-        //       "stopAtEntry": false,
-        //       "cwd": "${workspaceFolder}",
-        //       "environment": [],
-        //       "externalConsole": false,
-        //       "MIMode": "gdb",
-        //       "setupCommands": [
-        //           {
-        //               "description": "Enable pretty-printing for gdb",
-        //               "text": "-enable-pretty-printing",
-        //               "ignoreFailures": true
-        //           }
-        //       ]
-        //   },
+          {
+              "preLaunchTask": "benchmark_model_plus_vm_v3",
+              "name": "bm_plus_vm_v3_del",
+              "type": "cppdbg",
+              "request": "launch",
+              "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v3/benchmark_model_plus_vm_delegate",
+              "args": [
+                  "--use_gpu=false",
+                  "--num_threads=1",
+                  "--enable_op_profiling=true",
+                  "--graph=./models/mobilenetv1.tflite",
+                  "--num_runs=1",
+                  "--warmup_runs=0",
+                  "--warmup_min_secs=0",
+                  "--use_vm_delegate=true",
+                  "--print_postinvoke_state=true",
+              ],
+              "stopAtEntry": false,
+              "cwd": "${workspaceFolder}",
+              "environment": [],
+              "externalConsole": false,
+              "MIMode": "gdb",
+              "setupCommands": [
+                  {
+                      "description": "Enable pretty-printing for gdb",
+                      "text": "-enable-pretty-printing",
+                      "ignoreFailures": true
+                  }
+              ]
+          },
+          {
+            "preLaunchTask": "benchmark_model_plus_vm_shift_rpp_v2",
+            "name": "bm_plus_vm_shift_rpp_v2_del",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_shift_delegate_rpp/v2/benchmark_model_plus_vm_shift_delegate_rpp",
+            "args": [
+                "--use_gpu=false",
+                "--num_threads=1",
+                // "--enable_op_profiling=true",
+                "--graph=./models/mnk_196_256_528.tflite",
+                "--num_runs=1",
+                "--warmup_runs=0",
+                "--warmup_min_secs=0",
+                "--use_vm_shift_delegate_rpp=true",
+                "--print_postinvoke_state=true",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
         //   {
         //       "preLaunchTask": "benchmark_model_plus_bert_sim_del",
         //       "name": "bm_plus_bert_sim_del",
@@ -599,7 +628,7 @@
             "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v4/inference_diff_plus_vm_delegate",
             "args": [
                 // "--model_file=./models/resnet18v1.tflite",
-                "--model_file=./models/mobilenetv2.tflite",
+                "--model_file=./models/mobilenetv1.tflite",
                 // "--model_file=./models/test_models/conv2d_64_64_64.tflite",
                 "--num_runs=1",
                 "--use_vm_delegate=true",
@@ -624,7 +653,10 @@
             "request": "launch",
             "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v3/inference_diff_plus_vm_delegate",
             "args": [
-                "--model_file=./models/mobilenetv2.tflite",
+                // "--model_file=./models/mobilenetv2.tflite",
+                "--model_file=./models/conv_1_1_16_3_7_7_256.tflite",
+
+                
                 "--num_runs=1",
                 "--use_vm_delegate=true",
             ],
@@ -736,8 +768,38 @@
                 "-daData/testdata/cifar10_test",
                 "-haData/testdata/cifar10_test_labels_names.txt",
                 "-oaData/testdata/cifar10_test_accuracy.txt",
-                "-u10000",
+                "-u10",
                 "-t24",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "preLaunchTask": "eval_model_accuracy_plus_vm_delegate_v4",
+            "name": "eval_model_accuracy_plus_vm_del_v4",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v4/eval_model_accuracy_plus_vm_delegate",
+            "args": [
+                "-mmodels/mobilenetv2_modified_updated_addSoftMax_pot_wgtchanged_v4_trained_ptqint8_100.tflite",
+                "-laData/testdata/labels_cifar10.txt",
+                "-iaData/testdata/testX_0_cifar10.bmp",
+                "-daData/testdata/cifar10_test",
+                "-haData/testdata/cifar10_test_labels_names.txt",
+                "-oaData/testdata/cifar10_test_accuracy.txt",
+                "-u10",
+                "-t1",
+                "--use_vm_delegate=true",
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

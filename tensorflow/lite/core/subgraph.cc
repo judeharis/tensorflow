@@ -1701,7 +1701,8 @@ TfLiteStatus Subgraph::InvokeImpl() {
     // if (registration.builtin_code == kTfLiteBuiltinConv2d) {
     //   using namespace std;
     //   TfLiteTensor* output;
-    //   TF_LITE_ENSURE_OK(&context_, GetOutputSafe(&context_, &node, 0, &output));
+    //   TF_LITE_ENSURE_OK(&context_, GetOutputSafe(&context_, &node, 0,
+    //   &output));
     //   {
     //     int cols = output->dims->data[1] * output->dims->data[2];
     //     int rows = output->dims->data[3];
