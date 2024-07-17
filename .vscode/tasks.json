@@ -25,8 +25,8 @@
     {
       "label": "Build Benchmark Model (Debug)",
       "type": "shell",
-      // "command": "bazel build //tensorflow/lite/tools/benchmark:benchmark_model --cxxopt=-DTOGGLE_TFLITE_SOC=1 -c dbg",
-      "command": "bazel build //tensorflow/lite/tools/benchmark:benchmark_model -c dbg",
+      // "command": "bazel build --jobs 4 //tensorflow/lite/tools/benchmark:benchmark_model --cxxopt=-DTOGGLE_TFLITE_SOC=1 -c dbg",
+      "command": "bazel build --jobs 4 //tensorflow/lite/tools/benchmark:benchmark_model -c dbg",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -44,8 +44,8 @@
     {
       "label": "Test_Add",
       "type": "shell",
-      // "command": "bazel build //tensorflow/lite/tools/benchmark:benchmark_model --cxxopt=-DTOGGLE_TFLITE_SOC=1 -c dbg",
-      "command": "bazel build -c opt tensorflow/lite/kernels:add_test -c dbg",
+      // "command": "bazel build --jobs 4 //tensorflow/lite/tools/benchmark:benchmark_model --cxxopt=-DTOGGLE_TFLITE_SOC=1 -c dbg",
+      "command": "bazel build --jobs 4 -c opt tensorflow/lite/kernels:add_test -c dbg",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -54,8 +54,8 @@
     {
       "label": "Benchmark_model_mydel",
       "type": "shell",
-      // "command": "bazel build //tensorflow/lite/tools/benchmark:benchmark_model --cxxopt=-DTOGGLE_TFLITE_SOC=1 -c dbg",
-      "command": "bazel build -c opt tensorflow/lite/delegates/utils/secda_delegates/mydel:benchmark_model_plus_my_delegate -c dbg",
+      // "command": "bazel build --jobs 4 //tensorflow/lite/tools/benchmark:benchmark_model --cxxopt=-DTOGGLE_TFLITE_SOC=1 -c dbg",
+      "command": "bazel build --jobs 4 -c opt tensorflow/lite/delegates/utils/secda_delegates/mydel:benchmark_model_plus_my_delegate -c dbg",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -64,7 +64,7 @@
     {
       "label": "Benchmark_model_dense_del",
       "type": "shell",
-      "command": "bazel build -c opt tensorflow/lite/delegates/utils/secda_delegates/dense_del:benchmark_model_plus_dense_del -c dbg",
+      "command": "bazel build --jobs 4 -c opt tensorflow/lite/delegates/utils/secda_delegates/dense_del:benchmark_model_plus_dense_del -c dbg",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -73,7 +73,7 @@
     {
       "label": "Benchmark_model_conv2d_del",
       "type": "shell",
-      "command": "bazel build -c opt tensorflow/lite/delegates/utils/secda_delegates/conv2d_del:benchmark_model_plus_conv2d_del -c dbg",
+      "command": "bazel build --jobs 4 -c opt tensorflow/lite/delegates/utils/secda_delegates/conv2d_del:benchmark_model_plus_conv2d_del -c dbg",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -82,7 +82,7 @@
     {
       "label": "eval_model_conv2d_del",
       "type": "shell",
-      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build -c opt tensorflow/lite/delegates/utils/secda_delegates/conv2d_del:eval_model_plus_conv2d_del -c dbg",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 -c opt tensorflow/lite/delegates/utils/secda_delegates/conv2d_del:eval_model_plus_conv2d_del -c dbg",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -91,7 +91,7 @@
     {
       "label": "eval_model",
       "type": "shell",
-      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build -c opt //tensorflow/lite/examples/secda_apps/eval_model:eval_model -c dbg",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 -c opt //tensorflow/lite/examples/secda_apps/eval_model:eval_model -c dbg",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -100,7 +100,7 @@
     {
       "label": "benchmark",
       "type": "shell",
-      "command": "bazel build tensorflow/lite/tools/benchmark:benchmark_model -c dbg",
+      "command": "bazel build --jobs 4 tensorflow/lite/tools/benchmark:benchmark_model -c dbg",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -109,7 +109,7 @@
     {
       "label": "eval_model_plus_dummy_del",
       "type": "shell",
-      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build -c opt tensorflow/lite/delegates/utils/secda_delegates/dummy_delegate:eval_model_plus_dummy_delegate -c dbg",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 -c opt tensorflow/lite/delegates/utils/secda_delegates/dummy_delegate:eval_model_plus_dummy_delegate -c dbg",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -118,7 +118,7 @@
     {
       "label": "eval_model_plus_secda_del",
       "type": "shell",
-      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build -c opt tensorflow/lite/delegates/utils/secda_delegates/secda_delegate:eval_model_plus_secda_delegate -c dbg",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 -c opt tensorflow/lite/delegates/utils/secda_delegates/secda_delegate:eval_model_plus_secda_delegate -c dbg",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -127,7 +127,7 @@
     {
       "label": "eval_model_plus_vta_del",
       "type": "shell",
-      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build -c opt tensorflow/lite/delegates/utils/secda_delegates/vta_delegate:eval_model_plus_vta_delegate -c dbg",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 -c opt tensorflow/lite/delegates/utils/secda_delegates/vta_delegate:eval_model_plus_vta_delegate -c dbg",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -136,7 +136,7 @@
     {
       "label": "eval_model_plus_bert_sim_del",
       "type": "shell",
-      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build -c opt tensorflow/lite/delegates/utils/secda_delegates/bert_sim_delegate:eval_model_plus_bert_sim_delegate -c dbg",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 -c opt tensorflow/lite/delegates/utils/secda_delegates/bert_sim_delegate:eval_model_plus_bert_sim_delegate -c dbg",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -145,7 +145,7 @@
     {
       "label": "benchmark_model_plus_secda_del",
       "type": "shell",
-      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build -c opt tensorflow/lite/delegates/utils/secda_delegates/secda_delegate:benchmark_model_plus_secda_delegate -c dbg",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 -c opt tensorflow/lite/delegates/utils/secda_delegates/secda_delegate:benchmark_model_plus_secda_delegate -c dbg",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -154,7 +154,7 @@
     {
       "label": "benchmark_model_plus_vm_sim_delegate",
       "type": "shell",
-      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build -c opt tensorflow/lite/delegates/utils/secda_delegates/vm_sim_delegate:benchmark_model_plus_vm_sim_delegate -c dbg --cxxopt='-DSYSC'",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 -c opt tensorflow/lite/delegates/utils/secda_delegates/vm_sim_delegate:benchmark_model_plus_vm_sim_delegate -c dbg --cxxopt='-DSYSC'",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -163,7 +163,7 @@
     {
       "label": "build_external_dummy_delegate_armhf",
       "type": "shell",
-      "command": "bazel build -c dbg tensorflow/lite/delegates/utils/secda_delegates/dummy_delegate:dummy_external_delegate.so --config=elinux_armhf",
+      "command": "bazel build --jobs 4 -c dbg tensorflow/lite/delegates/utils/secda_delegates/dummy_delegate:dummy_external_delegate.so --config=elinux_armhf",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -172,7 +172,7 @@
     {
       "label": "eval_model_plus_vm_sim_del",
       "type": "shell",
-      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build tensorflow/lite/delegates/utils/secda_delegates/vm_sim_delegate:eval_model_plus_vm_sim_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 tensorflow/lite/delegates/utils/secda_delegates/vm_sim_delegate:eval_model_plus_vm_sim_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -181,7 +181,7 @@
     {
       "label": "eval_model_plus_vm_del",
       "type": "shell",
-      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build tensorflow/lite/delegates/utils/secda_delegates/vm_delegate:eval_model_plus_vm_delegate -c dbg --cxxopt='-DSYSC' --cxxopt='-DACC_PROFILE' --verbose_failures",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 tensorflow/lite/delegates/utils/secda_delegates/vm_delegate:eval_model_plus_vm_delegate -c dbg --cxxopt='-DSYSC' --cxxopt='-DACC_PROFILE' --verbose_failures",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -190,7 +190,7 @@
     {
       "label": "eval_model_plus_sa_sim_del",
       "type": "shell",
-      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build -c opt tensorflow/lite/delegates/utils/secda_delegates/sa_sim_delegate:eval_model_plus_sa_sim_delegate -c dbg --cxxopt='-DSYSC'",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 -c opt tensorflow/lite/delegates/utils/secda_delegates/sa_sim_delegate:eval_model_plus_sa_sim_delegate -c dbg --cxxopt='-DSYSC'",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -199,7 +199,7 @@
     {
       "label": "eval_model_plus_bert_sim_del",
       "type": "shell",
-      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build -c opt tensorflow/lite/delegates/utils/secda_delegates/bert_sim_delegate:eval_model_plus_bert_sim_delegate -c dbg --cxxopt='-DSYSC'",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 -c opt tensorflow/lite/delegates/utils/secda_delegates/bert_sim_delegate:eval_model_plus_bert_sim_delegate -c dbg --cxxopt='-DSYSC'",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -208,7 +208,7 @@
     {
       "label": "eval_model_plus_vta_sim_del",
       "type": "shell",
-      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build -c opt tensorflow/lite/delegates/utils/secda_delegates/vta_sim_delegate:eval_model_plus_vta_sim_delegate -c dbg --cxxopt='-DSYSC'",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 -c opt tensorflow/lite/delegates/utils/secda_delegates/vta_sim_delegate:eval_model_plus_vta_sim_delegate -c dbg --cxxopt='-DSYSC'",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -217,7 +217,7 @@
     {
       "label": "benchmark_model_plus_toy_del",
       "type": "shell",
-      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build -c opt tensorflow/lite/delegates/utils/secda_delegates/toy_accelerator/sim_delegate:benchmark_model_plus_toy_delegate -c dbg --cxxopt='-DSYSC'",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 -c opt tensorflow/lite/delegates/utils/secda_delegates/toy_accelerator/sim_delegate:benchmark_model_plus_toy_delegate -c dbg --cxxopt='-DSYSC'",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -226,7 +226,7 @@
     {
       "label": "benchmark_model_plus_tconv_sim_delegate",
       "type": "shell",
-      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build -c opt tensorflow/lite/delegates/utils/secda_delegates/tconv_sim_delegate:benchmark_model_plus_tconv_sim_delegate -c dbg --cxxopt='-DSYSC'",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 -c opt tensorflow/lite/delegates/utils/secda_delegates/tconv_sim_delegate:benchmark_model_plus_tconv_sim_delegate -c dbg --cxxopt='-DSYSC'",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -235,7 +235,7 @@
     {
       "label": "benchmark_model_plus_mm2im_sim_delegate",
       "type": "shell",
-      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build -c opt tensorflow/lite/delegates/utils/secda_delegates/mm2im_sim_delegate:benchmark_model_plus_mm2im_sim_delegate -c dbg --cxxopt='-DSYSC'",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 -c opt tensorflow/lite/delegates/utils/secda_delegates/mm2im_sim_delegate:benchmark_model_plus_mm2im_sim_delegate -c dbg --cxxopt='-DSYSC'",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -244,7 +244,7 @@
     {
       "label": "benchmark_model_plus_mm2im_delegate",
       "type": "shell",
-      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build -c opt tensorflow/lite/delegates/utils/secda_delegates/mm2im_delegate:benchmark_model_plus_mm2im_delegate -c dbg --cxxopt='-DSYSC'",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 -c opt tensorflow/lite/delegates/utils/secda_delegates/mm2im_delegate:benchmark_model_plus_mm2im_delegate -c dbg --cxxopt='-DSYSC'",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -253,18 +253,7 @@
     {
       "label": "benchmark_model_plus_sa_sim_delegate",
       "type": "shell",
-      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build -c opt tensorflow/lite/delegates/utils/secda_delegates/sa_sim_delegate:benchmark_model_plus_sa_sim_delegate -c dbg --cxxopt='-DSYSC'",
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      }
-    },
-    {
-      "label": "benchmark_model_plus_bert_sim_del",
-      "type": "shell",
-      // "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build -c opt --config=monolithic tensorflow/lite/delegates/utils/secda_delegates/bert_sim_delegate:benchmark_model_plus_bert_sim_delegate -c dbg --cxxopt='-DSYSC'",
-            "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build -c opt --config=monolithic tensorflow/lite/tools/benchmark:benchmark_model_plus_flex",
-
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 -c opt tensorflow/lite/delegates/utils/secda_delegates/sa_sim_delegate:benchmark_model_plus_sa_sim_delegate -c dbg --cxxopt='-DSYSC'",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -282,7 +271,7 @@
     {
       "label": "benchmark_model_plus_ramulator_add_sim_delegate",
       "type": "shell",
-      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build -c opt tensorflow/lite/delegates/utils/secda_delegates/ramulator_add_sim_delegate:benchmark_model_plus_ramulator_add_delegate -c dbg --cxxopt='-DSYSC'",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 -c opt tensorflow/lite/delegates/utils/secda_delegates/ramulator_add_sim_delegate:benchmark_model_plus_ramulator_add_delegate -c dbg --cxxopt='-DSYSC'",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -291,7 +280,7 @@
     {
       "label": "run_bench",
       "type": "shell",
-      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build -c opt tensorflow/lite/delegates/utils/secda_delegates/ramulator_add_sim_delegate:benchmark_model_plus_ramulator_add_delegate -c dbg --cxxopt='-DSYSC'",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 -c opt tensorflow/lite/delegates/utils/secda_delegates/ramulator_add_sim_delegate:benchmark_model_plus_ramulator_add_delegate -c dbg --cxxopt='-DSYSC'",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -301,7 +290,7 @@
     {
       "label": "eval_model_plus_vm_sim_del",
       "type": "shell",
-      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build tensorflow/lite/delegates/utils/secda_delegates/vm_sim_delegate:eval_model_plus_vm_sim_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 tensorflow/lite/delegates/utils/secda_delegates/vm_sim_delegate:eval_model_plus_vm_sim_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -310,16 +299,17 @@
     {
       "label": "inference_diff_plus_vm_sim_delegate",
       "type": "shell",
-      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build tensorflow/lite/delegates/utils/secda_delegates/vm_sim_delegate:inference_diff_plus_vm_sim_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 tensorflow/lite/delegates/utils/secda_delegates/vm_sim_delegate:inference_diff_plus_vm_sim_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures",
       "group": {
         "kind": "build",
         "isDefault": true
       }
     },
+  
     {
       "label": "inference_diff_plus_mm2im_delegate",
       "type": "shell",
-      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build tensorflow/lite/delegates/utils/secda_delegates/mm2im_delegate:inference_diff_plus_mm2im_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures --subcommands",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 tensorflow/lite/delegates/utils/secda_delegates/mm2im_delegate:inference_diff_plus_mm2im_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -328,7 +318,7 @@
     {
       "label": "inference_diff_plus_mm2im_sim_delegate",
       "type": "shell",
-      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build tensorflow/lite/delegates/utils/secda_delegates/mm2im_sim_delegate:inference_diff_plus_mm2im_sim_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 tensorflow/lite/delegates/utils/secda_delegates/mm2im_sim_delegate:inference_diff_plus_mm2im_sim_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -337,7 +327,7 @@
     {
       "label": "inference_diff_plus_add_delegate",
       "type": "shell",
-      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build tensorflow/lite/delegates/utils/secda_delegates/add_delegate:inference_diff_plus_add_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 tensorflow/lite/delegates/utils/secda_delegates/add_delegate:inference_diff_plus_add_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -346,7 +336,76 @@
     {
       "label": "inference_diff",
       "type": "shell",
-      "command": "bazel build //tensorflow/lite/tools/evaluation/tasks/inference_diff:run_eval -c dbg --cxxopt='-DSYSC' --verbose_failures",
+      "command": "bazel build --jobs 4 //tensorflow/lite/tools/evaluation/tasks/inference_diff:run_eval -c dbg --cxxopt='-DSYSC' --verbose_failures",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+
+// task added by rpp
+
+    {
+      "label": "eval_model_plus_vm_bitshift_sim_del",
+      "type": "shell",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 tensorflow/lite/delegates/utils/secda_delegates/vm_bitshift_sim_delegate:eval_model_plus_vm_bitshift_sim_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "eval_model_accuracy",
+      "type": "shell",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 -c opt //tensorflow/lite/examples/secda_apps/eval_model_accuracy:eval_model_accuracy -c dbg",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "eval_model_accuracy_plus_vm_bitshift_sim_del",
+      "type": "shell",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 tensorflow/lite/delegates/utils/secda_delegates/vm_bitshift_sim_delegate:eval_model_accuracy_plus_vm_bitshift_sim_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "imagenet_image_classification",
+      "type": "shell",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 -c opt //tensorflow/lite/examples/secda_apps/imagenet_image_classification:run_eval -c dbg",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    // --output_user_root=/mnt/sata/bazel_cache
+    {
+      "label": "imagenet_image_classification_plus_vm_bitshift_sim_del",
+      "type": "shell",
+      "command": "bazel build --jobs=4 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 tensorflow/lite/delegates/utils/secda_delegates/vm_bitshift_sim_delegate:imagenet_image_classification_plus_vm_bitshift_sim_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+
+    {
+      "label": "imagenet_image_classification_plus_vm_delegate_rpp_v1",
+      "type": "shell",
+      "command": "bazel build --jobs 4 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 tensorflow/lite/delegates/utils/secda_delegates/vm_delegate_rpp/v1:imagenet_image_classification_plus_vm_delegate_rpp -c dbg --cxxopt='-DSYSC' --verbose_failures",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+
+    {
+      "label": "benchmark_model_plus_mul_del",
+      "type": "shell",
+      "command": "bazel build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc && bazel build --jobs 4 -c opt tensorflow/lite/delegates/utils/secda_delegates/mul_delegate/benchmark_model_plus_mul_delegate -c dbg --cxxopt='-DSYSC'",
       "group": {
         "kind": "build",
         "isDefault": true
