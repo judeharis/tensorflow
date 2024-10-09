@@ -4,289 +4,8 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-        // {
-        //     "preLaunchTask": "systemCProject",
-        //     "name": "systemCProject",
-        //     "type": "cppdbg",
-        //     "request": "launch",
-        //     "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/examples/systemCProject/test_systemc",
-        //     "args": [],
-        //     "stopAtEntry": false,
-        //     "cwd": "${workspaceFolder}",
-        //     "environment": [],
-        //     "externalConsole": false,
-        //     "MIMode": "gdb",
-        //     "setupCommands": [
-        //         {
-        //             "description": "Enable pretty-printing for gdb",
-        //             "text": "-enable-pretty-printing",
-        //             "ignoreFailures": true
-        //         }
-        //     ]
-        // },
-        //   {
-        //       "preLaunchTask": "eval_model",
-        //       "name": "eval_model",
-        //       "type": "cppdbg",
-        //       "request": "launch",
-        //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/examples/secda_apps/eval_model/eval_model",
-        //       "args": [
-        //           "-mmodels/mobilenetv1.tflite",
-        //           // "-lmodels/labels.txt",
-        //           "-lmodels/labels2.txt",
-        //           "-imodels/grace_hopper.bmp",
-        //           "-t 1",
-        //       ],
-        //       "stopAtEntry": false,
-        //       "cwd": "${workspaceFolder}",
-        //       "environment": [],
-        //       "externalConsole": false,
-        //       "MIMode": "gdb",
-        //       "setupCommands": [
-        //           {
-        //               "description": "Enable pretty-printing for gdb",
-        //               "text": "-enable-pretty-printing",
-        //               "ignoreFailures": true
-        //           }
-        //       ]
-        //   },
-        // conv2d_simple_v1
-        // conv2d_simple_v2
-        // conv2d_simple_v3
-        // conv2d_simple_v4
-        // efficientnet_lite
-        // inceptionv3
-        // mobilenetv1
-        //   {
-        //       "preLaunchTask": "eval_model_plus_sa_sim_del",
-        //       "name": "eval_model_plus_sa_sim_del",
-        //       "type": "cppdbg",
-        //       "request": "launch",
-        //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/sa_sim_delegate/eval_model_plus_sa_sim_delegate",
-        //       "args": [
-        //           "-mmodels/mobilenetv1.tflite",
-        //           // "-mmodels/resnet18v1.tflite",
-        //           // "-mmodels/distilgpt2-64.tflite",
-        //           // "-mmodels//test_models/conv2d_22_28_32.tflite",
-        //           "-lmodels/labels2.txt",
-        //           "-imodels/grace_hopper.bmp",
-        //           "-v 1",
-        //           "-t 1",
-        //           "--use_sa_sim_delegate=true",
-        //       ],
-        //       "stopAtEntry": false,
-        //       "cwd": "${workspaceFolder}",
-        //       "environment": [],
-        //       "externalConsole": false,
-        //       "MIMode": "gdb",
-        //       "setupCommands": [
-        //           {
-        //               "description": "Enable pretty-printing for gdb",
-        //               "text": "-enable-pretty-printing",
-        //               "ignoreFailures": true
-        //           }
-        //       ]
-        //   },
-        //   {
-        //       "preLaunchTask": "eval_model_plus_vm_sim_del",
-        //       "name": "eval_model_plus_vm_sim_del",
-        //       "type": "cppdbg",
-        //       "request": "launch",
-        //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_sim_delegate/eval_model_plus_vm_sim_delegate",
-        //       "args": [
-        //           "-mmodels/mobilenetv1.tflite",
-        //           // "-mmodels/resnet18v1.tflite",
-        //           // "-mmodels/test_models/conv2d_128_128_128.tflite",
-        //           "-lmodels/labels2.txt",
-        //           "-imodels/grace_hopper.bmp",
-        //           "-v 1",
-        //           "-t 1",
-        //           "--use_vm_sim_delegate=true",
-        //           "--use_simmode=true",
-        //       ],
-        //       "stopAtEntry": false,
-        //       "cwd": "${workspaceFolder}",
-        //       "environment": [],
-        //       "externalConsole": false,
-        //       "MIMode": "gdb",
-        //       "setupCommands": [
-        //           {
-        //               "description": "Enable pretty-printing for gdb",
-        //               "text": "-enable-pretty-printing",
-        //               "ignoreFailures": true
-        //           }
-        //       ]
-        //   },
-        //   {
-        //       "preLaunchTask": "eval_model_plus_vm_del",
-        //       "name": "eval_model_plus_vm_del",
-        //       "type": "cppdbg",
-        //       "request": "launch",
-        //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/eval_model_plus_vm_delegate",
-        //       "args": [
-        //           "-mmodels/mobilenetv1.tflite",
-        //           // "-mmodels/resnet18v1.tflite",
-        //           "-lmodels/labels2.txt",
-        //           "-imodels/grace_hopper.bmp",
-        //           "-v 1",
-        //           "-t 1",
-        //           "--use_vm_delegate=true",
-        //           "--use_simmode=false",
-        //       ],
-        //       "stopAtEntry": false,
-        //       "cwd": "${workspaceFolder}",
-        //       "environment": [],
-        //       "externalConsole": false,
-        //       "MIMode": "gdb",
-        //       "setupCommands": [
-        //           {
-        //               "description": "Enable pretty-printing for gdb",
-        //               "text": "-enable-pretty-printing",
-        //               "ignoreFailures": true
-        //           }
-        //       ]
-        //   },
-        //   {
-        //       "preLaunchTask": "eval_model_plus_vm_sim_del",
-        //       "name": "eval_model_plus_vm_sim_del2",
-        //       "type": "cppdbg",
-        //       "request": "launch",
-        //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_sim_delegate/eval_model_plus_vm_sim_delegate",
-        //       "args": [
-        //           "-mmodels/dcgan_gen.tflite",
-        //           "-lmodels/labels2.txt",
-        //           "-imodels/grace_hopper.bmp",
-        //           "-v 1",
-        //           "-t 1",
-        //           "--use_vm_sim_delegate=false",
-        //           "--use_simmode=true",
-        //       ],
-        //       "stopAtEntry": false,
-        //       "cwd": "${workspaceFolder}",
-        //       "environment": [],
-        //       "externalConsole": false,
-        //       "MIMode": "gdb",
-        //       "setupCommands": [
-        //           {
-        //               "description": "Enable pretty-printing for gdb",
-        //               "text": "-enable-pretty-printing",
-        //               "ignoreFailures": true
-        //           }
-        //       ]
-        //   },
-        //   {
-        //       "preLaunchTask": "eval_model_plus_bert_sim_del",
-        //       "name": "eval_model_plus_bert_sim_del",
-        //       "type": "cppdbg",
-        //       "request": "launch",
-        //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/bert_sim_delegate/eval_model_plus_bert_sim_delegate",
-        //       "args": [
-        //           "-mmodels/mobilebert_quant.tflite",
-        //           "-lmodels/labels2.txt",
-        //           "-imodels/grace_hopper.bmp",
-        //           "-v 1",
-        //           "-t 1",
-        //           "--use_bert_sim_delegate=true",
-        //       ],
-        //       "stopAtEntry": false,
-        //       "cwd": "${workspaceFolder}",
-        //       "environment": [],
-        //       "externalConsole": false,
-        //       "MIMode": "gdb",
-        //       "setupCommands": [
-        //           {
-        //               "description": "Enable pretty-printing for gdb",
-        //               "text": "-enable-pretty-printing",
-        //               "ignoreFailures": true
-        //           }
-        //       ]
-        //   },
-        //   {
-        //       "preLaunchTask": "eval_model_plus_vta_sim_del",
-        //       "name": "eval_model_plus_vta_sim_del",
-        //       "type": "cppdbg",
-        //       "request": "launch",
-        //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vta_sim_delegate/eval_model_plus_vta_sim_delegate",
-        //       "args": [
-        //           "-mmodels/mobilenetv1.tflite",
-        //           "-lmodels/labels.txt",
-        //           "-imodels/grace_hopper.bmp",
-        //           // "-v 1",
-        //           "-t 1",
-        //           "--use_vta_sim_delegate=true",
-        //       ],
-        //       "stopAtEntry": false,
-        //       "cwd": "${workspaceFolder}",
-        //       "environment": [],
-        //       "externalConsole": false,
-        //       "MIMode": "gdb",
-        //       "setupCommands": [
-        //           {
-        //               "description": "Enable pretty-printing for gdb",
-        //               "text": "-enable-pretty-printing",
-        //               "ignoreFailures": true
-        //           }
-        //       ]
-        //   },
-        //   {
-        //       "preLaunchTask": "Build Benchmark Model (Debug)",
-        //       "name": "bm",
-        //       "type": "cppdbg",
-        //       "request": "launch",
-        //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/tools/benchmark/benchmark_model",
-        //       "args": [
-        //           "--use_gpu=false",
-        //           "--num_threads=1",
-        //           "--enable_op_profiling=true",
-        //           "--graph=./models/mobilebert_quant.tflite",
-        //           "--num_runs=1",
-        //           "--warmup_runs=0",
-        //           "--profiling_output_csv_file=./a_Bert/mobile_bert/benchmark.csv"
-        //       ],
-        //       "stopAtEntry": false,
-        //       "cwd": "${workspaceFolder}",
-        //       "environment": [],
-        //       "externalConsole": false,
-        //       "MIMode": "gdb",
-        //       "setupCommands": [
-        //           {
-        //               "description": "Enable pretty-printing for gdb",
-        //               "text": "-enable-pretty-printing",
-        //               "ignoreFailures": true
-        //           }
-        //       ]
-        //   },
-        //   {
-        //       "preLaunchTask": "benchmark_model_plus_sa_sim_delegate",
-        //       "name": "bm_plus_sa_sim_del",
-        //       "type": "cppdbg",
-        //       "request": "launch",
-        //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_sim_delegate/benchmark_model_plus_sa_sim_delegate",
-        //       "args": [
-        //           "--use_gpu=false",
-        //           "--num_threads=1",
-        //           "--enable_op_profiling=true",
-        //           "--graph=./models/mobilenetv1.tflite",
-        //           "--num_runs=1",
-        //           "--warmup_runs=0",
-        //           "--warmup_min_secs=0",
-        //           "--use_sa_sim_delegate=true",
-        //           "--print_postinvoke_state=true",
-        //           // "--profiling_output_csv_file=A_cycle_gan_g.csv"
-        //       ],
-        //       "stopAtEntry": false,
-        //       "cwd": "${workspaceFolder}",
-        //       "environment": [],
-        //       "externalConsole": false,
-        //       "MIMode": "gdb",
-        //       "setupCommands": [
-        //           {
-        //               "description": "Enable pretty-printing for gdb",
-        //               "text": "-enable-pretty-printing",
-        //               "ignoreFailures": true
-        //           }
-        //       ]
-        //   },
+
+
           {
               "preLaunchTask": "benchmark_model_plus_vm_v3",
               "name": "bm_plus_vm_v3_del",
@@ -297,7 +16,7 @@
                   "--use_gpu=false",
                   "--num_threads=1",
                   "--enable_op_profiling=true",
-                  "--graph=./models/mobilenetv1.tflite",
+                  "--graph=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/mobilenetv2.tflite",
                   "--num_runs=1",
                   "--warmup_runs=0",
                   "--warmup_min_secs=0",
@@ -327,7 +46,7 @@
                 "--use_gpu=false",
                 "--num_threads=1",
                 // "--enable_op_profiling=true",
-                "--graph=./models/mnk_196_256_528.tflite",
+                "--graph=${env:MODEL_N_DATA_FOLDER_PATH}/model_gen/mnk/mnk_196_256_528.tflite",
                 "--num_runs=1",
                 "--warmup_runs=0",
                 "--warmup_min_secs=0",
@@ -388,7 +107,7 @@
         //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/tconv_sim_delegate/benchmark_model_plus_tconv_sim_delegate",
         //       "args": [
         //           "--enable_op_profiling=true",
-        //           "--graph=./models/dcgan_gen.tflite",
+        //           "--graph=${env:MODEL_N_DATA_FOLDER_PATH}/otherModels/dcgan_gen.tflite",
         //           "--num_runs=2",
         //           "--warmup_runs=0",
         //           "--warmup_min_secs=0",
@@ -417,7 +136,7 @@
         //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/mm2im_sim_delegate/benchmark_model_plus_mm2im_sim_delegate",
         //       "args": [
         //           // "--enable_op_profiling=true",
-        //           "--graph=./models/dcgan_gen.tflite",
+        //           "--graph=${env:MODEL_N_DATA_FOLDER_PATH}/otherModels/dcgan_gen.tflite",
         //           // "--graph=./models/test_models/tconv_pmodels/tconv_1_1_64_5_7_7_128.tflite",
         //           // "--graph=./models/test_models/tconv_pmodels/tconv_1_1_16_3_7_7_32.tflite",
         //           // "--graph=./models/test_models/tconv_pmodels/tconv_1_1_16_5_7_7_256.tflite",
@@ -461,8 +180,8 @@
         //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/mm2im_delegate/benchmark_model_plus_mm2im_delegate",
         //       "args": [
         //           // "--enable_op_profiling=true",
-        //           // "--graph=./models/dcgan_gen.tflite",
-        //           // "--graph=./models/dcgan_gen.tflite",
+        //           // "--graph=${env:MODEL_N_DATA_FOLDER_PATH}/otherModels/dcgan_gen.tflite",
+        //           // "--graph=${env:MODEL_N_DATA_FOLDER_PATH}/otherModels/dcgan_gen.tflite",
         //           "--graph=./models/test_models/tconv_pmodels/tconv_1_1_64_5_7_7_128.tflite",
         //           "--num_runs=1",
         //           "--warmup_runs=0",
@@ -490,7 +209,7 @@
         //       "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/secda_delegates/ramulator_add_sim_delegate/benchmark_model_plus_ramulator_add_delegate",
         //       "args": [
         //           // "--enable_op_profiling=true",
-        //           "--graph=./models/add_simple.tflite",
+        //           "--graph=${env:MODEL_N_DATA_FOLDER_PATH}/model_gen/add_simple.tflite",
         //           "--num_runs=1",
         //           "--warmup_runs=0",
         //           "--warmup_min_secs=0",
@@ -510,6 +229,7 @@
         //           }
         //       ]
         //   },
+        
         {
             "preLaunchTask": "benchmark_model_plus_bert_sim_delegate",
             "name": "bm_plus_bert_sim_del",
@@ -520,10 +240,128 @@
                 "--use_gpu=false",
                 "--num_threads=1",
                 "--enable_op_profiling=true",
-                "--graph=./models/distilgpt2-64.tflite",
+                "--graph=${env:MODEL_N_DATA_FOLDER_PATH}/otherModels/distilgpt2-64.tflite",
                 "--num_runs=1",
                 "--warmup_runs=0",
                 "--use_bert_sim_delegate=true",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        
+        {
+            "preLaunchTask": "benchmark_model_plus_mul_del_v1",
+            "name": "bm_plus_mul_del_v1",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/mul_delegate/v1/benchmark_model_plus_mul_delegate",
+            "args": [
+                "--use_gpu=false",
+                "--num_threads=1",
+                "--enable_op_profiling=true",
+                "--graph=${env:MODEL_N_DATA_FOLDER_PATH}/model_gen/add_simple.tflite",
+                "--num_runs=1",
+                "--warmup_runs=0",
+                "--use_mul_delegate=true",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
+        {
+            "preLaunchTask": "benchmark_model_plus_mul_del_v2",
+            "name": "bm_plus_mul_del_v2",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/mul_delegate/v2/benchmark_model_plus_mul_delegate",
+            "args": [
+                "--use_gpu=false",
+                "--num_threads=1",
+                "--enable_op_profiling=true",
+                "--graph=${env:MODEL_N_DATA_FOLDER_PATH}/model_gen/add_simple.tflite",
+                "--num_runs=1",
+                "--warmup_runs=0",
+                "--use_mul_delegate=true",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        
+        {
+            "preLaunchTask": "benchmark_model_plus_mul_del_v3",
+            "name": "bm_plus_mul_del_v3",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/mul_delegate/v3/benchmark_model_plus_mul_delegate",
+            "args": [
+                "--use_gpu=false",
+                "--num_threads=1",
+                "--enable_op_profiling=true",
+                "--graph=${env:MODEL_N_DATA_FOLDER_PATH}/model_gen/add_simple.tflite",
+                "--num_runs=1",
+                "--warmup_runs=0",
+                "--use_mul_delegate=true",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
+        {
+            "preLaunchTask": "benchmark_model_plus_vm_v3",
+            "name": "bm_plus_vm_v3_del",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v3/benchmark_model_plus_vm_delegate",
+            "args": [
+                "--use_gpu=false",
+                "--num_threads=1",
+                "--enable_op_profiling=true",
+                "--graph=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/mobilenetv2.tflite",
+                "--num_runs=1",
+                "--warmup_runs=0",
+                "--warmup_min_secs=0",
+                "--use_vm_delegate=true",
+                "--print_postinvoke_state=true",
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -542,13 +380,13 @@
         // Inference Diff
         // =========================================
         {
-            "preLaunchTask": "inference_diff_plus_sa_delegate_v1",
-            "name": "id_plus_sa_del_v1",
+            "preLaunchTask": "inference_diff_plus_sa_delegate_v3",
+            "name": "id_plus_sa_del_v3",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/sa_delegate/v1/inference_diff_plus_sa_delegate",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/sa_delegate/v3/inference_diff_plus_sa_delegate",
             "args": [
-                "--model_file=./models/mobilenetv1.tflite",
+                "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/mobilenetv2.tflite",
                 "--num_runs=1",
                 "--use_sa_delegate=true",
             ],
@@ -566,18 +404,67 @@
             ]
         },
         {
+            "preLaunchTask": "inference_diff_plus_sa_delegate_v4",
+            "name": "id_plus_sa_del_v4",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/sa_delegate/v4/inference_diff_plus_sa_delegate",
+            "args": [
+                "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/mobilenetv2.tflite",
+                "--num_runs=1",
+                "--use_sa_delegate=true",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "preLaunchTask": "inference_diff_plus_sa_delegate_rpp_v1",
+            "name": "id_plus_sa_del_rpp_v1",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/sa_delegate_rpp/v1/inference_diff_plus_sa_delegate_rpp",
+            "args": [
+                "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/mobilenetv2.tflite",
+                // "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/cifar10/models/mobilentv2_fpTrained_ptqint8_cifar10_100.tflite",
+                "--num_runs=1",
+                "--use_sa_delegate_rpp=true",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
+        {
             "preLaunchTask": "inference_diff_plus_bert_sim_delegate",
             "name": "id_plus_bert_sim_del",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/bert_sim_delegate/inference_diff_plus_bert_sim_delegate",
             "args": [
-                // "--model_file=./models/distilgpt2-64.tflite",
-                // "--model_file=./models/albert_int8.tflite",
-                // "--model_file=./models/mobilebert_quant.tflite",
-                // "--model_file=./models/test_models/fc_4_4_16.tflite",
-                "--model_file=./models/mobilevit_xxs_int8.tflite",
-                // "--model_file=./models/dcgan_gen.tflite",
+                // "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/otherModels/distilgpt2-64.tflite",
+                // "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/otherModels/albert_int8.tflite",
+                // "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/otherModels/mobilebert_quant.tflite",
+                "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/otherModels/mobilevit_xxs_int8.tflite",
+                // "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/otherModels/dcgan_gen.tflite",
                 "--num_runs=1",
                 "--use_bert_sim_delegate=true",
             ],
@@ -601,9 +488,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_delegate_rpp/v1/inference_diff_plus_vm_delegate_rpp",
             "args": [
-                // "--model_file=./models/resnet18v1.tflite",
-                "--model_file=./models/mobilenetv2.tflite",
-                // "--model_file=./models/test_models/conv2d_64_64_64.tflite",
+                // "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/resnet18v1.tflite",
+                "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/mobilenetv2.tflite",
                 "--num_runs=1",
                 "--use_vm_delegate_rpp=true",
             ],
@@ -621,15 +507,207 @@
             ]
         },
         {
+            "preLaunchTask": "inference_diff_plus_vm_delegate_rpp_v2",
+            "name": "id_plus_vm_del_rpp_v2",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_delegate_rpp/v2/inference_diff_plus_vm_delegate_rpp",
+            "args": [
+                "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/mobilenetv2.tflite",
+                // "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/cifar10/models/mobilenetv2_modified_updated_addSoftMax_pot_wgtchanged_v4_trained_ptqint8_100.tflite",
+                // "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/cifar10/models/mobilentv2_fpTrained_ptqint8_cifar10_100.tflite",
+                // "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/model_gen/mnk_sm_models/mnk_2_4_8.tflite",
+                // "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/model_gen/mnk_sm_models/mnk_2_16_8.tflite",
+                // "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/model_gen/mnk_sm_models/mnk_2_64_8.tflite",
+                "--num_runs=1",
+                "--use_vm_delegate_rpp=true",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "preLaunchTask": "inference_diff_plus_vm_delegate_rpp_v3",
+            "name": "id_plus_vm_del_rpp_v3",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_delegate_rpp/v3/inference_diff_plus_vm_delegate_rpp",
+            "args": [
+                // "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/resnet18v1.tflite",
+                "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/mobilenetv2.tflite",
+                // "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/mobilenetv2.tflite",
+                // "--model_file=./models/test_models/conv2d_64_64_64.tflite",
+                "--num_runs=1",
+                "--use_vm_delegate_rpp=true",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
+        {
+            "preLaunchTask": "inference_diff_plus_vm_delegate_rpp_v4",
+            "name": "id_plus_vm_del_rpp_v4",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_delegate_rpp/v4/inference_diff_plus_vm_delegate_rpp",
+            "args": [
+                // "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/resnet18v1.tflite",
+                "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/mobilenetv2.tflite",
+                // "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/mobilenetv2.tflite",
+                // "--model_file=./models/test_models/conv2d_64_64_64.tflite",
+                "--num_runs=1",
+                "--use_vm_delegate_rpp=true",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        
+        {
+            "preLaunchTask": "inference_diff_plus_vm_hedl_delegate_rpp_v2",
+            "name": "id_plus_vm_hedl_del_rpp_v2",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_hedl_delegate_rpp/v2/inference_diff_plus_vm_hedl_delegate_rpp",
+            "args": [
+                // "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/resnet18v1.tflite",
+                "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/cifar10/models/mobilenetv2_modified_updated_addSoftMax_pot_wgtchanged_v4_trained_ptqint8_100.tflite",
+                // "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/mobilenetv2.tflite",
+                "--num_runs=1",
+                "--use_vm_hedl_delegate_rpp=true",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
+        {
+            "preLaunchTask": "inference_diff_plus_vm_shift_delegate_rpp_v1",
+            "name": "id_plus_vm_sh_del_rpp_v1",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_shift_delegate_rpp/v1/inference_diff_plus_vm_shift_delegate_rpp",
+            "args": [
+                // "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/resnet18v1.tflite",
+                "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/mobilenetv2.tflite",
+                // "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/cifar10/models/mobilenetv2_modified_updated_addSoftMax_pot_wgtchanged_v4_trained_ptqint8_100.tflite",
+                "--num_runs=1",
+                "--use_vm_shift_delegate_rpp=true",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
+        {
+            "preLaunchTask": "inference_diff_plus_vm_shift_delegate_rpp_v2",
+            "name": "id_plus_vm_sh_del_rpp_v2",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_shift_delegate_rpp/v2/inference_diff_plus_vm_shift_delegate_rpp",
+            "args": [
+                // "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/resnet18v1.tflite",
+                "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/cifar10/models/mobilenetv2_modified_updated_addSoftMax_pot_wgtchanged_v4_trained_ptqint8_100.tflite",
+                // "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/mobilenetv2.tflite",
+                "--num_runs=1",
+                "--use_vm_shift_delegate_rpp=true",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
+        {
+            "preLaunchTask": "inference_diff_plus_vm_shift_delegate_rpp_v3",
+            "name": "id_plus_vm_sh_del_rpp_v3",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_shift_delegate_rpp/v3/inference_diff_plus_vm_shift_delegate_rpp",
+            "args": [
+                // "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/resnet18v1.tflite",
+                "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/mobilenetv2.tflite",
+                // "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/mobilenetv2.tflite",
+                "--num_runs=1",
+                "--use_vm_shift_delegate_rpp=true",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
+        {
             "preLaunchTask": "inference_diff_plus_vm_delegate_v4",
             "name": "id_plus_vm_del_v4",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v4/inference_diff_plus_vm_delegate",
             "args": [
-                // "--model_file=./models/resnet18v1.tflite",
-                "--model_file=./models/mobilenetv1.tflite",
-                // "--model_file=./models/test_models/conv2d_64_64_64.tflite",
+                // "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/resnet18v1.tflite",
+                "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/mobilenetv2.tflite",
                 "--num_runs=1",
                 "--use_vm_delegate=true",
             ],
@@ -653,9 +731,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v3/inference_diff_plus_vm_delegate",
             "args": [
-                // "--model_file=./models/mobilenetv2.tflite",
-                "--model_file=./models/conv_1_1_16_3_7_7_256.tflite",
-
+                "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/mobilenetv2.tflite",
                 
                 "--num_runs=1",
                 "--use_vm_delegate=true",
@@ -680,7 +756,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/mm2im_delegate/v4/inference_diff_plus_mm2im_delegate",
             "args": [
-                "--model_file=./models/dcgan_gen.tflite",
+                "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/otherModels/dcgan_gen.tflite",
                 "--num_runs=1",
                 "--use_mm2im_delegate=true",
             ],
@@ -704,14 +780,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/mm2im_delegate/v5/inference_diff_plus_mm2im_delegate",
             "args": [
-                "--model_file=./models/dcgan_gen.tflite",
-                // "--model_file=./models/new_cycle_gan_f.tflite",
-                // "--model_file=./models/pix2pix_g.tflite",
-                // "--model_file=./models/test_models/tconv_pmodels/tconv_1_1_16_7_7_7_32.tflite",
-                //   "--model_file=./models/test_models/tconv_pmodels/tconv_2_2_128_5_16_16_256.tflite",
-                // "--model_file=./models/test_models/tconv_pmodels/tconv_2_2_512_5_4_4_1024.tflite",
-                // "--model_file=./models/test_models/tconv_pmodels/tconv_1_1_16_3_7_7_32.tflite",
-                // "--model_file=./models/test_models/tconv_pmodels/tconv_2_2_64_7_11_11_256.tflite",
+                "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/otherModels/dcgan_gen.tflite",
                 "--num_runs=1",
                 "--use_mm2im_delegate=true",
             ],
@@ -735,7 +804,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/add_delegate/inference_diff_plus_add_delegate",
             "args": [
-                "--model_file=./models/add_simple.tflite",
+                "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/model_gen/add_simple.tflite",
                 "--num_runs=1",
                 "--use_add_delegate=true",
             ],
@@ -753,6 +822,92 @@
             ]
         },
         // =========================================
+        // Eval Model
+        // =========================================
+        {
+            "preLaunchTask": "eval_model",
+            "name": "eval_model",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/examples/secda_apps/eval_model/eval_model",
+            "args": [
+                "-m${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/mobilenetv1.tflite",
+                "-l${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/labels/model_output_labels_1000.txt",
+                "-i${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/otherImages/grace_hopper.bmp",
+                "-t 1",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        
+        {
+            "preLaunchTask": "eval_model_plus_vm_delegate_rpp_v2",
+            "name": "em_plus_vm_del_rpp_v2",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_delegate_rpp/v2/eval_model_plus_vm_delegate_rpp",
+            "args": [
+                "-m${env:MODEL_N_DATA_FOLDER_PATH}/cifar10/models/mobilenetv2_modified_updated_addSoftMax_pot_wgtchanged_trained_ptqint8_100.tflite", // cifar10 model
+                "-l${env:MODEL_N_DATA_FOLDER_PATH}/cifar10/labels/model_output_labels_10.txt",
+                "-i${env:MODEL_N_DATA_FOLDER_PATH}/cifar10/testData/testX_000000.bmp",
+                "-t 1",
+                "--use_vm_delegate_rpp=true",
+                "--use_simmode=true",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
+        {
+            "preLaunchTask": "eval_model_plus_vm_shift_delegate_rpp_v2",
+            "name": "em_plus_vm_sh_del_rpp_v2",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_shift_delegate_rpp/v2/eval_model_plus_vm_shift_delegate_rpp",
+            "args": [
+                
+                "-m${env:MODEL_N_DATA_FOLDER_PATH}/cifar10/models/mobilenetv2_modified_updated_addSoftMax_pot_wgtchanged_trained_ptqint8_100.tflite", // cifar10 model
+                "-l${env:MODEL_N_DATA_FOLDER_PATH}/cifar10/labels/model_output_labels_10.txt",
+                "-i${env:MODEL_N_DATA_FOLDER_PATH}/cifar10/testData/testX_000000.bmp",
+                "-t 1",
+                "--use_vm_shift_delegate_rpp=true",
+                "--use_simmode=true",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
+        // =========================================
         // Accuracy Testing
         // =========================================
         {
@@ -762,12 +917,21 @@
             "request": "launch",
             "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/examples/secda_apps/eval_model_accuracy/eval_model_accuracy",
             "args": [
-                "-mmodels/mobilenetv2_modified_updated_addSoftMax_pot_wgtchanged_v4_trained_ptqint8_100.tflite",
-                "-laData/testdata/labels_cifar10.txt",
-                "-iaData/testdata/testX_0_cifar10.bmp",
-                "-daData/testdata/cifar10_test",
-                "-haData/testdata/cifar10_test_labels_names.txt",
-                "-oaData/testdata/cifar10_test_accuracy.txt",
+                //MNIST//
+                // "-m${env:MODEL_N_DATA_FOLDER_PATH}/mnist/models/customCNN_quantPotTrained_ptqint8_mnist_100.tflite",
+                // "-l${env:MODEL_N_DATA_FOLDER_PATH}/mnist/labels/model_output_labels_10.txt",
+                // "-i${env:MODEL_N_DATA_FOLDER_PATH}/mnist/testData/testX_000010.bmp",
+                // "-d${env:MODEL_N_DATA_FOLDER_PATH}/mnist/testData",
+                // "-h${env:MODEL_N_DATA_FOLDER_PATH}/mnist/labels/groundTruth_testData_labels.txt",
+                // "-o${env:SECDA_TFLITE_PATH}/src/secda_apps/eval_model_accuracy/output/mnist_outputTest.txt",
+                
+                //CIFAR10//
+                "-m${env:MODEL_N_DATA_FOLDER_PATH}/cifar10/models/mobilenetv2_modified_updated_addSoftMax_pot_wgtchanged_trained_ptqint8_100.tflite",
+                "-l${env:MODEL_N_DATA_FOLDER_PATH}/cifar10/labels/model_output_labels_10.txt",
+                "-i${env:MODEL_N_DATA_FOLDER_PATH}/cifar10/testData/testX_000010.bmp",
+                "-d${env:MODEL_N_DATA_FOLDER_PATH}/cifar10/testData",
+                "-h${env:MODEL_N_DATA_FOLDER_PATH}/cifar10/labels/groundTruth_testData_labels.txt",
+                "-o${env:SECDA_TFLITE_PATH}/src/secda_apps/eval_model_accuracy/output/cifar10_outputTest.txt",
                 "-u10",
                 "-t24",
             ],
@@ -791,15 +955,62 @@
             "request": "launch",
             "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v4/eval_model_accuracy_plus_vm_delegate",
             "args": [
-                "-mmodels/mobilenetv2_modified_updated_addSoftMax_pot_wgtchanged_v4_trained_ptqint8_100.tflite",
-                "-laData/testdata/labels_cifar10.txt",
-                "-iaData/testdata/testX_0_cifar10.bmp",
-                "-daData/testdata/cifar10_test",
-                "-haData/testdata/cifar10_test_labels_names.txt",
-                "-oaData/testdata/cifar10_test_accuracy.txt",
-                "-u10",
-                "-t1",
-                "--use_vm_delegate=true",
+                //MNIST//
+                // "-m${env:MODEL_N_DATA_FOLDER_PATH}/mnist/models/customCNN_quantPotTrained_ptqint8_mnist_100.tflite",
+                // "-l${env:MODEL_N_DATA_FOLDER_PATH}/mnist/labels/model_output_labels_10.txt",
+                // "-i${env:MODEL_N_DATA_FOLDER_PATH}/mnist/testData/testX_000010.bmp",
+                // "-d${env:MODEL_N_DATA_FOLDER_PATH}/mnist/testData",
+                // "-h${env:MODEL_N_DATA_FOLDER_PATH}/mnist/labels/groundTruth_testData_labels.txt",
+                // "-o${env:SECDA_TFLITE_PATH}/src/secda_apps/eval_model_accuracy/output/mnist_outputTest.txt",
+                
+                //CIFAR10//
+                "-m${env:MODEL_N_DATA_FOLDER_PATH}/cifar10/models/mobilenetv2_modified_updated_addSoftMax_pot_wgtchanged_trained_ptqint8_100.tflite",
+                "-l${env:MODEL_N_DATA_FOLDER_PATH}/cifar10/labels/model_output_labels_10.txt",
+                "-i${env:MODEL_N_DATA_FOLDER_PATH}/cifar10/testData/testX_000010.bmp",
+                "-d${env:MODEL_N_DATA_FOLDER_PATH}/cifar10/testData",
+                "-h${env:MODEL_N_DATA_FOLDER_PATH}/cifar10/labels/groundTruth_testData_labels.txt",
+                "-o${env:SECDA_TFLITE_PATH}/src/secda_apps/eval_model_accuracy/output/cifar10_outputTest.txt",
+                
+                "-u1",
+                "-t24",
+
+                "--use_vm_shift_delegate_rpp=true",
+                "--use_simmode=true",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
+        {
+            "preLaunchTask": "imagenet_image_classification_plus_vm_hedl_delegate_rpp_v2",
+            "name": "iic_plus_vm_hedl_delegate_rpp_v2",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_hedl_delegate_rpp/v2/imagenet_image_classification_plus_vm_hedl_delegate_rpp",
+            "args": [
+                
+                //Imagenet
+                "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/mobilenetv2_quant_int8_1000.tflite",
+                "--ground_truth_images_path=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/testData",
+                "--ground_truth_labels=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/labels/groundTruth_testData_labels.txt",
+                "--model_output_labels=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/labels/model_output_labels_1000.txt",
+                "--output_file_path=${env:SECDA_TFLITE_V1_PATH}/src/secda_apps/imagenet_image_classification/output/imagenet_outputTest.txt",
+                "--num_images=10",
+                "--num_interpreter_threads=8", 
+                "--SkipEvaluation=0",
+
+                "--use_vm_hedl_delegate_rpp=true",
+                "--use_simmode=true",
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
