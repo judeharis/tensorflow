@@ -644,7 +644,7 @@
                 // "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/resnet18v1.tflite",
                 // "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/cifar10/models/mobilenetv2_modified_updated_addSoftMax_pot_wgtchanged_v4_trained_ptqint8_100.tflite",
                 // "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/imagenet/models/mobilenetv2.tflite",
-                "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/model_gen/conv_models3/conv_1_1_16_1_2_2_16.tflite",
+                "--model_file=${env:MODEL_N_DATA_FOLDER_PATH}/model_gen/conv_models3/conv_1_1_16_1_2_2_4096.tflite",
                 "--num_runs=100",
                 "--use_vm_shift_delegate_rpp=true",
             ],
