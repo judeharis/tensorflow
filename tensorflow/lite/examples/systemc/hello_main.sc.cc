@@ -1,6 +1,7 @@
 // Created by Nicolas Agostini
 
-#include <systemc/systemc.h>
+// #include <systemc/systemc.h>
+#include <systemc.h>
 //#include "tensorflow/lite/examples/systemc/logging.h"
 
 // Simple Hello World module
