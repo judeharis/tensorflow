@@ -462,7 +462,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/fcgemm_delegate/v1/inference_diff_plus_fcgemm_delegate",
             "args": [
-                "--model_file=./models/mobilebert_quant.tflite",
+                "--model_file=./models/resnet18v1.tflite",
                 "--num_runs=1",
                 "--use_fcgemm_delegate=true",
             ],
