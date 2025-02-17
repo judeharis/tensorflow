@@ -180,20 +180,48 @@
                 }
             ]
         },
+        // {
+        //     "preLaunchTask": "benchmark_model_plus_bert_sim_delegate",
+        //     "name": "bm_plus_bert_sim_del",
+        //     "type": "cppdbg",
+        //     "request": "launch",
+        //     "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/bert_sim_delegate/benchmark_model_plus_bert_sim_delegate",
+        //     "args": [
+        //         "--use_gpu=false",
+        //         "--num_threads=1",
+        //         "--enable_op_profiling=true",
+        //         "--graph=./models/resnet18v1.tflite",
+        //         "--num_runs=1",
+        //         "--warmup_runs=0",
+        //         "--use_bert_sim_delegate=true",
+        //     ],
+        //     "stopAtEntry": false,
+        //     "cwd": "${workspaceFolder}",
+        //     "environment": [],
+        //     "externalConsole": false,
+        //     "MIMode": "gdb",
+        //     "setupCommands": [
+        //         {
+        //             "description": "Enable pretty-printing for gdb",
+        //             "text": "-enable-pretty-printing",
+        //             "ignoreFailures": true
+        //         }
+        //     ]
+        // },
         {
-            "preLaunchTask": "benchmark_model_plus_bert_sim_delegate",
-            "name": "bm_plus_bert_sim_del",
+            "preLaunchTask": "benchmark_model_plus_fcgemm_delegate_v1",
+            "name": "bm_plus_fcgemm_v1_del",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/bert_sim_delegate/benchmark_model_plus_bert_sim_delegate",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/fcgemm_delegate/v1/benchmark_model_plus_fcgemm_delegate",
             "args": [
                 "--use_gpu=false",
                 "--num_threads=1",
                 "--enable_op_profiling=true",
-                "--graph=./models/mobilebert_quant.tflite",
+                "--graph=./models/resnet18v1.tflite",
                 "--num_runs=1",
                 "--warmup_runs=0",
-                "--use_bert_sim_delegate=true",
+                "--use_fcgemm_delegate=true",
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -427,15 +455,16 @@
                 }
             ]
         },
-
-
         {
-            "preLaunchTask": "sysc",
-            "name": "sysc",
+            "preLaunchTask": "inference_diff_plus_fcgemm_delegate_v1",
+            "name": "id_plus_fcgemm_del_v1",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/examples/systemc/hello_systemc",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/fcgemm_delegate/v1/inference_diff_plus_fcgemm_delegate",
             "args": [
+                "--model_file=./models/mobilebert_quant.tflite",
+                "--num_runs=1",
+                "--use_fcgemm_delegate=true",
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -450,7 +479,6 @@
                 }
             ]
         },
-
         // // =========================================
         // // Accuracy Testing
         // // =========================================
@@ -513,5 +541,28 @@
         //         }
         //     ]
         // },
+        // // =========================================
+        // // Others
+        // // =========================================
+        {
+            "preLaunchTask": "sysc",
+            "name": "sysc",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/examples/systemc/hello_systemc",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
     ]
 }
