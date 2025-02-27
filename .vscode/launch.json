@@ -264,6 +264,30 @@
             ]
         },
         {
+            "preLaunchTask": "inference_diff_plus_sa_delegate_v4",
+            "name": "id_plus_sa_del_v4",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/sa_delegate/v4/inference_diff_plus_sa_delegate",
+            "args": [
+                "--model_file=./models/mobilenetv1.tflite",
+                "--num_runs=1",
+                "--use_sa_delegate=true",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
             "preLaunchTask": "inference_diff_plus_bert_sim_delegate",
             "name": "id_plus_bert_sim_del",
             "type": "cppdbg",
@@ -317,6 +341,30 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v4/inference_diff_plus_vm_delegate",
+            "args": [
+                "--model_file=./models/mobilenetv2.tflite",
+                "--num_runs=1",
+                "--use_vm_delegate=true",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "preLaunchTask": "inference_diff_plus_vm_delegate_v5",
+            "name": "id_plus_vm_del_v5",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v5/inference_diff_plus_vm_delegate",
             "args": [
                 "--model_file=./models/mobilenetv1.tflite",
                 "--num_runs=1",
@@ -432,11 +480,11 @@
             ]
         },
         {
-            "preLaunchTask": "inference_diff_plus_add_delegate",
-            "name": "id_plus_add_del",
+            "preLaunchTask": "inference_diff_plus_add_delegate_v1",
+            "name": "id_plus_add_del_v1",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/add_delegate/inference_diff_plus_add_delegate",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/add_delegate/v1/inference_diff_plus_add_delegate",
             "args": [
                 "--model_file=./models/add_simple.tflite",
                 "--num_runs=1",

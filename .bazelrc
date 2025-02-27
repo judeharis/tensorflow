@@ -76,8 +76,8 @@
 
 common --enable_bzlmod
 # common --lockfile_mode=off
-# common --registry=https://raw.githubusercontent.com/judeharis/bazel-central-registry/main/
-common --registry=file:///home/jude/Workspace/SECDA/bazel-central-registry/
+common --registry=https://raw.githubusercontent.com/judeharis/bazel-central-registry/main/
+# common --registry=file:///home/jude/Workspace/SECDA/bazel-central-registry/
 
 # For projects which use TensorFlow as part of a Bazel build process, putting
 # nothing in a bazelrc will default to a monolithic build. The following line

@@ -96,7 +96,7 @@
     {
       "label": "benchmark_model_plus_fcgemm_delegate_v1",
       "type": "shell",
-      "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/fcgemm_delegate/v1:benchmark_model_plus_fcgemm_delegate -c dbg --cxxopt='-DSYSC' --cxxopt='-DACC_PROFILE' --define tflite_with_xnnpack=false --verbose_failures --sandbox_debug --spawn_strategy=standalone --@secda_tools//:config=sysc",
+      "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/fcgemm_delegate/v1:benchmark_model_plus_fcgemm_delegate -c dbg --cxxopt='-DSYSC' --cxxopt='-DACC_PROFILE' --cxxopt='-DRUY_OPT_SET=0' --@secda_tools//:config=sysc",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -109,6 +109,20 @@
       "label": "inference_diff_plus_sa_delegate_v3",
       "type": "shell",
       "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/sa_delegate/v3:inference_diff_plus_sa_delegate -c dbg --cxxopt='-DSYSC' --define tflite_with_xnnpack=false --verbose_failures",
+      "dependsOn": [
+        "sysc"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "inference_diff_plus_sa_delegate_v4",
+      "type": "shell",
+      // "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/sa_delegate/v4:inference_diff_plus_sa_delegate -c dbg --cxxopt='-DSYSC' --define tflite_with_xnnpack=false --verbose_failures --cxxopt='-DRUY_OPT_SET=0'",
+      "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/sa_delegate/v4:inference_diff_plus_sa_delegate -c dbg --cxxopt='-DSYSC' --define tflite_with_xnnpack=false --verbose_failures",
+
       "dependsOn": [
         "sysc"
       ],
@@ -133,6 +147,19 @@
       "label": "inference_diff_plus_vm_delegate_rpp_v2",
       "type": "shell",
       "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/vm_delegate_rpp/v2:inference_diff_plus_vm_delegate_rpp -c dbg --cxxopt='-DSYSC' --cxxopt='-DACC_PROFILE' --cxxopt='-DRUY_OPT_SET=0' --define tflite_with_xnnpack=false --verbose_failures",
+      "dependsOn": [
+        "sysc"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "inference_diff_plus_vm_delegate_v5",
+      "type": "shell",
+      // "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v4:inference_diff_plus_vm_delegate -c dbg --cxxopt='-DSYSC' --cxxopt='-DACC_PROFILE' --define tflite_with_xnnpack=false --verbose_failures",
+      "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v5:inference_diff_plus_vm_delegate -c dbg --cxxopt='-DSYSC' --cxxopt='-DACC_PROFILE' --cxxopt='-DRUY_OPT_SET=0' --define tflite_with_xnnpack=false --verbose_failures --@secda_tools//:config=sysc",
       "dependsOn": [
         "sysc"
       ],
@@ -207,9 +234,9 @@
       }
     },
     {
-      "label": "inference_diff_plus_add_delegate",
+      "label": "inference_diff_plus_add_delegate_v1",
       "type": "shell",
-      "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/add_delegate:inference_diff_plus_add_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures --define tflite_with_xnnpack=false --sandbox_debug --spawn_strategy=standalone --@secda_tools//:config=sysc",
+      "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/add_delegate/v1:inference_diff_plus_add_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures --define tflite_with_xnnpack=false --sandbox_debug --spawn_strategy=standalone --@secda_tools//:config=sysc",
       // "dependsOn": [
       //   "sysc"
       // ],
@@ -221,7 +248,7 @@
     {
       "label": "inference_diff_plus_fcgemm_delegate_v1",
       "type": "shell",
-      "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/fcgemm_delegate/v1:inference_diff_plus_fcgemm_delegate -c dbg --cxxopt='-DSYSC' --verbose_failures --define tflite_with_xnnpack=false --sandbox_debug --spawn_strategy=standalone --@secda_tools//:config=sysc",
+      "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/fcgemm_delegate/v1:inference_diff_plus_fcgemm_delegate -c dbg --cxxopt='-DSYSC' --cxxopt='-DRUY_OPT_SET=0' --@secda_tools//:config=sysc",
       "group": {
         "kind": "build",
         "isDefault": true
