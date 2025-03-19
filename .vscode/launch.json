@@ -462,7 +462,141 @@
             "request": "launch",
             "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/mm2im_delegate/v5/inference_diff_plus_mm2im_delegate",
             "args": [
+                // "--model_file=./models/dcgan_gen.tflite",
+                "--model_file=./models/pix2pix_g.tflite",
+                "--num_runs=1",
+                "--use_mm2im_delegate=true",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "preLaunchTask": "inference_diff_plus_mm2im_delegate_v6",
+            "name": "id_plus_mm2im_del_v6",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/mm2im_delegate/v6/inference_diff_plus_mm2im_delegate",
+            "args": [
+                // "--model_file=./models/dcgan_gen.tflite",
+                // "--model_file=./models/tconv_2_2_7_4_14_14_64.tflite",
+                // "--model_file=./models/tconv_2_2_3_5_4_4_64.tflite",
+                // "--model_file=./models/tconv_2_2_8_4_14_14_64.tflite",
+
+
+                "--model_file=./models/tconv_2_2_1_8_14_14_64.tflite", // produces error
+
+                // "--model_file=./models/pix2/tconv_2_2_64_4_64_64_256.tflite",
+                // "--model_file=./models/pix2/tconv_2_2_512_4_1_1_512.tflite",
+                // "--model_file=./models/pix2/tconv_2_2_128_4_32_32_512.tflite",
+                // "--model_file=./models/pix2pix_g.tflite",
+                // "--model_file=./models/tconv_2_2_1_5_14_14_64.tflite",
+
+                
+
+                
+                "--num_runs=1",
+                "--use_mm2im_delegate=true",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "preLaunchTask": "inference_diff_plus_mm2im_delegate_v7",
+            "name": "id_plus_mm2im_del_v7",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/mm2im_delegate/v7/inference_diff_plus_mm2im_delegate",
+            "args": [
                 "--model_file=./models/dcgan_gen.tflite",
+                // "--model_file=./models/tconv_2_2_7_4_14_14_64.tflite",
+                // "--model_file=./models/tconv_2_2_3_5_4_4_64.tflite",
+                // "--model_file=./models/tconv_2_2_8_4_14_14_64.tflite",
+                // "--model_file=./models/tconv_2_2_1_8_14_14_64.tflite",
+
+
+
+
+                // "--model_file=./models/pix2/tconv_2_2_64_4_64_64_256.tflite",
+                // "--model_file=./models/pix2/tconv_2_2_512_4_1_1_512.tflite",
+                // "--model_file=./models/pix2/tconv_2_2_128_4_32_32_512.tflite",
+                // "--model_file=./models/pix2pix_g.tflite",
+                // "--model_file=./models/tconv_2_2_1_5_14_14_64.tflite",
+
+                
+
+                
+                "--num_runs=1",
+                "--use_mm2im_delegate=true",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "preLaunchTask": "inference_diff_plus_mm2im_delegate_v8",
+            "name": "id_plus_mm2im_del_v8",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/mm2im_delegate/v8/inference_diff_plus_mm2im_delegate",
+            "args": [
+                // "--model_file=./models/dcgan_gen.tflite",
+                // "--model_file=./models/tconv_2_2_7_4_14_14_64.tflite",
+                // "--model_file=./models/tconv_2_2_3_5_4_4_64.tflite",
+                // "--model_file=./models/tconv_2_2_8_4_14_14_64.tflite",
+                // "--model_file=./models/tconv_2_2_1_8_14_14_64.tflite",
+
+
+
+                // "--model_file=./models/pix2/tconv_2_2_64_4_64_64_256.tflite",
+                // "--model_file=./models/pix2/tconv_2_2_512_4_1_1_512.tflite",
+                // "--model_file=./models/pix2/tconv_2_2_128_4_32_32_512.tflite",
+                // "--model_file=./models/pix2/tconv_2_2_256_4_16_16_1024.tflite",
+                // "--model_file=./models/pix2/tconv_2_2_512_4_2_2_1024.tflite",
+                // "--model_file=./models/pix2/tconv_2_2_512_4_4_4_1024.tflite",
+                // "--model_file=./models/pix2/tconv_2_2_512_4_8_8_1024.tflite",
+                // "--model_file=./models/pix2/tconv_2_2_3_4_128_128_128.tflite",
+                // "--model_file=./models/pix2pix_g.tflite",
+
+                // "--model_file=./models/esrgan.tflite",
+                "--model_file=./models/unet_carvana.tflite",
+
+
+                
+
+                // "--model_file=./models/tconv_2_2_1_5_14_14_64.tflite",
+
+                
+
+                
                 "--num_runs=1",
                 "--use_mm2im_delegate=true",
             ],
@@ -485,6 +619,30 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/add_delegate/v1/inference_diff_plus_add_delegate",
+            "args": [
+                "--model_file=./models/add_simple.tflite",
+                "--num_runs=1",
+                "--use_add_delegate=true",
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "preLaunchTask": "inference_diff_plus_add_delegate_v2",
+            "name": "id_plus_add_del_v2",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/add_delegate/v2/inference_diff_plus_add_delegate",
             "args": [
                 "--model_file=./models/add_simple.tflite",
                 "--num_runs=1",
@@ -611,6 +769,6 @@
                     "ignoreFailures": true
                 }
             ]
-        },
+        }
     ]
 }
