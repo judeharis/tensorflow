@@ -62,17 +62,17 @@ float CalculateAverageError(T* reference, T* test, int64_t num_elements) {
     float test_value = static_cast<float>(test[i]);
     float reference_value = static_cast<float>(reference[i]);
      // Jude: Added
-    if (reference_value != test_value) {
-      LOG(INFO) << "Mismatch at index " << i
-                << ": reference = " << reference_value
-                << ", test = " << test_value
-                << " (diff =" << std::abs(test_value - reference_value) << ")"
-                << std::endl;
-    }
+    // if (reference_value != test_value) {
+    //   LOG(INFO) << "Mismatch at index " << i
+    //             << ": reference = " << reference_value
+    //             << ", test = " << test_value
+    //             << " (diff =" << std::abs(test_value - reference_value) << ")"
+    //             << std::endl;
+    // }
     error += std::abs(test_value - reference_value);
-    if ((test_value - reference_value) != 0) {
-      LOG(INFO) << "error: " << error << std::endl;
-    }
+    // if ((test_value - reference_value) != 0) {
+    //   LOG(INFO) << "error: " << error << std::endl;
+    // }
   }
   error /= num_elements;
 
