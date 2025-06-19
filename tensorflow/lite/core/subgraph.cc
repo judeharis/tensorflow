@@ -1691,59 +1691,40 @@ TfLiteStatus Subgraph::InvokeImpl() {
     EnsureTensorsVectorCapacity();
     tensor_resized_since_op_invoke_ = false;
     // Jude: Added
-    // std::cout << "node_index: " << node_index <<  " node name: " << GetTFLiteOpName(registration) << std::endl;
+    // std::cout << "node_index: " << node_index <<  " node name: " <<
+    // GetTFLiteOpName(registration) << std::endl;
     if (auto s = OpInvoke(registration, &node); s != kTfLiteOk) {
       auto err = ReportOpError(&context_, node, registration, node_index,
                                "failed to invoke");
       return s == kTfLiteCancelled ? s : err;
     }
     // Jude: Added
-    // if (registration.builtin_code == kTfLiteBuiltinConv2d) {
-    //   using namespace std;
-    //   TfLiteTensor* output;
-    //   TF_LITE_ENSURE_OK(&context_, GetOutputSafe(&context_, &node, 0,
-    //   &output));
-    //   {
-    //     int cols = output->dims->data[1] * output->dims->data[2];
-    //     int rows = output->dims->data[3];
-    //     ofstream myfile;
-    //     myfile.open("./aData/conv/" + std::to_string(node_index) +
-    //                 "_out_cpu.csv");
-    //     int8_t* res_pointer = output->data.int8;
-    //     int index = 0;
-    //     for (int c = 0; c < cols; c++) {
-    //       myfile << endl;
-    //       for (int r = 0; r < rows; r++) {
-    //         myfile << (int)res_pointer[index] << ",";
-    //         index++;
-    //       }
-    //     }
-    //     myfile.close();
-    //   }
-    // }
+    // using namespace std;
+    // const TfLiteTensor* input;
+    // TfLiteTensor* output;
+    // if (std::string(GetTFLiteOpName(registration)) != "OmniDelegate") {
+    //   GetInputSafe(&context_, &node, 0, &input);
+    //   int8_t* input_data = input->data.int8;
+    //   int input_size = 1;
+    //   for (int dims = 0; dims < input->dims->size; dims++)
+    //     input_size *= input->dims->data[dims];
+    //   ofstream in_file;
+    //   in_file.open("aData/omni/input_" + std::to_string(node.inputs->data[0]) +
+    //                "_cpu_" + GetTFLiteOpName(registration) + ".csv");
+    //   for (int i = 0; i < input_size; ++i)
+    //     in_file << static_cast<int>(input_data[i]) << "\n";
 
-    // if (registration.builtin_code == kTfLiteBuiltinFullyConnected) {
-    //   using namespace std;
-    //   TfLiteTensor* output;
-    //   TF_LITE_ENSURE_OK(&context_, GetOutputSafe(&context_, &node, 0,
-    //   &output));
-    //   {
-    //     int cols = output->dims->data[0];
-    //     int rows = output->dims->data[1];
-    //     ofstream myfile;
-    //     myfile.open("./aData/fc/" + std::to_string(node_index) +
-    //                 "_out_cpu.csv");
-    //     int8_t* res_pointer = output->data.int8;
-    //     int index = 0;
-    //     for (int c = 0; c < cols; c++) {
-    //       myfile << endl;
-    //       for (int r = 0; r < rows; r++) {
-    //         myfile << (int)res_pointer[index] << ",";
-    //         index++;
-    //       }
-    //     }
-    //     myfile.close();
-    //   }
+    //   TF_LITE_ENSURE_OK(&context_, GetOutputSafe(&context_, &node, 0, &output));
+    //   int output_size = 1;
+    //   for (int i = 0; i < output->dims->size; i++)
+    //     output_size *= output->dims->data[i];
+    //   ofstream out_file;
+    //   out_file.open("aData/omni/output_" +
+    //                 std::to_string(node.outputs->data[0]) + "_cpu_" +
+    //                 GetTFLiteOpName(registration) + ".csv");
+    //   int8_t* output_data = output->data.int8;
+    //   for (int i = 0; i < output_size; ++i)
+    //     out_file << static_cast<int>(output_data[i]) << "\n";
     // }
 
     // Force execution prep for downstream ops if the latest op triggered the
