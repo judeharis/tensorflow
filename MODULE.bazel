@@ -9,5 +9,5 @@
 # bazel_dep(name = "systemc", version = "2.3.3")
 # bazel_dep(name = "secda_tools", version = "0.2.0")
 bazel_dep(name = "systemc_bazel", version = "2.3.3c") # Add/Remove to switch between old and new method
-bazel_dep(name = "secda_tools", version = "0.2.0d")
+# bazel_dep(name = "secda_tools", version = "0.2.0d")
 

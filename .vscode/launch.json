@@ -396,8 +396,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/vm_delegate/v5/inference_diff_plus_vm_delegate",
             "args": [
-                // "--model_file=./models/mobilenetv1.tflite",
-                "--model_file=./models/omni_simple.tflite",
+                "--model_file=./models/mobilenetv2.tflite",
+                // "--model_file=./models/omni_simple.tflite",
                 "--num_runs=1",
                 "--use_vm_delegate=true",
             ],
@@ -522,19 +522,12 @@
                 // "--model_file=./models/tconv_2_2_7_4_14_14_64.tflite",
                 // "--model_file=./models/tconv_2_2_3_5_4_4_64.tflite",
                 // "--model_file=./models/tconv_2_2_8_4_14_14_64.tflite",
-
-
                 // "--model_file=./models/tconv_2_2_1_8_14_14_64.tflite", // produces error
-
                 // "--model_file=./models/pix2/tconv_2_2_64_4_64_64_256.tflite",
                 // "--model_file=./models/pix2/tconv_2_2_512_4_1_1_512.tflite",
                 // "--model_file=./models/pix2/tconv_2_2_128_4_32_32_512.tflite",
                 // "--model_file=./models/pix2pix_g.tflite",
                 // "--model_file=./models/tconv_2_2_1_5_14_14_64.tflite",
-
-                
-
-                
                 "--num_runs=1",
                 "--use_mm2im_delegate=true",
             ],
@@ -563,19 +556,11 @@
                 // "--model_file=./models/tconv_2_2_3_5_4_4_64.tflite",
                 // "--model_file=./models/tconv_2_2_8_4_14_14_64.tflite",
                 // "--model_file=./models/tconv_2_2_1_8_14_14_64.tflite",
-
-
-
-
                 // "--model_file=./models/pix2/tconv_2_2_64_4_64_64_256.tflite",
                 // "--model_file=./models/pix2/tconv_2_2_512_4_1_1_512.tflite",
                 // "--model_file=./models/pix2/tconv_2_2_128_4_32_32_512.tflite",
                 // "--model_file=./models/pix2pix_g.tflite",
                 // "--model_file=./models/tconv_2_2_1_5_14_14_64.tflite",
-
-                
-
-                
                 "--num_runs=1",
                 "--use_mm2im_delegate=true",
             ],
@@ -604,9 +589,6 @@
                 // "--model_file=./models/tconv_2_2_3_5_4_4_64.tflite",
                 // "--model_file=./models/tconv_2_2_8_4_14_14_64.tflite",
                 // "--model_file=./models/tconv_2_2_1_8_14_14_64.tflite",
-
-
-
                 // "--model_file=./models/pix2/tconv_2_2_64_4_64_64_256.tflite",
                 // "--model_file=./models/pix2/tconv_2_2_512_4_1_1_512.tflite",
                 // "--model_file=./models/pix2/tconv_2_2_128_4_32_32_512.tflite",
@@ -616,12 +598,9 @@
                 // "--model_file=./models/pix2/tconv_2_2_512_4_8_8_1024.tflite",
                 // "--model_file=./models/pix2/tconv_2_2_3_4_128_128_128.tflite",
                 // "--model_file=./models/pix2pix_g.tflite",
-
                 // "--model_file=./models/esrgan.tflite",
                 // "--model_file=./models/unet_carvana.tflite",
                 // "--model_file=./models/tconv_2_2_1_5_14_14_64.tflite",
-
-                
                 "--num_runs=1",
                 "--use_mm2im_delegate=true",
             ],
@@ -660,12 +639,9 @@
                 // "--model_file=./models/pix2/tconv_2_2_3_4_128_128_128.tflite",
                 "--model_file=./models/pix2pix_g.tflite",
                 // "--model_file=./models/tconv_exp/style_transfer_layer3.tflite",
-
                 // "--model_file=./models/esrgan.tflite",
                 // "--model_file=./models/unet_carvana.tflite",
                 // "--model_file=./models/tconv_2_2_1_5_14_14_64.tflite",
-
-                
                 "--num_runs=1",
                 "--use_mm2im_delegate=true",
             ],
@@ -704,12 +680,9 @@
                 // "--model_file=./models/pix2/tconv_2_2_3_4_128_128_128.tflite",
                 // "--model_file=./models/pix2pix_g.tflite",
                 // "--model_file=./models/tconv_exp/style_transfer_layer3.tflite",
-
                 // "--model_file=./models/esrgan.tflite",
                 // "--model_file=./models/unet_carvana.tflite",
                 // "--model_file=./models/tconv_2_2_1_5_14_14_64.tflite",
-
-                
                 "--num_runs=1",
                 "--use_mm2im_delegate=true",
             ],
@@ -748,12 +721,9 @@
                 // "--model_file=./models/pix2/tconv_2_2_3_4_128_128_128.tflite",
                 // "--model_file=./models/pix2pix_g.tflite",
                 // "--model_file=./models/tconv_exp/style_transfer_layer3.tflite",
-
                 // "--model_file=./models/esrgan.tflite",
                 // "--model_file=./models/unet_carvana.tflite",
                 // "--model_file=./models/tconv_2_2_1_5_14_14_64.tflite",
-
-                
                 "--num_runs=1",
                 "--use_mm2im_delegate=true",
             ],
@@ -792,12 +762,9 @@
                 // "--model_file=./models/pix2/tconv_2_2_3_4_128_128_128.tflite",
                 // "--model_file=./models/pix2pix_g.tflite",
                 // "--model_file=./models/tconv_exp/style_transfer_layer3.tflite",
-
                 // "--model_file=./models/esrgan.tflite",
                 // "--model_file=./models/unet_carvana.tflite",
                 // "--model_file=./models/tconv_2_2_1_5_14_14_64.tflite",
-
-                
                 "--num_runs=1",
                 "--use_mm2im_delegate=true",
             ],
@@ -886,7 +853,6 @@
                 }
             ]
         },
-
         {
             "preLaunchTask": "inference_diff_plus_vit_csr_delegate_v1",
             "name": "id_plus_vit_csr_del_v1",
@@ -918,10 +884,21 @@
             "request": "launch",
             "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/omni_delegate/v1/inference_diff_plus_omni_delegate",
             "args": [
-                // "--model_file=./models/mobilenetv2.tflite",
+                "--model_file=./models/mobilenetv2.tflite",
                 // "--model_file=./models/omni_simple.tflite",
-                "--model_file=./models/omni_simplev2.tflite",
+                // "--model_file=./models/omni_simplev2.tflite",
+                // "--model_file=./models/omni_simplev3.tflite",
+                // "--model_file=./models/omni_simplev4.tflite",
+                // "--model_file=./models/omni_simplev5.tflite",
+                // "--model_file=./models/omni_simplev6.tflite",
+                // "--model_file=./models/omni_simplev7.tflite",
+                // "--model_file=./models/custom_layer2_brType0_1_1_2_2_2_2_16.tflite",
 
+
+
+
+
+                // "--model_file=./models/dcgan_gen.tflite",
                 "--num_runs=1",
                 "--use_omni_delegate=true",
             ],
@@ -938,7 +915,6 @@
                 }
             ]
         },
-
         // // =========================================
         // // Accuracy Testing
         // // =========================================
