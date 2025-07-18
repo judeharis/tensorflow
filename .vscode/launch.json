@@ -272,7 +272,7 @@
             "name": "Inference Diff",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/tools/evaluation/tasks/inference_diff",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/tools/evaluation/tasks/inference_diff/run_eval",
             "args": [
                 "--model_file=${workspaceFolder}/../data/models/mobilenetv1.tflite",
                 "--num_runs=1",

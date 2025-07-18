@@ -64,3 +64,5 @@ tensorflow/lite/delegates/utils/secda_vm_delegate_working
 tensorflow/lite/delegates/utils/vm_sim_delegate_working
 *.old
 runtime.txt
+prf.csv
+runtime.txt
