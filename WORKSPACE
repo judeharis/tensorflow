@@ -93,7 +93,7 @@ tf_workspace0()
 
 
 
-local_repository(
-    name = "secda_tools",
-    path = "/home/jude/Workspace/SECDA/secda_tools",
-)
+# local_repository(
+#     name = "secda_tools",
+#     path = "/home/jude/Workspace/SECDA/secda_tools",
+# )
