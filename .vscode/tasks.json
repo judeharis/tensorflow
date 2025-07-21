@@ -55,9 +55,9 @@
       }
     },
     {
-      "label": "benchmark_model_plus_fcgemm_delegate_v1",
+      "label": "benchmark_model_plus_fcgemm_delegate_v2",
       "type": "shell",
-      "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/fcgemm_delegate/v1:benchmark_model_plus_fcgemm_delegate -c dbg --cxxopt='-DSYSC' --cxxopt='-DACC_PROFILE' --cxxopt='-DRUY_OPT_SET=0' --@secda_tools//:config=sysc",
+      "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/fcgemm_delegate/v2:benchmark_model_plus_fcgemm_delegate -c dbg --cxxopt='-DSYSC' --cxxopt='-DACC_PROFILE' --cxxopt='-DRUY_OPT_SET=0' --@secda_tools//:config=sysc",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -121,9 +121,9 @@
       }
     },
     {
-      "label": "inference_diff_plus_fcgemm_delegate_v1",
+      "label": "inference_diff_plus_fcgemm_delegate_v2",
       "type": "shell",
-      "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/fcgemm_delegate/v1:inference_diff_plus_fcgemm_delegate -c dbg --cxxopt='-DSYSC' --cxxopt='-DRUY_OPT_SET=0' --@secda_tools//:config=sysc",
+      "command": "bazel6 build tensorflow/lite/delegates/utils/secda_delegates/fcgemm_delegate/v2:inference_diff_plus_fcgemm_delegate -c dbg --cxxopt='-DSYSC' --cxxopt='-DRUY_OPT_SET=0' --@secda_tools//:config=sysc",
       "group": {
         "kind": "build",
         "isDefault": true

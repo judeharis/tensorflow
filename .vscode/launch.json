@@ -150,11 +150,11 @@
             ]
         },
         {
-            "preLaunchTask": "benchmark_model_plus_fcgemm_delegate_v1",
-            "name": "Benchmark Model | FCGEMMv1",
+            "preLaunchTask": "benchmark_model_plus_fcgemm_delegate_v2",
+            "name": "Benchmark Model | FCGEMMv2",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/fcgemm_delegate/v1/benchmark_model_plus_fcgemm_delegate",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/fcgemm_delegate/v2/benchmark_model_plus_fcgemm_delegate",
             "args": [
                 "--use_gpu=false",
                 "--num_threads=1",
@@ -339,11 +339,11 @@
             ]
         },
         {
-            "preLaunchTask": "inference_diff_plus_fcgemm_delegate_v1",
-            "name": "Inference Diff | FCGEMMv1",
+            "preLaunchTask": "inference_diff_plus_fcgemm_delegate_v2",
+            "name": "Inference Diff | FCGEMMv2",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/fcgemm_delegate/v1/inference_diff_plus_fcgemm_delegate",
+            "program": "${workspaceFolder}/bazel-bin/tensorflow/lite/delegates/utils/secda_delegates/fcgemm_delegate/v2/inference_diff_plus_fcgemm_delegate",
             "args": [
                 "--model_file=${workspaceFolder}/../data/models/resnet18v1.tflite",
                 "--num_runs=1",
