@@ -33,7 +33,7 @@
             ]
         },
         {
-            "preLaunchTask": "eval_model_plus_vm_v5",
+            "preLaunchTask": "eval_model_plus_vm_delegate_v5",
             "name": "Eval Model | VMv5",
             "type": "cppdbg",
             "request": "launch",
@@ -90,7 +90,7 @@
             ]
         },
         {
-            "preLaunchTask": "benchmark_model_plus_vm_v5",
+            "preLaunchTask": "benchmark_model_plus_vm_delegate_v5",
             "name": "Benchmark Model | VMv5",
             "type": "cppdbg",
             "request": "launch",
@@ -120,7 +120,7 @@
             ]
         },
         {
-            "preLaunchTask": "benchmark_model_plus_sa_v4",
+            "preLaunchTask": "benchmark_model_plus_sa_delegate_v4",
             "name": "Benchmark Model | SAv4",
             "type": "cppdbg",
             "request": "launch",
