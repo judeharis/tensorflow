@@ -157,14 +157,14 @@
       }
     },
     // =========================================
-    {
-      "label": "sysc",
-      "type": "shell",
-      "command": "bazel6 build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc --spawn_strategy=standalone  ",
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      }
-    },
+    // {
+    //   "label": "sysc",
+    //   "type": "shell",
+    //   "command": "bazel6 build --jobs 1 //tensorflow/lite/examples/systemc:hello_systemc --spawn_strategy=standalone  ",
+    //   "group": {
+    //     "kind": "build",
+    //     "isDefault": true
+    //   }
+    // },
   ]
 }

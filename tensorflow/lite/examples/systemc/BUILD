@@ -34,9 +34,7 @@ cc_binary(
     }),
     deps = [
         #":logging",
-        "@systemc//:systemc",
-        # "@systemc//:systemc_lib"
-        
+        "@systemc_bazel//:systemc_lib",
     ],
 )
 
