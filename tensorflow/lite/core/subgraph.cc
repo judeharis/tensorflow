@@ -56,7 +56,7 @@ limitations under the License.
 #endif  // TF_LITE_TENSORFLOW_PROFILER
 
 #include <fstream>
-// #include <iostream>  // Jude: Added
+#include <iostream>  // Jude: Added
 
 #include "tensorflow/lite/kernels/kernel_util.h"
 
@@ -1709,14 +1709,15 @@ TfLiteStatus Subgraph::InvokeImpl() {
     //   for (int dims = 0; dims < input->dims->size; dims++)
     //     input_size *= input->dims->data[dims];
     //   ofstream in_file;
-    //   in_file.open("aData/omni/input_" + std::to_string(node.inputs->data[0]) +
+    //   in_file.open("aData/omni/input_" + std::to_string(node.inputs->data[0])
+    //   +
     //                "_cpu_" + GetTFLiteOpName(registration) + ".csv");
     //   for (int i = 0; i < input_size; ++i)
     //     in_file << static_cast<int>(input_data[i]) << "\n";
 
-    //   TF_LITE_ENSURE_OK(&context_, GetOutputSafe(&context_, &node, 0, &output));
-    //   int output_size = 1;
-    //   for (int i = 0; i < output->dims->size; i++)
+    //   TF_LITE_ENSURE_OK(&context_, GetOutputSafe(&context_, &node, 0,
+    //   &output)); int output_size = 1; for (int i = 0; i < output->dims->size;
+    //   i++)
     //     output_size *= output->dims->data[i];
     //   ofstream out_file;
     //   out_file.open("aData/omni/output_" +
@@ -1725,6 +1726,31 @@ TfLiteStatus Subgraph::InvokeImpl() {
     //   int8_t* output_data = output->data.int8;
     //   for (int i = 0; i < output_size; ++i)
     //     out_file << static_cast<int>(output_data[i]) << "\n";
+    // }
+
+    // using namespace std;
+    // const TfLiteTensor* input;
+    // TfLiteTensor* output;
+    // if (std::string(GetTFLiteOpName(registration)) == "CONV_2D") {
+
+    //   TF_LITE_ENSURE_OK(&context_, GetOutputSafe(&context_, &node, 0, &output));
+    //   int output_rows = 1;
+    //   for (int i = 0; i < output->dims->size - 1; i++)
+    //     output_rows *= output->dims->data[i];
+    //   int output_cols = output->dims->data[output->dims->size - 1];
+    //   ofstream out_file;
+    //   out_file.open("aData/conv/" + std::to_string(node_index) +
+    //                 "_out_cpu.csv");
+    //   int8_t* output_data = output->data.int8;
+    //   int index = 0;
+    //   for (int r = 0; r < output_rows; r++) {
+    //     out_file << "\n";
+    //     for (int c = 0; c < output_cols; c++) {
+    //       out_file << static_cast<int>(output_data[index]) << ",";
+    //       index++;
+    //     }
+    //   }
+    //   out_file.close();
     // }
 
     // Force execution prep for downstream ops if the latest op triggered the

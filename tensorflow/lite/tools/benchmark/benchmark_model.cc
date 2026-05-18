@@ -324,10 +324,12 @@ TfLiteStatus BenchmarkModel::Run() {
     std::cout << "===========================" << std::endl;
   }
   // Jude: Added Done
+  int64_t timestamp_us_start = profiling::time::NowMicros();
 
   Stat<int64_t> inference_time_us =
       Run(params_.Get<int32_t>("num_runs"), params_.Get<float>("min_secs"),
           params_.Get<float>("max_secs"), REGULAR, &status);
+  int64_t timestamp_us_end = profiling::time::NowMicros();
   const auto overall_mem_usage =
       profiling::memory::GetMemoryUsage() - start_mem_usage;
 
@@ -336,19 +338,22 @@ TfLiteStatus BenchmarkModel::Run() {
     peak_memory_reporter->Stop();
     peak_mem_mb = peak_memory_reporter->GetPeakMemUsageInMB();
   }
-  
+
   // Jude: Added
   float run_time = inference_time_us.sum();
   Stat<int64_t> warmup_time_us = inference_time_us;
   float avg_run_time = (run_time / (params_.Get<int32_t>("num_runs") * 1000));
+  std::string runtime_file = "runtime.txt";
+  std::ofstream runtime_out(runtime_file, std::ios::out);
+  runtime_out << avg_run_time << std::endl;
   if (params_.Get<bool>("collect_power")) {
     std::cout << "===========================" << std::endl;
     std::cout << "Power Measurement Done" << std::endl;
     std::cout << "===========================" << std::endl;
+    // runtime_out << "Start Time (us): " << timestamp_us_start << std::endl;
+    // runtime_out << "End Time (us): " << timestamp_us_end << std::endl;
   }
-  std::string runtime_file = "runtime.txt";
-  std::ofstream runtime_out(runtime_file, std::ios::out);
-  runtime_out << avg_run_time << std::endl;
+
   runtime_out.close();
   // Jude: Added Done
 
