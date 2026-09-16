@@ -91,9 +91,10 @@ load("@//tensorflow:workspace0.bzl", "tf_workspace0")
 
 tf_workspace0()
 
-
-
-# local_repository(
-#     name = "secda_tools",
-#     path = "/home/jude/Workspace/SECDA/secda_tools",
-# )
+# SECDA-Core, mounted from the framework repo's submodule (SECDA-TFLite/third_party/secda_core).
+# Repo name is secda_core (underscore); the package path inside it is //secda-core (hyphen), so a
+# dep label reads @secda_core//secda-core:secda_corev5 and the config flag is --@secda_core//:config=.
+local_repository(
+    name = "secda_core",
+    path = "../third_party/secda_core",
+)

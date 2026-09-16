@@ -4,10 +4,10 @@ package(default_visibility = ["//visibility:public"])
 
 alias(
     name = "secdav5",
-    actual = "@secda_tools//secda_tools:secda_toolsv5",
+    actual = "@secda_core//secda-core:secda_corev5",
 )
 
 alias(
     name = "secdav6",
-    actual = "@secda_tools//secda_tools:secda_toolsv6",
+    actual = "@secda_core//secda-core:secda_corev6",
 )
