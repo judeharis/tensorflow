@@ -758,3 +758,6 @@ test:macos_arm64_pycpp_test_filters --build_tag_filters=-no_oss,-oss_excluded,-o
 test:macos_arm64_pycpp_test_filters --test_lang_filters=cc,py
 test:macos_arm64_pycpp_test --config=macos_arm64_pycpp_test_filters -- //tensorflow/... -//tensorflow/compiler/tf2tensorrt/... -//tensorflow/compiler/xla/service/gpu/... -//tensorflow/compiler/xla/tools/multihost_hlo_runner/... -//tensorflow/compiler/xrt/... -//tensorflow/core/tpu/... -//tensorflow/go/... -//tensorflow/java/... -//tensorflow/python/integration_testing/... -//tensorflow/tools/toolchains/... -//tensorflow/lite/... -//tensorflow/compiler/aot/... -//tensorflow/compiler/xla/tests:local_client_aot_test_computation -//tensorflow/compiler/xla/tests:local_client_aot_test_helper -//tensorflow/compiler/xla/tests:local_client_aot_test
 # END TF TEST SUITE OPTIONS
+
+# SystemC (systemc_bazel, built by rules_foreign_cc) needs C++17 and PIC; same line as SECDA-Test/SECDA-Sandboxed.
+build --action_env=CXXFLAGS="-fPIC -std=c++17"
