@@ -761,3 +761,14 @@ test:macos_arm64_pycpp_test --config=macos_arm64_pycpp_test_filters -- //tensorf
 
 # SystemC (systemc_bazel, built by rules_foreign_cc) needs C++17 and PIC; same line as SECDA-Test/SECDA-Sandboxed.
 build --action_env=CXXFLAGS="-fPIC -std=c++17"
+
+# SECDA delegate SystemC simulation build, used by SECDA-Core's tools
+# (`secda build`, the generated .vscode/ tasks): same flags as docs/vscode.md's
+# debug build of a delegate. Hardware builds keep the benchmark suite's flags.
+build:sysc --compilation_mode=dbg
+build:sysc --cxxopt=-DSYSC
+build:sysc --cxxopt=-DTF_LITE_DISABLE_X86_NEON
+build:sysc --cxxopt=-DACC_PROFILE
+build:sysc --cxxopt=-DRUY_OPT_SET=0
+build:sysc --define=tflite_with_xnnpack=false
+build:sysc --@secda_core//:config=sysc
