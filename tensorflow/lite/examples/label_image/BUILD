@@ -44,6 +44,41 @@ cc_binary(
     ],
 )
 
+# label_image as a library, so a delegate can link its own provider into it:
+# SECDA-TFLite's label_image_plus_<del> targets are this plus
+# :<del>_delegate_provider (the dummy_delegate pattern). label_image.cc
+# carries main(), and delegates are picked up through the provider registry.
+cc_library(
+    name = "label_image_lib",
+    srcs = [
+        "get_top_n.h",
+        "get_top_n_impl.h",
+        "label_image.cc",
+    ],
+    linkopts = tflite_linkopts() + select({
+        "//tensorflow:android": [
+            "-pie",  # Android 5.0 and later supports only PIE
+            "-lm",  # some builtin ops, e.g., tanh, need -lm
+            "-Wl,-rpath=/data/local/tmp",  # for hexagon delegate
+        ],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":bitmap_helpers",
+        "//tensorflow/lite:framework",
+        "//tensorflow/lite:string_util",
+        "//tensorflow/lite/c:common",
+        "//tensorflow/lite/kernels:builtin_ops",
+        "//tensorflow/lite/profiling:profiler",
+        "//tensorflow/lite/tools:command_line_flags",
+        "//tensorflow/lite/tools:tool_params",
+        "//tensorflow/lite/tools/delegates:delegate_provider_hdr",
+        "//tensorflow/lite/tools/delegates:tflite_execution_providers",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
 cc_library(
     name = "bitmap_helpers",
     srcs = ["bitmap_helpers.cc"],
