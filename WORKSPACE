@@ -91,10 +91,13 @@ load("@//tensorflow:workspace0.bzl", "tf_workspace0")
 
 tf_workspace0()
 
-# SECDA-Core, mounted from the framework repo's submodule (SECDA-TFLite/third_party/secda_core).
+# SECDA-Core: $SECDA_CORE_DIR, else SECDA-DS's own SECDA-Core when SECDA-TFLite sits inside
+# SECDA-DS, else SECDA-TFLite's third_party/secda_core submodule (third_party/secda_core_repo.bzl).
 # Repo name is secda_core (underscore); the package path inside it is //secda-core (hyphen), so a
 # dep label reads @secda_core//secda-core:secda_corev5 and the config flag is --@secda_core//:config=.
-local_repository(
+load("//third_party:secda_core_repo.bzl", "secda_core_repository")
+
+secda_core_repository(
     name = "secda_core",
-    path = "../third_party/secda_core",
+    repo_root_up = 1,  # this WORKSPACE is SECDA-TFLite/tensorflow
 )
