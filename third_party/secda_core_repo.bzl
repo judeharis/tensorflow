@@ -11,6 +11,9 @@ In order:
 A replacement for local_repository(path = ...): the checkout's top-level entries
 are symlinked in, as local_repository does, minus .git and Bazel's bazel-*
 convenience links, which would loop.
+
+Managed by `./secda scaffold` from SECDA-Core templates/framework/bazel/; edit it
+there, not here.
 """
 
 def _secda_core_repository_impl(rctx):
