@@ -3,9 +3,11 @@
 In order:
   1. $SECDA_CORE_DIR, if set.
   2. Inside SECDA-DS, the suite's own SECDA-Core (<SECDA-DS>/SECDA-Core), found
-     through the suite's .gitmodules. The framework repo's third_party/secda_core
-     submodule is then not needed and SECDA-DS's setup.sh leaves it unchecked-out,
-     so the suite holds one SECDA-Core instead of one per framework.
+     through the suite's .gitmodules. The suite is the framework repo's parent,
+     else its grandparent (SECDA-DS/prototypes/<repo>). The framework repo's
+     third_party/secda_core submodule is then not needed and SECDA-DS's setup.sh
+     leaves it unchecked-out, so the suite holds one SECDA-Core instead of one per
+     framework.
   3. The framework repo's third_party/secda_core submodule (a standalone clone).
 
 A replacement for local_repository(path = ...): the checkout's top-level entries
@@ -23,16 +25,19 @@ def _secda_core_repository_impl(rctx):
         repo = repo.dirname
 
     env = rctx.os.environ.get("SECDA_CORE_DIR", "")
-    suite = repo.dirname
-    gitmodules = suite.get_child(".gitmodules")
+    src = None
     if env:
         src = rctx.path(env)
         origin = "$SECDA_CORE_DIR"
-    elif (gitmodules.exists and "path = SECDA-Core" in rctx.read(gitmodules) and
-          suite.get_child("SECDA-Core").get_child("secda-core").exists):
-        src = suite.get_child("SECDA-Core")
-        origin = "SECDA-DS"
     else:
+        for suite in [repo.dirname, repo.dirname.dirname]:
+            gitmodules = suite.get_child(".gitmodules")
+            if (gitmodules.exists and "path = SECDA-Core" in rctx.read(gitmodules) and
+                suite.get_child("SECDA-Core").get_child("secda-core").exists):
+                src = suite.get_child("SECDA-Core")
+                origin = "SECDA-DS"
+                break
+    if src == None:
         src = repo.get_child("third_party").get_child("secda_core")
         origin = "third_party/secda_core"
 
