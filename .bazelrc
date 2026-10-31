@@ -784,6 +784,11 @@ build:xrt --define=tflite_with_xnnpack=false
 build:xrt --copt=-DTFLITE_ENABLE_XNNPACK=OFF
 build:xrt --copt=-DTFLITE_WITHOUT_XNNPACK
 build:xrt --@secda_core//:config=xrt
+# ruy's portable kernels for the CPU ops, as build:sysc: inference_diff's reference is the CPU,
+# and ruy's optimised x86 kernels break rounding ties the other way from the accelerator (and
+# from simulation and the boards' aarch64 kernels). Without it VM v17 showed avg_error up to
+# 0.021 on a correct accelerator (TFL-8). Costs speed on the CPU ops.
+build:xrt --cxxopt=-DRUY_OPT_SET=0
 # Own convenience links (bazel-xrt-bin, ...): the build usually runs in a container with its own
 # --output_user_root, and must not repoint bazel-bin away from the host builds.
 build:xrt --symlink_prefix=bazel-xrt-
