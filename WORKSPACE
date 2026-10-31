@@ -101,3 +101,8 @@ secda_core_repository(
     name = "secda_core",
     repo_root_up = 1,  # this WORKSPACE is SECDA-TFLite/tensorflow
 )
+
+# XRT, for --config=xrt (Alveo: SECDA-Core's axi_support v6 XRT backend). Only read by xrt builds.
+load("@secda_core//:xrt.bzl", "secda_xrt_repository")
+
+secda_xrt_repository()
